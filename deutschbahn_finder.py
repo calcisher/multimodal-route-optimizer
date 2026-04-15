@@ -33,7 +33,7 @@ for j in r.json().get("journeys", []):
         fiyat = f"{j['price']['amount']} {j['price']['currency']}"
         dt_notu = ""
     else:
-        fiyat = "49€"
+        fiyat = "60€"
         dt_notu = " [Deutschland Ticket]"
 
     print(f"  ⏰ {dep_dt.strftime('%H:%M')}→{arr_dt.strftime('%H:%M')} | "
