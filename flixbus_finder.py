@@ -4,6 +4,7 @@ import os
 import json
 import time
 from datetime import datetime, timedelta
+from bs4 import BeautifulSoup
 
 # ──────────────────────────────────────────────
 # Konfigürasyon
@@ -38,7 +39,6 @@ def init_db():
 # ──────────────────────────────────────────────
 def scrape_germany_city_names() -> list[str]:
     """flixbus.com/bus/germany sayfasından şehir isimlerini çeker."""
-    from bs4 import BeautifulSoup
 
     url = "https://www.flixbus.com/bus/germany"
     resp = requests.get(url, headers=HEADERS, timeout=15)
