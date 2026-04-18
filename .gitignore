@@ -1,12 +1,20 @@
-# Python-generated files
 __pycache__/
-*.py[oc]
+*.py[cod]
+*$py.class
+*.so
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
 
-# Virtual environments
-.venv
-*.md
+# virtual environments
+.venv/
+venv/
+ENV/
+
+# PyCharm ve IDE Settings 
+.idea/
+.vscode/
+
+# api keys etc.
 .env
