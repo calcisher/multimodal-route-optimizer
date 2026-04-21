@@ -1,0 +1,701 @@
+{
+    "search_metadata": {
+        "id": "69e4e2af22abf71cbacec9ad",
+        "status": "Success",
+        "json_endpoint": "https://serpapi.com/searches/DwCgH4sYCOeytXx9-1szqg/69e4e2af22abf71cbacec9ad.json",
+        "created_at": "2026-04-19 14:11:59 UTC",
+        "processed_at": "2026-04-19 14:11:59 UTC",
+        "google_flights_url": "https://www.google.com/travel/flights?hl=en&gl=it&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTA1LTEwagcIARIDQkdZcgcIARIDTlVFQAFIAXABmAEC&tfu=EgIIAQ",
+        "raw_html_file": "https://serpapi.com/searches/DwCgH4sYCOeytXx9-1szqg/69e4e2af22abf71cbacec9ad.html",
+        "prettify_html_file": "https://serpapi.com/searches/DwCgH4sYCOeytXx9-1szqg/69e4e2af22abf71cbacec9ad.prettify",
+        "total_time_taken": 0.46
+    },
+    "search_parameters": {
+        "engine": "google_flights",
+        "hl": "en",
+        "gl": "it",
+        "type": "2",
+        "departure_id": "BGY",
+        "arrival_id": "NUE",
+        "outbound_date": "2026-05-10",
+        "currency": "EUR",
+
+
+    },
+    "other_flights": [
+        {
+            "flights": [
+                {
+                    "departure_airport": {
+                        "name": "Il Caravaggio International Airport",
+                        "id": "BGY",
+                        "time": "2026-05-10 11:45"
+                    },
+                    "arrival_airport": {
+                        "name": "Sabiha Gökçen International Airport",
+                        "id": "SAW",
+                        "time": "2026-05-10 15:25"
+                    },
+                    "duration": 160,
+                    "airplane": "Airbus A321",
+                    "airline": "Pegasus",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/PC.png",
+                    "travel_class": "Economy",
+                    "flight_number": "PC 1212",
+                    "ticket_also_sold_by": [
+                        "ITA"
+                    ],
+                    "legroom": "28 in",
+                    "extensions": [
+                        "Below average legroom (28 in)",
+                        "Stream media to your device",
+                        "Carbon emissions estimate: 138 kg"
+                    ]
+                },
+                {
+                    "departure_airport": {
+                        "name": "Istanbul Airport",
+                        "id": "IST",
+                        "time": "2026-05-11 03:45"
+                    },
+                    "arrival_airport": {
+                        "name": "Munich International Airport",
+                        "id": "MUC",
+                        "time": "2026-05-11 05:30"
+                    },
+                    "duration": 165,
+                    "airplane": "Airbus A320neo",
+                    "airline": "Lufthansa",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/LH.png",
+                    "travel_class": "Economy",
+                    "flight_number": "LH 1743",
+                    "legroom": "29 in",
+                    "extensions": [
+                        "Below average legroom (29 in)",
+                        "In-seat USB outlet",
+                        "Carbon emissions estimate: 124 kg"
+                    ],
+                    "overnight": true
+                },
+                {
+                    "departure_airport": {
+                        "name": "Munich International Airport",
+                        "id": "MUC",
+                        "time": "2026-05-11 19:15"
+                    },
+                    "arrival_airport": {
+                        "name": "Nuremberg Airport",
+                        "id": "NUE",
+                        "time": "2026-05-11 21:30"
+                    },
+                    "duration": 135,
+                    "airplane": "Bus",
+                    "airline": "Lufthansa",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/LH.png",
+                    "travel_class": "Economy",
+                    "flight_number": "LH 3810",
+                    "plane_and_crew_by": "Dlh Bus Services"
+                }
+            ],
+            "layovers": [
+                {
+                    "duration": 740,
+                    "name": "Istanbul Airport",
+                    "id": "SAW",
+                    "overnight": true
+                },
+                {
+                    "duration": 825,
+                    "name": "Munich International Airport",
+                    "id": "MUC"
+                }
+            ],
+            "total_duration": 2025,
+            "carbon_emissions": {
+                "typical_for_this_route": 64000
+            },
+            "price": 391,
+            "type": "One way",
+            "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/multi.png",
+            "booking_token": "WyJDalJJVmtWbFkySjZha1ZRTjJOQlQweHFVVUZDUnkwdExTMHRMUzB0TFc5NWJtUXhORUZCUVVGQlIyNXJOSEU0UlZwVU5rRkJFaFJRUXpFeU1USjhURWd4TnpRemZFeElNemd4TUJvTENOcXdBaEFDR2dORlZWSTRISERqNWdJPSIsW1siQkdZIiwiMjAyNi0wNS0xMCIsIlNBVyIsbnVsbCwiUEMiLCIxMjEyIl0sWyJJU1QiLCIyMDI2LTA1LTExIiwiTVVDIixudWxsLCJMSCIsIjE3NDMiXSxbIk1VQyIsIjIwMjYtMDUtMTEiLCJOVUUiLG51bGwsIkxIIiwiMzgxMCJdXV0="
+        },
+        {
+            "flights": [
+                {
+                    "departure_airport": {
+                        "name": "Il Caravaggio International Airport",
+                        "id": "BGY",
+                        "time": "2026-05-10 11:45"
+                    },
+                    "arrival_airport": {
+                        "name": "Sabiha Gökçen International Airport",
+                        "id": "SAW",
+                        "time": "2026-05-10 15:25"
+                    },
+                    "duration": 160,
+                    "airplane": "Airbus A321",
+                    "airline": "Pegasus",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/PC.png",
+                    "travel_class": "Economy",
+                    "flight_number": "PC 1212",
+                    "ticket_also_sold_by": [
+                        "ITA"
+                    ],
+                    "legroom": "28 in",
+                    "extensions": [
+                        "Below average legroom (28 in)",
+                        "Stream media to your device",
+                        "Carbon emissions estimate: 138 kg"
+                    ]
+                },
+                {
+                    "departure_airport": {
+                        "name": "Istanbul Airport",
+                        "id": "IST",
+                        "time": "2026-05-11 03:45"
+                    },
+                    "arrival_airport": {
+                        "name": "Munich International Airport",
+                        "id": "MUC",
+                        "time": "2026-05-11 05:30"
+                    },
+                    "duration": 165,
+                    "airplane": "Airbus A320neo",
+                    "airline": "Lufthansa",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/LH.png",
+                    "travel_class": "Economy",
+                    "flight_number": "LH 1743",
+                    "legroom": "29 in",
+                    "extensions": [
+                        "Below average legroom (29 in)",
+                        "In-seat USB outlet",
+                        "Carbon emissions estimate: 124 kg"
+                    ],
+                    "overnight": true
+                },
+                {
+                    "departure_airport": {
+                        "name": "Munich International Airport",
+                        "id": "MUC",
+                        "time": "2026-05-11 08:30"
+                    },
+                    "arrival_airport": {
+                        "name": "Nuremberg Airport",
+                        "id": "NUE",
+                        "time": "2026-05-11 10:45"
+                    },
+                    "duration": 135,
+                    "airplane": "Bus",
+                    "airline": "Lufthansa",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/LH.png",
+                    "travel_class": "Economy",
+                    "flight_number": "LH 3802",
+                    "plane_and_crew_by": "Dlh Bus Services"
+                }
+            ],
+            "layovers": [
+                {
+                    "duration": 740,
+                    "name": "Istanbul Airport",
+                    "id": "SAW",
+                    "overnight": true
+                },
+                {
+                    "duration": 180,
+                    "name": "Munich International Airport",
+                    "id": "MUC"
+                }
+            ],
+            "total_duration": 1380,
+            "carbon_emissions": {
+                "typical_for_this_route": 64000
+            },
+            "price": 410,
+            "type": "One way",
+            "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/multi.png",
+            "booking_token": "WyJDalJJVmtWbFkySjZha1ZRTjJOQlQweHFVVUZDUnkwdExTMHRMUzB0TFc5NWJtUXhORUZCUVVGQlIyNXJOSEU0UlZwVU5rRkJFaFJRUXpFeU1USjhURWd4TnpRemZFeElNemd3TWhvTENNYS9BaEFDR2dORlZWSTRISENnK0FJPSIsW1siQkdZIiwiMjAyNi0wNS0xMCIsIlNBVyIsbnVsbCwiUEMiLCIxMjEyIl0sWyJJU1QiLCIyMDI2LTA1LTExIiwiTVVDIixudWxsLCJMSCIsIjE3NDMiXSxbIk1VQyIsIjIwMjYtMDUtMTEiLCJOVUUiLG51bGwsIkxIIiwiMzgwMiJdXV0="
+        },
+        {
+            "flights": [
+                {
+                    "departure_airport": {
+                        "name": "Il Caravaggio International Airport",
+                        "id": "BGY",
+                        "time": "2026-05-10 17:15"
+                    },
+                    "arrival_airport": {
+                        "name": "Sabiha Gökçen International Airport",
+                        "id": "SAW",
+                        "time": "2026-05-10 20:55"
+                    },
+                    "duration": 160,
+                    "airplane": "Airbus A321",
+                    "airline": "Pegasus",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/PC.png",
+                    "travel_class": "Economy",
+                    "flight_number": "PC 1214",
+                    "ticket_also_sold_by": [
+                        "ITA"
+                    ],
+                    "legroom": "28 in",
+                    "extensions": [
+                        "Below average legroom (28 in)",
+                        "Stream media to your device",
+                        "Carbon emissions estimate: 138 kg"
+                    ],
+                    "often_delayed_by_over_30_min": true
+                },
+                {
+                    "departure_airport": {
+                        "name": "Istanbul Airport",
+                        "id": "IST",
+                        "time": "2026-05-11 03:45"
+                    },
+                    "arrival_airport": {
+                        "name": "Munich International Airport",
+                        "id": "MUC",
+                        "time": "2026-05-11 05:30"
+                    },
+                    "duration": 165,
+                    "airplane": "Airbus A320neo",
+                    "airline": "Lufthansa",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/LH.png",
+                    "travel_class": "Economy",
+                    "flight_number": "LH 1743",
+                    "legroom": "29 in",
+                    "extensions": [
+                        "Below average legroom (29 in)",
+                        "In-seat USB outlet",
+                        "Carbon emissions estimate: 124 kg"
+                    ],
+                    "overnight": true
+                },
+                {
+                    "departure_airport": {
+                        "name": "Munich International Airport",
+                        "id": "MUC",
+                        "time": "2026-05-11 21:30"
+                    },
+                    "arrival_airport": {
+                        "name": "Nuremberg Airport",
+                        "id": "NUE",
+                        "time": "2026-05-11 23:45"
+                    },
+                    "duration": 135,
+                    "airplane": "Bus",
+                    "airline": "Lufthansa",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/LH.png",
+                    "travel_class": "Economy",
+                    "flight_number": "LH 3808",
+                    "plane_and_crew_by": "Dlh Bus Services"
+                }
+            ],
+            "layovers": [
+                {
+                    "duration": 410,
+                    "name": "Istanbul Airport",
+                    "id": "SAW",
+                    "overnight": true
+                },
+                {
+                    "duration": 960,
+                    "name": "Munich International Airport",
+                    "id": "MUC"
+                }
+            ],
+            "total_duration": 1830,
+            "carbon_emissions": {
+                "typical_for_this_route": 64000
+            },
+            "price": 425,
+            "type": "One way",
+            "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/multi.png",
+            "booking_token": "WyJDalJJVmtWbFkySjZha1ZRTjJOQlQweHFVVUZDUnkwdExTMHRMUzB0TFc5NWJtUXhORUZCUVVGQlIyNXJOSEU0UlZwVU5rRkJFaFJRUXpFeU1UUjhURWd4TnpRemZFeElNemd3T0JvTENLTExBaEFDR2dORlZWSTRISENHaGdNPSIsW1siQkdZIiwiMjAyNi0wNS0xMCIsIlNBVyIsbnVsbCwiUEMiLCIxMjE0Il0sWyJJU1QiLCIyMDI2LTA1LTExIiwiTVVDIixudWxsLCJMSCIsIjE3NDMiXSxbIk1VQyIsIjIwMjYtMDUtMTEiLCJOVUUiLG51bGwsIkxIIiwiMzgwOCJdXV0="
+        },
+        {
+            "flights": [
+                {
+                    "departure_airport": {
+                        "name": "Il Caravaggio International Airport",
+                        "id": "BGY",
+                        "time": "2026-05-10 17:15"
+                    },
+                    "arrival_airport": {
+                        "name": "Sabiha Gökçen International Airport",
+                        "id": "SAW",
+                        "time": "2026-05-10 20:55"
+                    },
+                    "duration": 160,
+                    "airplane": "Airbus A321",
+                    "airline": "Pegasus",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/PC.png",
+                    "travel_class": "Economy",
+                    "flight_number": "PC 1214",
+                    "ticket_also_sold_by": [
+                        "ITA"
+                    ],
+                    "legroom": "28 in",
+                    "extensions": [
+                        "Below average legroom (28 in)",
+                        "Stream media to your device",
+                        "Carbon emissions estimate: 138 kg"
+                    ],
+                    "often_delayed_by_over_30_min": true
+                },
+                {
+                    "departure_airport": {
+                        "name": "Istanbul Airport",
+                        "id": "IST",
+                        "time": "2026-05-11 03:45"
+                    },
+                    "arrival_airport": {
+                        "name": "Munich International Airport",
+                        "id": "MUC",
+                        "time": "2026-05-11 05:30"
+                    },
+                    "duration": 165,
+                    "airplane": "Airbus A320neo",
+                    "airline": "Lufthansa",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/LH.png",
+                    "travel_class": "Economy",
+                    "flight_number": "LH 1743",
+                    "legroom": "29 in",
+                    "extensions": [
+                        "Below average legroom (29 in)",
+                        "In-seat USB outlet",
+                        "Carbon emissions estimate: 124 kg"
+                    ],
+                    "overnight": true
+                },
+                {
+                    "departure_airport": {
+                        "name": "Munich International Airport",
+                        "id": "MUC",
+                        "time": "2026-05-11 08:30"
+                    },
+                    "arrival_airport": {
+                        "name": "Nuremberg Airport",
+                        "id": "NUE",
+                        "time": "2026-05-11 10:45"
+                    },
+                    "duration": 135,
+                    "airplane": "Bus",
+                    "airline": "Lufthansa",
+                    "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/LH.png",
+                    "travel_class": "Economy",
+                    "flight_number": "LH 3802",
+                    "plane_and_crew_by": "Dlh Bus Services"
+                }
+            ],
+            "layovers": [
+                {
+                    "duration": 410,
+                    "name": "Istanbul Airport",
+                    "id": "SAW",
+                    "overnight": true
+                },
+                {
+                    "duration": 180,
+                    "name": "Munich International Airport",
+                    "id": "MUC"
+                }
+            ],
+            "total_duration": 1050,
+            "carbon_emissions": {
+                "typical_for_this_route": 64000
+            },
+            "price": 444,
+            "type": "One way",
+            "airline_logo": "https://www.gstatic.com/flights/airline_logos/70px/multi.png",
+            "booking_token": "WyJDalJJVmtWbFkySjZha1ZRTjJOQlQweHFVVUZDUnkwdExTMHRMUzB0TFc5NWJtUXhORUZCUVVGQlIyNXJOSEU0UlZwVU5rRkJFaFJRUXpFeU1UUjhURWd4TnpRemZFeElNemd3TWhvTENJN2FBaEFDR2dORlZWSTRISEREbHdNPSIsW1siQkdZIiwiMjAyNi0wNS0xMCIsIlNBVyIsbnVsbCwiUEMiLCIxMjE0Il0sWyJJU1QiLCIyMDI2LTA1LTExIiwiTVVDIixudWxsLCJMSCIsIjE3NDMiXSxbIk1VQyIsIjIwMjYtMDUtMTEiLCJOVUUiLG51bGwsIkxIIiwiMzgwMiJdXV0="
+        }
+    ],
+    "price_insights": {
+        "lowest_price": 391,
+        "price_level": "typical",
+        "typical_price_range": [
+            305,
+            500
+        ],
+        "price_history": [
+            [
+                1771282800,
+                2127
+            ],
+            [
+                1771369200,
+                2096
+            ],
+            [
+                1771455600,
+                2026
+            ],
+            [
+                1771542000,
+                2026
+            ],
+            [
+                1771628400,
+                2154
+            ],
+            [
+                1771714800,
+                2155
+            ],
+            [
+                1771801200,
+                2155
+            ],
+            [
+                1771887600,
+                2155
+            ],
+            [
+                1771974000,
+                2154
+            ],
+            [
+                1772060400,
+                2154
+            ],
+            [
+                1772146800,
+                2154
+            ],
+            [
+                1772233200,
+                2154
+            ],
+            [
+                1772319600,
+                308
+            ],
+            [
+                1772406000,
+                308
+            ],
+            [
+                1772492400,
+                308
+            ],
+            [
+                1772578800,
+                352
+            ],
+            [
+                1772665200,
+                352
+            ],
+            [
+                1772751600,
+                352
+            ],
+            [
+                1772838000,
+                352
+            ],
+            [
+                1772924400,
+                352
+            ],
+            [
+                1773010800,
+                352
+            ],
+            [
+                1773097200,
+                352
+            ],
+            [
+                1773183600,
+                352
+            ],
+            [
+                1773270000,
+                352
+            ],
+            [
+                1773356400,
+                352
+            ],
+            [
+                1773442800,
+                352
+            ],
+            [
+                1773529200,
+                352
+            ],
+            [
+                1773615600,
+                352
+            ],
+            [
+                1773702000,
+                352
+            ],
+            [
+                1773788400,
+                352
+            ],
+            [
+                1773874800,
+                352
+            ],
+            [
+                1773961200,
+                352
+            ],
+            [
+                1774047600,
+                352
+            ],
+            [
+                1774134000,
+                354
+            ],
+            [
+                1774220400,
+                379
+            ],
+            [
+                1774306800,
+                379
+            ],
+            [
+                1774393200,
+                389
+            ],
+            [
+                1774479600,
+                389
+            ],
+            [
+                1774566000,
+                389
+            ],
+            [
+                1774652400,
+                389
+            ],
+            [
+                1774738800,
+                389
+            ],
+            [
+                1774821600,
+                389
+            ],
+            [
+                1774908000,
+                389
+            ],
+            [
+                1774994400,
+                391
+            ],
+            [
+                1775080800,
+                391
+            ],
+            [
+                1775167200,
+                391
+            ],
+            [
+                1775253600,
+                391
+            ],
+            [
+                1775340000,
+                391
+            ],
+            [
+                1775426400,
+                391
+            ],
+            [
+                1775512800,
+                391
+            ],
+            [
+                1775599200,
+                391
+            ],
+            [
+                1775685600,
+                391
+            ],
+            [
+                1775772000,
+                347
+            ],
+            [
+                1775858400,
+                347
+            ],
+            [
+                1775944800,
+                347
+            ],
+            [
+                1776031200,
+                347
+            ],
+            [
+                1776117600,
+                347
+            ],
+            [
+                1776204000,
+                347
+            ],
+            [
+                1776290400,
+                347
+            ],
+            [
+                1776376800,
+                391
+            ],
+            [
+                1776463200,
+                391
+            ],
+            [
+                1776549600,
+                391
+            ]
+        ]
+    },
+    "airports": [
+        {
+            "departure": [
+                {
+                    "airport": {
+                        "id": "BGY",
+                        "name": "Il Caravaggio International Airport"
+                    },
+                    "city": "Milan",
+                    "country": "Italy",
+                    "country_code": "IT",
+                    "image": "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTpIuAaYn-1q7jvtJKK9jO9Q0T_a_2HSfh1W2_pk8staOhM7a7JIweVHMECsqtVw5pO_yXdd9g5APWZqA",
+                    "thumbnail": "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTsBB8akHX241dOfMh93D9sZuGXUGLXU4NMsSjTo4rnhQrgmRXJssnGLBNbZz1j31_7qNDAYshJ2KaWOL4z4jtiycyGiwD1epOOcsFmmSU"
+                }
+            ],
+            "arrival": [
+                {
+                    "airport": {
+                        "id": "NUE",
+                        "name": "Nuremberg Airport"
+                    },
+                    "city": "Nuremberg",
+                    "country": "Germany",
+                    "country_code": "DE",
+                    "image": "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcRC2brAhEwVabAduHtDEb0w3CQuxuAdzCX17Lmlh53E5p9nsfvGE-5qzIug8JK8aFXdMcioIpblBMwUHQ",
+                    "thumbnail": "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcQpISKsIwJEfafppgg66Is0KJjKARxRZq65hqlVt5VM7hq0W89GSIISronJk38PIYYANVmCA5rFkpXSeG9Vq6AuPJjhF7R1GBhP2Ld3mvE"
+                }
+            ]
+        }
+    ]
+}
