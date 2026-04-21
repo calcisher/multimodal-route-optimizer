@@ -19,3 +19,4 @@ ENV/
 # api keys etc.
 .env
 *.md
+multi-way-road-tripping
