@@ -4,30 +4,33 @@ import os
 import json
 import time
 from datetime import datetime, timedelta
-from bs4 import BeautifulSoup
 
 # ──────────────────────────────────────────────
 # Konfigürasyon
 # ──────────────────────────────────────────────
-DB_PATH = "data/flixbus_de.db"
+DB_PATH = "data/flixbus_europe.db"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept-Language": "de-DE,de;q=0.9",
+    "Accept-Language": "en-US,en;q=0.9",  # İngilizce sonuçları da yakalayabilmek için
 }
 
 os.makedirs("data", exist_ok=True)
 
+
 # ──────────────────────────────────────────────
-# 1. Veritabanı kurulumu
+# 1. Veritabanı Kurulumu (Gelişmiş Şema)
 # ──────────────────────────────────────────────
 def init_db():
     conn = sqlite3.connect(DB_PATH)
+    # Birleştirilmiş DB şemasıyla tam uyum için slug sütunu da eklendi
     conn.execute("""
         CREATE TABLE IF NOT EXISTS cities (
-            id   TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            slug TEXT
+            id           TEXT PRIMARY KEY,
+            name         TEXT NOT NULL,
+            search_terms TEXT,
+            slug         TEXT,
+            country      TEXT
         )
     """)
     conn.commit()
@@ -35,42 +38,21 @@ def init_db():
 
 
 # ──────────────────────────────────────────────
-# 2. Almanya şehirlerini scrape et (sadece isimler)
+# 2. Autocomplete API (Dinamik Ülke Destekli)
 # ──────────────────────────────────────────────
-def scrape_germany_city_names() -> list[str]:
-    """flixbus.com/bus/germany sayfasından şehir isimlerini çeker."""
-
-    url = "https://www.flixbus.com/bus/germany"
-    resp = requests.get(url, headers=HEADERS, timeout=15)
-    resp.raise_for_status()
-
-    soup = BeautifulSoup(resp.content, "html.parser")
-    names = []
-    for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-        for a in soup.select(f"#{letter} > ul:nth-child(2) > li > a"):
-            names.append(a.text.strip())
-
-    print(f"✅ Almanya'da {len(names)} şehir bulundu.")
-    return names
-
-
-# ──────────────────────────────────────────────
-# 3. Autocomplete API ile şehir ID'si bul
-# ──────────────────────────────────────────────
-def fetch_city_id_via_autocomplete(city_name: str) -> tuple[str, str] | None:
+def fetch_city_id_via_autocomplete(query: str, target_country: str = None) -> tuple[str, str, str] | None:
     """
-    Flixbus autocomplete API'si ile şehir ID'si döner.
-    Flixbus autocomplete API'si ile şehir ID'si döner.
-    Returns: (city_id, matched_name) veya None
+    Returns: (city_id, official_name, country_code)
     """
     url = "https://global.api.flixbus.com/search/autocomplete/cities"
     params = {
-        "q": city_name,
-        "lang": "de",
-        "country": "DE",
-        "flixbus_cities_only": "false",
-        "include_stations": "false",
+        "q": query,
+        "lang": "en",
+        "flixbus_cities_only": "true"
     }
+    if target_country:
+        params["country"] = target_country
+
     try:
         resp = requests.get(url, params=params, headers=HEADERS, timeout=10)
         if resp.status_code != 200:
@@ -78,91 +60,67 @@ def fetch_city_id_via_autocomplete(city_name: str) -> tuple[str, str] | None:
         data = resp.json()
         if not data:
             return None
-        # İlk sonucu al (en alakalı)
+
         best = data[0]
-        return best["id"], best["name"]
+        official_name = best["name"]
+
+        # Global lokasyon filtrelemesi
+        if ", TX" in official_name or ", USA" in official_name:
+            return None
+
+        country_code = best.get("country_code", target_country or "")
+        return best["id"], official_name, country_code
     except Exception:
         return None
 
 
 # ──────────────────────────────────────────────
-# 4. Tüm Almanya şehirlerini DB'ye kaydet
+# 3. Şehir Arama & Akıllı Öğrenme (Alias Kaydı)
 # ──────────────────────────────────────────────
-def populate_germany_cities(conn: sqlite3.Connection):
-    """Sadece DB boşsa çalışır."""
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM cities")
-    count = cur.fetchone()[0]
-    if count > 0:
-        print(f"📦 DB'de {count} Almanya şehri mevcut, scrape atlanıyor.")
-        return
-
-    city_names = scrape_germany_city_names()
-    total = len(city_names)
-    found = 0
-
-    for i, name in enumerate(city_names, 1):
-        result = fetch_city_id_via_autocomplete(name)
-        if result:
-            city_id, matched_name = result
-            cur.execute(
-                "INSERT OR IGNORE INTO cities (id, name) VALUES (?, ?)",
-                (city_id, matched_name)
-            )
-            conn.commit()
-            found += 1
-            print(f"  [{i}/{total}] ✅ {matched_name} → {city_id}")
-        else:
-            print(f"  [{i}/{total}] ⚠️  '{name}' için ID bulunamadı")
-
-        time.sleep(0.15)  # rate limit'e takılmamak için
-
-    print(f"\n✅ {found}/{total} şehir kaydedildi.")
-
-
-# ──────────────────────────────────────────────
-# 5. Şehir arama (DB'den)
-# ──────────────────────────────────────────────
-def find_city(conn: sqlite3.Connection, name: str) -> tuple[str, str] | None:
+def find_city(conn: sqlite3.Connection, query_name: str) -> tuple[str, str] | None:
     """
-    Önce tam eşleşme, sonra LIKE ile arar.
-    Returns: (city_id, city_name) veya None
+    Önce veritabanında resmi isim VEYA arama terimlerine göre arar.
+    Bulamazsa API'ye sorar, öğrenir ve İngilizce/farklı ismi alias olarak DB'ye ekler.
     """
     cur = conn.cursor()
+    query_lower = query_name.lower()
 
-    # Tam eşleşme
-    cur.execute("SELECT id, name FROM cities WHERE LOWER(name) = LOWER(?)", (name,))
+    # 1. DB'de tam veya search_terms (alias) içinde ara
+    cur.execute("""
+        SELECT id, name FROM cities 
+        WHERE LOWER(name) = ? OR LOWER(search_terms) LIKE ?
+    """, (query_lower, f"%{query_lower}%"))
+
     row = cur.fetchone()
     if row:
         return row
 
-    # Kısmi eşleşme
-    cur.execute("SELECT id, name FROM cities WHERE LOWER(name) LIKE LOWER(?)", (f"%{name}%",))
-    rows = cur.fetchall()
-    if rows:
-        print(f"  💡 '{name}' için benzer şehirler: {[r[1] for r in rows[:5]]}")
-        return rows[0]
+    # 2. DB'de yoksa API'den global arama yap
+    print(f"  🔍 '{query_name}' DB'de yok, API'ye danışılıyor...")
+    result = fetch_city_id_via_autocomplete(query_name)
 
-    # DB'de yoksa API'den dene
-    print(f"  🔍 '{name}' DB'de yok, API'den aranıyor...")
-    result = fetch_city_id_via_autocomplete(name)
     if result:
-        city_id, matched_name = result
-        conn.execute("INSERT OR IGNORE INTO cities (id, name) VALUES (?, ?)", (city_id, matched_name))
+        city_id, official_name, country_code = result
+
+        # 3. Bulunan sonucu DB'ye ekle veya varsa search_terms sütununu güncelle
+        cur.execute("""
+            INSERT INTO cities (id, name, search_terms, country) 
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET 
+                search_terms = IFNULL(search_terms, '') || ',' || excluded.search_terms
+            WHERE IFNULL(search_terms, '') NOT LIKE ?
+        """, (city_id, official_name, query_lower, country_code, f"%{query_lower}%"))
+
         conn.commit()
-        return city_id, matched_name
+        return city_id, official_name
 
     return None
 
 
 # ──────────────────────────────────────────────
-# 6. Bilet arama
+# 5. Bilet Arama
 # ──────────────────────────────────────────────
 def search_tickets(from_id: str, to_id: str, date: str) -> list[dict]:
-    """
-    date: "DD.MM.YYYY" formatında
-    Returns: fiyata göre sıralı bilet listesi
-    """
     url = "https://global.api.flixbus.com/search/service/v4/search"
     params = {
         "from_city_id": from_id,
@@ -170,7 +128,7 @@ def search_tickets(from_id: str, to_id: str, date: str) -> list[dict]:
         "departure_date": date,
         "products": '{"adult":1}',
         "currency": "EUR",
-        "locale": "de_DE",
+        "locale": "en_US",
         "search_by": "cities",
         "include_after_midnight_rides": "1",
     }
@@ -183,24 +141,20 @@ def search_tickets(from_id: str, to_id: str, date: str) -> list[dict]:
     for trip in data.get("trips", []):
         for detail in trip.get("results", {}).values():
             price = detail.get("price", {}).get("total")
-            dep   = detail.get("departure", {}).get("date")
-            arr   = detail.get("arrival", {}).get("date")
-            dur   = detail.get("duration", {})
+            dep = detail.get("departure", {}).get("date")
+            arr = detail.get("arrival", {}).get("date")
+            dur = detail.get("duration", {})
             seats = detail.get("available", {}).get("seats")
-            # Bilet satın alma URL'si
-            buy_url = (
-                f"https://shop.global.flixbus.com/search"
-                f"?departureCity={from_id}&arrivalCity={to_id}"
-                f"&rideDate={date}&adult=1"
-            )
+            buy_url = f"https://shop.global.flixbus.com/search?departureCity={from_id}&arrivalCity={to_id}&rideDate={date}&adult=1"
+
             results.append({
-                "tarih":   date,
-                "kalkış":  dep,
-                "varış":   arr,
-                "süre":    f"{dur.get('hours','?')}s {dur.get('minutes','?')}dk",
-                "fiyat":   price,
-                "koltuk":  seats,
-                "url":     buy_url,
+                "tarih": date,
+                "kalkış": dep,
+                "varış": arr,
+                "süre": f"{dur.get('hours', '0')}s {dur.get('minutes', '0')}dk",
+                "fiyat": price,
+                "koltuk": seats,
+                "url": buy_url,
             })
 
     results.sort(key=lambda x: x["fiyat"] or 9999)
@@ -208,11 +162,8 @@ def search_tickets(from_id: str, to_id: str, date: str) -> list[dict]:
 
 
 def search_range(from_id: str, to_id: str, start: str, end: str) -> list[dict]:
-    """
-    start / end: "DD-MM-YYYY"
-    """
     s = datetime.strptime(start, "%d-%m-%Y")
-    e = datetime.strptime(end,   "%d-%m-%Y")
+    e = datetime.strptime(end, "%d-%m-%Y")
     all_tickets = []
 
     current = s
@@ -220,51 +171,62 @@ def search_range(from_id: str, to_id: str, start: str, end: str) -> list[dict]:
         d = current.strftime("%d.%m.%Y")
         tickets = search_tickets(from_id, to_id, d)
         all_tickets.extend(tickets)
-        print(f"  {d}: {len(tickets)} sefer bulundu" + (f" | en ucuz: {tickets[0]['fiyat']} EUR" if tickets else ""))
+        if tickets:
+            print(f"  {d}: {len(tickets)} sefer | En ucuz: {tickets[0]['fiyat']} EUR")
+        else:
+            print(f"  {d}: Sefer bulunamadı.")
         current += timedelta(days=1)
-        time.sleep(0.2)
+        time.sleep(0.5)
 
     all_tickets.sort(key=lambda x: x["fiyat"] or 9999)
     return all_tickets
 
 
 # ──────────────────────────────────────────────
-# 7. Ana kullanım
+# 6. Ana Çalıştırıcı
+# ──────────────────────────────────────────────
+# ──────────────────────────────────────────────
+# 6. Ana Çalıştırıcı
 # ──────────────────────────────────────────────
 if __name__ == "__main__":
     conn = init_db()
 
-    # Almanya şehirlerini DB'ye yükle (ilk çalıştırmada ~2-3 dk)
-    populate_germany_cities(conn)
-
-    # Tüm şehirleri listele
-    rows = conn.execute("SELECT name, id FROM cities ORDER BY name").fetchall()
-    print(f"\n📍 DB'deki Almanya şehirleri ({len(rows)} adet):")
-    for name, cid in rows[:20]:
-        print(f"  {name:30s} → {cid}")
-    if len(rows) > 20:
-        print(f"  ... ve {len(rows)-20} tane daha")
+    print("🚄 FlixBus Avrupa Akıllı Arama Motoru")
+    print("-" * 40)
 
     # Şehirleri bul
-    berlin = find_city(conn, "Berlin")
-    munich = find_city(conn, "Munich")
+    c1 = find_city(conn, "Venice")
+    c2 = find_city(conn, "Munich")
 
-    if not berlin or not munich:
-        print("❌ Şehir bulunamadı.")
+    if not c1 or not c2:
+        print("❌ Şehirler eşleştirilemedi.")
         exit(1)
 
-    print(f"\n🏙️  {berlin[1]} → ID: {berlin[0]}")
-    print(f"🏙️  {munich[1]} → ID: {munich[0]}")
+    print(f"\n🏙️  Kalkış: {c1[1]} (ID: {c1[0]})")
+    print(f"🏙️  Varış:  {c2[1]} (ID: {c2[0]})")
 
-    # Belirli bir gün
-    print("\n🎫 01.06.2026 | Berlin → München:")
-    tickets = search_tickets(berlin[0], munich[0], "01.06.2026")
-    for t in tickets[:5]:
-        print(f"  {t['kalkış']} → {t['varış']} | {t['süre']} | {t['fiyat']} EUR | {t['koltuk']} koltuk")
-        print(f"  🔗 {t['url']}")
+    # 📅 TARİH ARALIĞI ARAMASI (Örn: 1 Haziran - 5 Haziran 2026)
+    # Not: search_range fonksiyonumuz tarihleri "DD-MM-YYYY" formatında bekliyor.
+    baslangic_tarihi = "01-06-2026"
+    bitis_tarihi = "05-06-2026"
 
-    # Tarih aralığı
-    print("\n📅 1–5 Haziran 2026 | Berlin → München | En ucuzlar:")
-    best = search_range(berlin[0], munich[0], "01-06-2026", "05-06-2026")
-    for t in best[:5]:
-        print(f"  {t['tarih']} | {t['kalkış']} → {t['varış']} | {t['fiyat']} EUR")
+    print(f"\n📅 {baslangic_tarihi} ile {bitis_tarihi} arası taranıyor...")
+
+    # Tüm aralıktaki biletleri çeker ve kendi içinde fiyata göre sıralar
+    best_tickets = search_range(c1[0], c2[0], baslangic_tarihi, bitis_tarihi)
+
+    print(f"\n🏆 TÜM ARAMANIN EN UCUZ 5 BİLETİ:")
+    print("-" * 40)
+
+    if not best_tickets:
+        print("Bu tarih aralığında hiç sefer bulunamadı.")
+    else:
+        for i, t in enumerate(best_tickets[:5], 1):
+            # API'den gelen kalkış/varış saatleri genelde ISO formatındadır (2026-06-01T21:00:00)
+            # Daha temiz görünmesi için sadece saat kısmını (11. ve 16. karakterler arası) alıyoruz.
+            saat_kalkis = t['kalkış'][11:16]
+            saat_varis = t['varış'][11:16]
+
+            print(
+                f"{i}. Tarih: {t['tarih']} | {saat_kalkis} -> {saat_varis} | Süre: {t['süre']} | Fiyat: {t['fiyat']} EUR")
+            print(f"   🔗 Bilet Linki: {t['url']}\n")
