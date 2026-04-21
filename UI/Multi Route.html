@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<title>Multi Rote — Çok Modlu Seyahat</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --or:#F4611E;--or-l:#FF8A50;--or-d:#C94D10;--or-s:#FFF1EB;--or-ss:#FEE4D8;
+  --bg:#FDFAF8;--white:#fff;--text:#1A120B;--mid:#5C4A3D;--lt:#9C8880;
+  --brd:#E8DDD8;--card-bg:#fff;
+  --sh:0 2px 12px rgba(26,18,11,.09);--sh2:0 8px 32px rgba(26,18,11,.14);
+  --f:'Space Grotesk',sans-serif;
+  --blue:#2563EB;--blue-s:#EFF6FF;
+  --green:#16A34A;--green-s:#F0FDF4;
+  --purple:#7C3AED;--purple-s:#F5F3FF;
+  --teal:#0891B2;--teal-s:#ECFEFF;
+  --slate:#475569;--slate-s:#F8FAFC;
+  --r:12px;
+}
+[data-theme="dark"]{
+  --bg:#0F0A07;--white:#1C1410;--card-bg:#1C1410;--text:#F5EDE8;--mid:#C4A99E;--lt:#7A6860;
+  --brd:#2E2018;--or-s:#2A1A10;--or-ss:#3A2218;--blue-s:#0D1929;--green-s:#0A1F10;
+  --purple-s:#160D2A;--teal-s:#071A1F;--slate-s:#131820;
+  --sh:0 2px 12px rgba(0,0,0,.3);--sh2:0 8px 32px rgba(0,0,0,.5);
+}
+body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#C94D10 0%,#F4611E 45%,#FF8A50 100%);padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(200,77,16,.35)}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;font-size:22px;letter-spacing:-.5px}
+.logo-icon{width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.lang-toggle{display:flex;background:rgba(255,255,255,.15);border-radius:20px;overflow:hidden}
+.lang-btn{border:none;background:transparent;color:rgba(255,255,255,.7);padding:6px 14px;font-family:var(--f);font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+.lang-btn.active{background:rgba(255,255,255,.25);color:#fff}
+.theme-btn{border:none;background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:6px 14px;font-family:var(--f);font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+.theme-btn:hover{background:rgba(255,255,255,.25)}
+
+/* HERO */
+.hero{background:linear-gradient(160deg,#C94D10 0%,#F4611E 50%,#FF9A6E 100%);padding:48px 40px 72px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:var(--bg);border-radius:40px 40px 0 0;transition:background .3s}
+.hero-title{color:#fff;font-size:36px;font-weight:700;letter-spacing:-1px;margin-bottom:6px}
+.hero-sub{color:rgba(255,255,255,.75);font-size:15px;margin-bottom:32px}
+
+/* SEARCH BOX */
+.search-box{background:var(--card-bg);border-radius:16px;padding:20px 24px;display:flex;align-items:flex-end;gap:12px;box-shadow:0 8px 40px rgba(0,0,0,.22);max-width:900px;transition:background .3s}
+.sf-field{flex:1;display:flex;flex-direction:column;gap:5px;position:relative}
+.sf-label{font-size:11px;font-weight:600;color:var(--lt);text-transform:uppercase;letter-spacing:.6px}
+.sf-input-wrap{position:relative;display:flex;align-items:center}
+.sf-input{border:1.5px solid var(--brd);border-radius:10px;padding:10px 14px;font-family:var(--f);font-size:15px;font-weight:500;color:var(--text);background:var(--card-bg);outline:none;transition:.2s;width:100%}
+.sf-input:focus{border-color:var(--or);box-shadow:0 0 0 3px var(--or-ss)}
+.sf-ap-badge{position:absolute;right:10px;background:var(--or);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;pointer-events:none;letter-spacing:.3px}
+.sf-date{max-width:160px}
+.swap-btn{width:40px;height:40px;min-width:40px;border:1.5px solid var(--brd);border-radius:10px;background:var(--card-bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:.2s;margin-bottom:1px;color:var(--text)}
+.swap-btn:hover{background:var(--or-s);border-color:var(--or)}
+.search-btn{background:var(--or);color:#fff;border:none;border-radius:10px;padding:12px 28px;font-family:var(--f);font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.2s;margin-bottom:1px}
+.search-btn:hover{background:var(--or-d);transform:translateY(-1px)}
+
+/* AIRPORT DROPDOWN */
+.ap-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card-bg);border:1.5px solid var(--brd);border-radius:10px;box-shadow:var(--sh2);z-index:300;overflow:hidden}
+.ap-item{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.15s}
+.ap-item:hover{background:var(--or-s)}
+.ap-iata{font-size:11px;font-weight:700;background:var(--or-s);color:var(--or);padding:3px 7px;border-radius:6px;flex-shrink:0}
+.ap-name{font-size:14px;font-weight:500;color:var(--text)}
+.ap-city{font-size:11px;color:var(--lt)}
+
+/* CATEGORY BAR */
+.results{max-width:1100px;margin:0 auto;padding:28px 40px 60px}
+.res-info{font-size:13px;color:var(--mid);margin-bottom:18px}
+.res-info b{color:var(--text)}
+.cat-bar{display:flex;gap:10px;margin-bottom:24px;overflow-x:auto;padding-bottom:2px}
+.cat-bar::-webkit-scrollbar{height:4px}
+.cat-bar::-webkit-scrollbar-thumb{background:var(--brd);border-radius:2px}
+.cat-pill{flex:1;min-width:160px;border:1.5px solid var(--brd);border-radius:14px;padding:14px 16px;cursor:pointer;background:var(--card-bg);transition:.2s;text-align:left;position:relative;overflow:hidden}
+.cat-pill:hover{border-color:var(--or-l);transform:translateY(-1px);box-shadow:var(--sh)}
+.cat-pill.active{border-color:var(--or);background:var(--or-s);box-shadow:0 0 0 3px var(--or-ss)}
+[data-theme="dark"] .cat-pill.active{background:var(--or-s)}
+.cat-pill-icon{font-size:20px;margin-bottom:6px;display:block}
+.cat-pill-label{font-size:12px;font-weight:700;color:var(--text);display:block;line-height:1.3;margin-bottom:6px}
+.cat-pill-price{font-size:20px;font-weight:700;color:var(--or);display:block}
+.cat-pill-sub{font-size:10px;color:var(--lt);margin-top:1px;display:block}
+.cat-pill.active .cat-pill-label{color:var(--or-d)}
+[data-theme="dark"] .cat-pill.active .cat-pill-label{color:var(--or-l)}
+.cat-active-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--or);border-radius:0 0 12px 12px}
+
+/* SECTION BODY */
+.sec-body{background:var(--card-bg);border:1.5px solid var(--brd);border-radius:var(--r);overflow:hidden;transition:background .3s}
+.cards-list{padding:10px}
+
+/* CARDS */
+.card{border:1.5px solid var(--brd);border-radius:10px;margin-bottom:8px;background:var(--card-bg);transition:.2s;overflow:hidden;cursor:pointer}
+.card:last-child{margin-bottom:0}
+.card-main{display:flex;align-items:center;gap:16px;padding:14px 18px}
+.card:hover .card-main{background:var(--or-s)}
+[data-theme="dark"] .card:hover .card-main{background:var(--or-s)}
+.card-airline{font-size:13px;font-weight:700;width:110px;flex-shrink:0;color:var(--text);line-height:1.3}
+.card-airline span{display:block;font-weight:400;font-size:11px;color:var(--lt);margin-top:2px}
+.card-times{display:flex;align-items:center;gap:10px;flex:1}
+.card-dep,.card-arr{font-size:18px;font-weight:700}
+.card-via{text-align:center;flex:1}
+.via-row{display:flex;align-items:center;gap:4px;justify-content:center;margin-bottom:3px}
+.via-dot{width:6px;height:6px;border-radius:50%}
+.via-line{flex:1;height:1.5px;background:var(--brd)}
+.card-via-text{font-size:11px;color:var(--lt)}
+.card-dur{font-size:12px;color:var(--mid);font-weight:500;text-align:center;min-width:70px}
+.card-dur small{display:block;font-size:10px;color:var(--lt)}
+.card-price{font-size:22px;font-weight:700;color:var(--or);min-width:75px;text-align:right}
+.card-price small{display:block;font-size:10px;color:var(--lt);font-weight:400}
+
+/* INLINE MAP (accordion) */
+.inline-map{border-top:1.5px solid var(--brd);background:var(--bg);animation:mapIn .25s ease}
+@keyframes mapIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.inline-map-inner{position:relative}
+.inline-map-close{position:absolute;top:10px;right:10px;border:none;background:rgba(255,255,255,.9);color:var(--mid);border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:500;box-shadow:var(--sh)}
+[data-theme="dark"] .inline-map-close{background:rgba(28,20,16,.9);color:var(--lt)}
+.leaflet-host{width:100%;height:440px;background:#E8E4DE}
+[data-theme="dark"] .leaflet-host{background:#0F0A07}
+.leaflet-tooltip.map-seg-label{background:var(--card-bg);border:1.5px solid var(--brd);color:var(--text);font-family:var(--f);font-size:11px;font-weight:700;padding:3px 9px;border-radius:14px;box-shadow:var(--sh);white-space:nowrap;cursor:pointer;transition:transform .15s}
+.leaflet-tooltip.map-seg-label:hover{transform:translateY(-1px)}
+.leaflet-tooltip.map-seg-label:before{display:none}
+.leaflet-tooltip.map-seg-label.flight{border-color:var(--blue);color:var(--blue)}
+.leaflet-tooltip.map-seg-label.bus{border-color:var(--or);color:var(--or)}
+.leaflet-tooltip.map-seg-label.train{border-color:var(--green);color:var(--green)}
+.leaflet-tooltip.map-city-label{background:var(--card-bg);border:1px solid var(--brd);color:var(--text);font-family:var(--f);font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;box-shadow:var(--sh)}
+.leaflet-tooltip.map-city-label:before{display:none}
+.leaflet-tooltip.map-city-label.origin{border-color:var(--or);color:var(--or)}
+.leaflet-popup-content-wrapper{background:var(--card-bg);color:var(--text);border-radius:12px;box-shadow:var(--sh2);border:1.5px solid var(--brd)}
+.leaflet-popup-content{margin:0;padding:0;min-width:180px}
+.leaflet-popup-tip{background:var(--card-bg);border:1.5px solid var(--brd)}
+.leaflet-popup-close-button{color:var(--lt) !important;font-size:20px !important;padding:6px 8px 0 0 !important}
+.map-popup-body{padding:14px 16px;font-family:var(--f)}
+.map-popup-head{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.map-popup-carrier{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;padding-right:18px}
+.map-popup-route{font-size:12px;color:var(--mid);margin-bottom:8px}
+.map-popup-dur{font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:5px}
+.map-legend{display:flex;gap:14px;padding:10px 18px;background:var(--card-bg);border-top:1.5px solid var(--brd);flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--mid)}
+.legend-line{width:22px;height:3px;border-radius:2px}
+
+/* TRANSFER CARD */
+.transfer-legs{display:flex;align-items:center;gap:0;flex:1;min-width:0}
+.tleg{text-align:center;flex:1}
+.tleg-time{font-size:17px;font-weight:700}
+.tleg-iata{font-size:10px;font-weight:600;color:var(--lt)}
+.tleg-sep{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:0 4px}
+.tleg-flight-bar{display:flex;align-items:center;width:100%;gap:2px}
+.tleg-seg-line{flex:1;height:1.5px;background:var(--brd)}
+.tleg-plane{font-size:12px}
+.tleg-meta{font-size:10px;color:var(--lt);white-space:nowrap}
+.layover-badge{background:var(--blue-s);color:var(--blue);font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap}
+[data-theme="dark"] .layover-badge{background:#0D1929;color:#60A5FA}
+
+/* COMBO */
+.combo-card{border:1.5px solid var(--brd);border-radius:10px;margin-bottom:8px;overflow:hidden;background:var(--card-bg);cursor:pointer;transition:.2s}
+.combo-card:last-child{margin-bottom:0}
+.combo-main{display:flex;align-items:center;gap:14px;padding:14px 18px;transition:.15s}
+.combo-card:hover .combo-main{background:var(--or-s)}
+.combo-seg{flex:1;display:flex;align-items:center;gap:8px}
+.combo-mode{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.combo-seg-info{flex:1;min-width:0}
+.combo-seg-label{font-size:10px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.5px}
+.combo-seg-main{font-size:13px;font-weight:600;color:var(--text)}
+.combo-seg-sub{font-size:11px;color:var(--lt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.combo-arrow{color:var(--lt);font-size:16px;flex-shrink:0}
+.combo-total{text-align:right;flex-shrink:0;min-width:80px}
+.combo-total-price{font-size:21px;font-weight:700;color:var(--or)}
+.combo-total-sub{font-size:10px;color:var(--lt)}
+
+/* GROUND */
+.ground-card{border:1.5px solid var(--brd);border-radius:10px;margin-bottom:8px;background:var(--card-bg);overflow:hidden;cursor:pointer;transition:.2s}
+.ground-card:last-child{margin-bottom:0}
+.ground-main{display:flex;align-items:center;gap:14px;padding:14px 18px;transition:.15s}
+.ground-card:hover .ground-main{background:var(--or-s)}
+.ground-mode{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ground-info{flex:1}
+.ground-company{font-size:14px;font-weight:700;color:var(--text)}
+.ground-via{font-size:11px;color:var(--lt);margin-top:1px}
+.ground-times{display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;margin-top:3px;color:var(--text)}
+.ground-times span{font-size:12px;font-weight:400;color:var(--lt)}
+.ground-dur{font-size:12px;color:var(--mid);font-weight:500;text-align:center;min-width:70px}
+.ground-price{font-size:21px;font-weight:700;color:var(--or);min-width:70px;text-align:right}
+.no-result{padding:40px;text-align:center;color:var(--lt);font-size:14px}
+.no-icon{font-size:32px;margin-bottom:8px}
+
+/* DETAIL PANEL */
+.detail-panel{border-top:1.5px solid var(--brd);background:var(--bg);animation:dpIn .22s ease;transition:background .3s}
+@keyframes dpIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* JOURNEY DIAGRAM */
+.jd-wrap{padding:22px 28px 20px;background:var(--or-s);display:flex;align-items:flex-start;justify-content:center;gap:0;transition:background .3s}
+[data-theme="dark"] .jd-wrap{background:#2A1508}
+.jd-node{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:110px}
+.jd-dot-ring{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-bottom:4px}
+.jd-dot{width:12px;height:12px;border-radius:50%}
+.jd-city{font-size:13px;font-weight:700;color:var(--text);text-align:center;line-height:1.3}
+.jd-iata{font-size:10px;color:var(--lt);font-weight:700;letter-spacing:.5px}
+.jd-node-times{font-size:12px;font-weight:700;color:var(--text);margin-top:5px;display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+.jd-tm-arr{color:var(--mid)}
+.jd-tm-sep{color:var(--lt);font-weight:500;font-size:10px}
+.jd-tm-dep{color:var(--text)}
+.jd-tm-nd{font-size:9px;font-weight:700;background:var(--or-ss);color:var(--or);padding:1px 5px;border-radius:3px;margin-left:3px;vertical-align:middle}
+.jd-node-layover{display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:4px 10px;border-radius:12px;background:var(--blue-s);color:var(--blue);font-size:10px;font-weight:700;border:1px solid var(--brd);white-space:nowrap}
+[data-theme="dark"] .jd-node-layover{background:#0D1929;color:#60A5FA;border-color:#1E3A5F}
+.jd-conn{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:11px;min-width:110px}
+.jd-bar{width:100%;display:flex;align-items:center;gap:0}
+.jd-line-thick{flex:1;height:5px;border-radius:3px}
+.jd-arrowhead{width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;flex-shrink:0}
+.jd-seg-carrier{font-size:11px;font-weight:700;color:var(--mid);white-space:nowrap;line-height:1;margin-top:2px;text-overflow:ellipsis;overflow:hidden;max-width:100%}
+.jd-dur{font-size:11px;font-weight:600;color:var(--lt);line-height:1}
+
+/* DETAIL GRID v2 */
+.dg2-wrap{padding:14px 20px 6px;display:flex;flex-direction:column;gap:12px}
+.dg2-card{border:1.5px solid var(--brd);border-radius:12px;padding:18px 20px;transition:background .3s;border-left-width:4px}
+.dg2-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.dg2-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.7px}
+.dg2-tag-icon{font-size:13px}
+.dg2-tag-ref{font-weight:500;color:var(--lt);margin-left:6px;text-transform:none;letter-spacing:0;font-size:12px}
+.dg2-cta{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border:1.5px solid;border-radius:8px;background:var(--card-bg);font-family:var(--f);font-size:11px;font-weight:700;text-decoration:none;transition:.15s;white-space:nowrap;cursor:pointer}
+.dg2-cta:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.dg2-carrier{font-size:17px;font-weight:700;color:var(--text);margin-bottom:2px}
+.dg2-route{font-size:13px;color:var(--mid);margin-bottom:18px}
+.dg2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.dg2-cell{display:flex;flex-direction:column;gap:6px;min-width:0}
+.dg2-cell-label{font-size:10px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.6px}
+.dg2-cell-time{font-size:22px;font-weight:700;color:var(--text);line-height:1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.dg2-cell-val{font-size:16px;font-weight:600;color:var(--text);line-height:1.1}
+.dg2-cell-price-val{font-size:22px;font-weight:700;line-height:1}
+.dg2-nextday{font-size:10px;font-weight:700;background:var(--or-ss);color:var(--or);padding:2px 6px;border-radius:4px}
+.dg2-layover{display:flex;justify-content:center;padding:2px 0}
+.dg2-layover-pill{display:inline-flex;align-items:center;gap:6px;background:var(--blue-s);color:var(--blue);font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;border:1.5px solid var(--brd)}
+[data-theme="dark"] .dg2-layover-pill{background:#0D1929;color:#60A5FA;border-color:#1E3A5F}
+@media (max-width: 640px){
+  .dg2-grid{grid-template-columns:repeat(2,1fr)}
+  .dg2-card{padding:16px}
+}
+
+/* TOTAL ROW */
+.dp-total-row{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 6px;border-top:1.5px solid var(--brd)}
+.dp-total-label{font-size:12px;color:var(--lt)}
+.dp-total-price{font-size:24px;font-weight:700;color:var(--or)}
+
+.dp-actions{padding:10px 20px 16px;display:flex;justify-content:flex-end}
+.dp-map-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border:1.5px solid var(--brd);border-radius:9px;background:var(--card-bg);font-family:var(--f);font-size:12px;font-weight:600;cursor:pointer;color:var(--mid);transition:.15s}
+.dp-map-btn:hover,.dp-map-btn.active{border-color:var(--or);color:var(--or);background:var(--or-s)}
+.card-chevron{color:var(--lt);font-size:12px;transition:.3s;flex-shrink:0}
+.card-chevron.open{transform:rotate(180deg)}
+
+/* TWEAKS */
+.tweaks-panel{position:fixed;bottom:24px;right:24px;background:var(--card-bg);border:1.5px solid var(--brd);border-radius:16px;padding:20px;width:240px;box-shadow:var(--sh2);z-index:400;transition:background .3s}
+.tweaks-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px}
+.tw-group{margin-bottom:12px}
+.tw-label{font-size:10px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
+.tw-opts{display:flex;gap:6px;flex-wrap:wrap}
+.tw-opt{padding:5px 11px;border:1.5px solid var(--brd);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--mid);transition:.15s;background:var(--card-bg)}
+.tw-opt.active{background:var(--or-s);border-color:var(--or);color:var(--or)}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:80px 40px;color:var(--mid)}
+.empty-icon{font-size:52px;margin-bottom:16px;opacity:.4}
+.empty-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px}
+
+/* LOADING */
+.loading-bar{height:3px;background:linear-gradient(90deg,var(--or),var(--or-l),var(--or));background-size:200%;animation:lslide 1.1s linear infinite;border-radius:2px;margin-bottom:20px}
+@keyframes lslide{0%{background-position:100%}100%{background-position:-100%}}
+.sk{border-radius:6px;background:linear-gradient(90deg,var(--brd) 25%,var(--or-s) 50%,var(--brd) 75%);background-size:200%;animation:sk 1.4s ease infinite}
+@keyframes sk{0%{background-position:200%}100%{background-position:-200%}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const { useState, useEffect, useRef, useCallback } = React;
+
+const TWEAK_DEFAULTS = {
+  theme: "light",
+  currency: "EUR",
+  cardStyle: "comfortable"
+};
+
+// ── i18n ──────────────────────────────────────────────────────────────────────
+const T = {
+  tr: { tagline: "Akıllı çok modlu seyahat araması", from: "Nereden", to: "Nereye", date: "Gidiş Tarihi",
+    search: "Ara", searching: "Aranıyor...",
+    bestFlight: "En İyi Uçuş", cheapFlight: "En Ucuz Uçuş", flightBus: "Uçak + Otobüs/Tren",
+    busFlight: "Otobüs + Uçak", busOnly: "Sadece Otobüs/Tren",
+    bestFlightSub: "Fiyat/süre dengesi", cheapFlightSub: "En düşük fiyat",
+    flightBusSub: "Uç, yerden devam et", busFlightSub: "Git, oradan uç", busOnlySub: "Karada tüm yol",
+    via: "via", nonstop: "aktarmasız", transfer: "aktarma", layover: "bekleme", total: "toplam",
+    flightLeg: "Uçuş", busLeg: "Otobüs", trainLeg: "Tren",
+    noResult: "Sonuç yok", mapTitle: "Rota Haritası",
+    selectAirport: "Havalimanı seç:", trySearch: "Milano → Nürnberg dene",
+    tweaks: "Tweaks", currency: "Para Birimi", cardStyle: "Kart Stili", comfortable: "Rahat", compact: "Kompakt"
+  },
+  en: { tagline: "Smart multi-modal travel search", from: "From", to: "To", date: "Departure",
+    search: "Search", searching: "Searching...",
+    bestFlight: "Best Flight", cheapFlight: "Cheapest Flight", flightBus: "Flight + Bus/Train",
+    busFlight: "Bus + Flight", busOnly: "Bus / Train Only",
+    bestFlightSub: "Price-duration balance", cheapFlightSub: "Lowest price",
+    flightBusSub: "Fly, continue by ground", busFlightSub: "Ground to hub, then fly", busOnlySub: "Fully overland",
+    via: "via", nonstop: "non-stop", transfer: "transfer", layover: "layover", total: "total",
+    flightLeg: "Flight", busLeg: "Bus", trainLeg: "Train",
+    noResult: "No results", mapTitle: "Route Map",
+    selectAirport: "Select airport:", trySearch: "Try Milan → Nürnberg",
+    tweaks: "Tweaks", currency: "Currency", cardStyle: "Card Style", comfortable: "Comfortable", compact: "Compact"
+  }
+};
+
+// ── Airport data ──────────────────────────────────────────────────────────────
+const MULTI_AP = {
+  "milan": [{ iata: "MXP", name: "Malpensa", city: "Milan, IT" }, { iata: "LIN", name: "Linate", city: "Milan, IT" }, { iata: "BGY", name: "Bergamo", city: "Milan, IT" }],
+  "milano": [{ iata: "MXP", name: "Malpensa", city: "Milano, IT" }, { iata: "LIN", name: "Linate", city: "Milano, IT" }, { iata: "BGY", name: "Bergamo Orio", city: "Milano, IT" }],
+  "london": [{ iata: "LHR", name: "Heathrow", city: "London, UK" }, { iata: "LGW", name: "Gatwick", city: "London, UK" }, { iata: "STN", name: "Stansted", city: "London, UK" }, { iata: "LCY", name: "City", city: "London, UK" }],
+  "paris": [{ iata: "CDG", name: "Charles de Gaulle", city: "Paris, FR" }, { iata: "ORY", name: "Orly", city: "Paris, FR" }],
+  "rome": [{ iata: "FCO", name: "Fiumicino", city: "Rome, IT" }, { iata: "CIA", name: "Ciampino", city: "Rome, IT" }],
+  "roma": [{ iata: "FCO", name: "Fiumicino", city: "Roma, IT" }, { iata: "CIA", name: "Ciampino", city: "Roma, IT" }],
+  "venice": [{ iata: "VCE", name: "Marco Polo", city: "Venice, IT" }, { iata: "TSF", name: "Treviso", city: "Venice area, IT" }],
+  "venezia": [{ iata: "VCE", name: "Marco Polo", city: "Venezia, IT" }, { iata: "TSF", name: "Treviso", city: "Venezia area, IT" }],
+  "stockholm": [{ iata: "ARN", name: "Arlanda", city: "Stockholm, SE" }, { iata: "NYO", name: "Skavsta", city: "Stockholm, SE" }]
+};
+
+// ── Mock Data ────────────────────────────────────────────────────────────────
+const MOCK = {
+  bestFlights: [
+  { airline: "Air France", flightNo: "AF 1327", price: 113, dep: "05:55", arr: "07:50", via: "CDG", viaName: "Paris", depIata: "VCE", arrIata: "NUE", duration: "4h 25m", stops: 0 },
+  { airline: "Air France", flightNo: "AF 1427", price: 113, dep: "12:45", arr: "14:40", via: "CDG", viaName: "Paris", depIata: "VCE", arrIata: "NUE", duration: "5h 10m", stops: 0 },
+  { airline: "Air Dolomiti", flightNo: "EN 8205", price: 186, dep: "17:15", arr: "18:20", via: "MUC", viaName: "Munich", depIata: "VCE", arrIata: "NUE", duration: "4h 15m", stops: 0 },
+  { airline: "KLM", flightNo: "KL 1630", price: 220, dep: "11:45", arr: "13:40", via: "AMS", viaName: "Amsterdam", depIata: "VCE", arrIata: "NUE", duration: "5h 55m", stops: 0 },
+  // Transfer example:
+  { airline: "Lufthansa", flightNo: "LH 325+LH 179", price: 231, depIata: "VCE", arrIata: "NUE", stops: 1, totalDuration: "5h 40m",
+    legs: [
+    { dep: "10:55", arr: "12:25", from: "VCE", to: "FRA", duration: "1h 30m", flightNo: "LH 325" },
+    { dep: "13:55", arr: "15:35", from: "FRA", to: "NUE", duration: "1h 40m", flightNo: "LH 179" }],
+
+    layover: { airport: "FRA", city: "Frankfurt", duration: "1h 30m" } }],
+
+  cheapFlights: [
+  { airline: "Air France", flightNo: "AF 1727", price: 132, dep: "14:15", arr: "16:05", via: "CDG", viaName: "Paris", depIata: "VCE", arrIata: "NUE", duration: "8h 00m", stops: 0 },
+  { airline: "KLM", flightNo: "KL 1628", price: 189, dep: "06:00", arr: "07:50", via: "AMS", viaName: "Amsterdam", depIata: "VCE", arrIata: "NUE", duration: "7h 40m", stops: 0 },
+  { airline: "Vueling", flightNo: "VY 6401+VY 102", price: 189, depIata: "VCE", arrIata: "NUE", stops: 1, totalDuration: "9h 20m",
+    legs: [
+    { dep: "09:10", arr: "11:10", from: "VCE", to: "BCN", duration: "2h 00m", flightNo: "VY 6401" },
+    { dep: "13:30", arr: "16:30", from: "BCN", to: "NUE", duration: "3h 00m", flightNo: "VY 102" }],
+
+    layover: { airport: "BCN", city: "Barcelona", duration: "2h 20m" } },
+  { airline: "KLM", flightNo: "KL 1634", price: 263, dep: "17:00", arr: "18:55", via: "AMS", viaName: "Amsterdam", depIata: "VCE", arrIata: "NUE", duration: "5h 35m", stops: 0 },
+  { airline: "Austrian", flightNo: "OS 550+OS 211", price: 305, depIata: "VCE", arrIata: "NUE", stops: 1, totalDuration: "7h 05m",
+    legs: [
+    { dep: "07:00", arr: "08:05", from: "VCE", to: "VIE", duration: "1h 05m", flightNo: "OS 550" },
+    { dep: "09:50", arr: "11:05", from: "VIE", to: "NUE", duration: "1h 15m", flightNo: "OS 211" }],
+
+    layover: { airport: "VIE", city: "Vienna", duration: "1h 45m" } }],
+
+  flightPlusBus: [
+  { flight: { airline: "Air France", flightNo: "AF 1301", price: 61, dep: "05:55", arr: "08:30", toIata: "FRA", toCity: "Frankfurt", duration: "2h 35m" },
+    ground: { type: "Bus", company: "FlixBus", price: 11.9, dep: "22:00", arr: "01:10", nextDay: true, from: "Frankfurt, DE", to: "Nürnberg", duration: "3h 10m" },
+    total: 72.9, depIata: "VCE", arrIata: "NUE", via: "FRA" },
+  { flight: { airline: "Air France", flightNo: "AF 1309", price: 61, dep: "05:55", arr: "08:00", toIata: "ZRH", toCity: "Zürich", duration: "2h 05m" },
+    ground: { type: "Bus", company: "FlixBus", price: 22.8, dep: "07:30", arr: "15:15", nextDay: false, from: "Zurich, CH", to: "Nürnberg", duration: "7h 45m" },
+    total: 83.8, depIata: "VCE", arrIata: "NUE", via: "ZRH" }],
+
+  busPlusFlight: [
+  { ground: { type: "Bus", company: "FlixBus", price: 8, dep: "05:00", arr: "06:40", from: "Venice", to: "Verona, IT", duration: "1h 40m" },
+    flight: { airline: "Ryanair", flightNo: "FR 2401", price: 87, dep: "09:30", arr: "11:10", fromIata: "VRN", toCity: "Nürnberg", duration: "1h 40m" },
+    total: 95, depIata: "VCE", arrIata: "NUE", via: "VRN" },
+  { ground: { type: "Bus", company: "FlixBus", price: 5, dep: "04:30", arr: "05:15", from: "Venice", to: "Treviso, IT", duration: "0h 45m" },
+    flight: { airline: "Wizz Air", flightNo: "W6 3201", price: 89, dep: "07:00", arr: "09:30", fromIata: "TSF", toCity: "Nürnberg", duration: "2h 30m" },
+    total: 94, depIata: "VCE", arrIata: "NUE", via: "TSF" }],
+
+  busOrTrain: [
+  { type: "Bus", company: "FlixBus", price: 45, dep: "06:00", arr: "14:30", duration: "8h 30m", transfers: 1, via: "Munich" },
+  { type: "Bus", company: "Eurolines", price: 52, dep: "08:00", arr: "18:00", duration: "10h 00m", transfers: 1, via: "Innsbruck" },
+  { type: "Train", company: "Trenitalia + DB", price: 89, dep: "07:12", arr: "15:04", duration: "7h 52m", transfers: 2, via: "Verona, Munich" }]
+
+};
+
+// ── City lat/lng for Leaflet map ──────────────────────────────────────────────
+const LATLNG = {
+  VCE: [45.5053, 12.3519], NUE: [49.4987, 11.0669],
+  FRA: [50.0379, 8.5622], MUC: [48.3538, 11.7861],
+  CDG: [49.0097, 2.5479], AMS: [52.3105, 4.7683],
+  ZRH: [47.4647, 8.5492], VIE: [48.1103, 16.5697],
+  BCN: [41.2974, 2.0833], VRN: [45.3957, 10.8885],
+  TSF: [45.6484, 12.1944]
+};
+const LINE_COLOR = { flight: "#2563EB", bus: "#F4611E", train: "#16A34A" };
+
+// Quadratic bezier in lat/lng — gives flight segments a gentle north arc
+function arcLatLng(a, b, steps = 48) {
+  const midLat = (a[0] + b[0]) / 2, midLng = (a[1] + b[1]) / 2;
+  const dLat = b[0] - a[0], dLng = b[1] - a[1];
+  const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+  const ctrl = [midLat + dist * 0.18, midLng];
+  const out = [];
+  for (let i = 0; i <= steps; i++) {
+    const tt = i / steps;
+    const lat = (1 - tt) * (1 - tt) * a[0] + 2 * (1 - tt) * tt * ctrl[0] + tt * tt * b[0];
+    const lng = (1 - tt) * (1 - tt) * a[1] + 2 * (1 - tt) * tt * ctrl[1] + tt * tt * b[1];
+    out.push([lat, lng]);
+  }
+  return out;
+}
+
+function InlineMap({ route, onClose, lang }) {
+  const t = T[lang];
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof L === 'undefined') return;
+
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const tileUrl = theme === 'dark' ?
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' :
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+    const map = L.map(containerRef.current, {
+      zoomControl: true,
+      scrollWheelZoom: false,
+      attributionControl: true
+    });
+
+    L.tileLayer(tileUrl, {
+      maxZoom: 18,
+      subdomains: 'abcd',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }).addTo(map);
+
+    const ICON = { flight: '✈', bus: '🚌', train: '🚆' };
+    const LABEL = (type) => type === 'flight' ? t.flightLeg : type === 'bus' ? t.busLeg : t.trainLeg;
+
+    const bounds = [];
+    const used = new Set();
+
+    route.segments.forEach((seg) => {
+      const a = LATLNG[seg.from], b = LATLNG[seg.to];
+      if (!a || !b) return;
+      used.add(seg.from); used.add(seg.to);
+      const color = LINE_COLOR[seg.type] || '#999';
+      const pts = seg.type === 'flight' ? arcLatLng(a, b) : [a, b];
+      const line = L.polyline(pts, {
+        color, weight: 4, opacity: .92,
+        dashArray: seg.type === 'bus' ? '10,8' : null
+      }).addTo(map);
+
+      const pill = seg.duration ? `${ICON[seg.type]} ${seg.duration}` : `${ICON[seg.type]} ${LABEL(seg.type)}`;
+      line.bindTooltip(pill, {
+        permanent: true,
+        interactive: true,
+        direction: 'top',
+        offset: [0, -4],
+        className: `map-seg-label ${seg.type}`
+      });
+
+      const fromCity = CITY_NAMES[seg.from] || seg.from;
+      const toCity = CITY_NAMES[seg.to] || seg.to;
+      const popupHtml =
+        `<div class="map-popup-body">` +
+        `<div class="map-popup-head" style="color:${color}">${ICON[seg.type]} <span>${LABEL(seg.type).toUpperCase()}</span></div>` +
+        (seg.carrier ? `<div class="map-popup-carrier">${seg.carrier}</div>` : '') +
+        `<div class="map-popup-route">${fromCity} → ${toCity}</div>` +
+        (seg.duration ? `<div class="map-popup-dur">⏱ ${seg.duration}</div>` : '') +
+        `</div>`;
+      line.bindPopup(popupHtml, { closeButton: true, autoPan: true, maxWidth: 280 });
+
+      pts.forEach((p) => bounds.push(p));
+    });
+
+    used.forEach((iata) => {
+      const c = LATLNG[iata];
+      if (!c) return;
+      const isOrigin = route.segments[0].from === iata;
+      const color = isOrigin ? '#F4611E' : '#2563EB';
+      L.circleMarker(c, {
+        radius: 7, fillColor: '#fff', color, weight: 3, fillOpacity: 1
+      }).addTo(map).bindTooltip(CITY_NAMES[iata] || iata, {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -8],
+        className: 'map-city-label' + (isOrigin ? ' origin' : '')
+      });
+      bounds.push(c);
+    });
+
+    if (bounds.length) map.fitBounds(bounds, { padding: [60, 60] });
+    setTimeout(() => map.invalidateSize(), 300);
+
+    mapRef.current = map;
+    return () => {
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+    };
+  }, [route, lang]);
+
+  return (
+    <div className="inline-map">
+      <div className="inline-map-inner" style={{ position: 'relative' }}>
+        <button className="inline-map-close" onClick={(e) => { e.stopPropagation(); onClose(); }}>✕</button>
+        <div ref={containerRef} className="leaflet-host" onClick={(e) => e.stopPropagation()} />
+      </div>
+      <div className="map-legend">
+        <div className="legend-item"><div className="legend-line" style={{ background: '#2563EB' }} />{t.flightLeg}</div>
+        <div className="legend-item"><div className="legend-line" style={{ background: '#F4611E', backgroundImage: 'repeating-linear-gradient(90deg,#F4611E 0,#F4611E 8px,transparent 8px,transparent 13px)' }} />{t.busLeg}</div>
+        <div className="legend-item"><div className="legend-line" style={{ background: '#16A34A' }} />{t.trainLeg}</div>
+        <div style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--lt)' }}>🔴 {lang === 'tr' ? 'Kalkış' : 'Orig.'} · 🔵 {lang === 'tr' ? 'Varış' : 'Dest.'}</div>
+      </div>
+    </div>);
+
+}
+
+// ── Journey Diagram ───────────────────────────────────────────────────────────
+const SEG_COLOR = { flight: '#2563EB', bus: '#F4611E', train: '#16A34A' };
+const CITY_NAMES = { VCE: 'Venice', NUE: 'Nürnberg', FRA: 'Frankfurt', MUC: 'Munich', CDG: 'Paris', AMS: 'Amsterdam', ZRH: 'Zürich', VIE: 'Vienna', BCN: 'Barcelona', VRN: 'Verona', TSF: 'Treviso' };
+
+function JourneyDiagram({ nodes, segs, lang }) {
+  const t = T[lang] || T.tr;
+  return (
+    <div className="jd-wrap">
+      {nodes.map((node, i) => {
+        const isOrigin = i === 0;
+        const isDest = i === nodes.length - 1;
+        return (
+          <React.Fragment key={i}>
+            <div className="jd-node">
+              <div className="jd-dot-ring" style={{ background: isOrigin ? '#FEE4D8' : isDest ? '#DBEAFE' : '#F3F4F6' }}>
+                <div className="jd-dot" style={{ background: isOrigin ? '#F4611E' : '#2563EB' }} />
+              </div>
+              <div className="jd-city">{node.name || CITY_NAMES[node.iata] || node.iata}</div>
+              <div className="jd-iata">{node.iata}</div>
+              {(node.arr || node.dep) &&
+              <div className="jd-node-times">
+                  {node.arr &&
+                <span className="jd-tm-arr">
+                      {node.arr}
+                      {node.arrNextDay && <span className="jd-tm-nd">+1</span>}
+                    </span>
+                }
+                  {node.arr && node.dep && <span className="jd-tm-sep">→</span>}
+                  {node.dep && <span className="jd-tm-dep">{node.dep}</span>}
+                </div>
+              }
+              {node.layover &&
+              <div className="jd-node-layover">⏱ {node.layover} {t.layover}</div>
+              }
+            </div>
+            {i < segs.length &&
+            <div className="jd-conn">
+                <div className="jd-bar">
+                  <div className="jd-line-thick" style={{
+                  background: SEG_COLOR[segs[i].type],
+                  backgroundImage: segs[i].type === 'bus' ? `repeating-linear-gradient(90deg,${SEG_COLOR.bus} 0,${SEG_COLOR.bus} 10px,transparent 10px,transparent 16px)` : 'none'
+                }} />
+                  <div className="jd-arrowhead" style={{ borderLeft: `10px solid ${SEG_COLOR[segs[i].type]}` }} />
+                </div>
+                <div className="jd-seg-carrier">
+                  {segs[i].carrier || (segs[i].type === 'flight' ? t.flightLeg : segs[i].type === 'bus' ? t.busLeg : t.trainLeg)}
+                  {segs[i].ref ? ` · ${segs[i].ref}` : ''}
+                </div>
+                <div className="jd-dur">{segs[i].duration}</div>
+              </div>
+            }
+          </React.Fragment>);
+
+      })}
+    </div>);
+
+}
+
+// ── Detail List (segment cards) ───────────────────────────────────────────────
+const MODE_TINT = { flight: 'var(--blue-s)', bus: 'var(--or-s)', train: 'var(--green-s)' };
+
+function calcLayover(prev, next) {
+  if (!prev?.arr || !next?.dep) return null;
+  const [ph, pm] = prev.arr.split(':').map(Number);
+  const [nh, nm] = next.dep.split(':').map(Number);
+  if ([ph, pm, nh, nm].some(Number.isNaN)) return null;
+  let mins = nh * 60 + nm - (ph * 60 + pm);
+  if (mins < 0) mins += 24 * 60;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function DetailGrid({ segs, currency, lang }) {
+  const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
+  const t = T[lang] || T.tr;
+  const L = lang === 'tr' ?
+    { depart: 'Kalkış', arrive: 'Varış', duration: 'Süre', price: 'Fiyat' } :
+    { depart: 'Depart', arrive: 'Arrive', duration: 'Duration', price: 'Price' };
+  const buyCopy = (type) => type === 'flight' ?
+    (lang === 'tr' ? "Google Flights'ta Ara" : "Search on Google Flights") :
+    (lang === 'tr' ? "Omio'da Ara" : "Search on Omio");
+  return (
+    <div className="dg2-wrap">
+      {segs.map((seg, i) => {
+        const color = SEG_COLOR[seg.type];
+        const bgTint = MODE_TINT[seg.type];
+        const modeLabel = (seg.type === 'flight' ? t.flightLeg : seg.type === 'bus' ? t.busLeg : t.trainLeg).toUpperCase();
+        const icon = seg.type === 'flight' ? '✈' : seg.type === 'bus' ? '🚌' : '🚆';
+        return (
+          <React.Fragment key={i}>
+            {i > 0 && (() => {
+              const prev = segs[i - 1];
+              const dur = calcLayover(prev, seg);
+              const iata = prev.to && prev.to.length === 3 && prev.to === prev.to.toUpperCase() ? prev.to : null;
+              const cityName = prev.toName || (iata && CITY_NAMES[iata]) || prev.to;
+              const where = iata && cityName && cityName !== iata ? `${cityName} (${iata})` : cityName || iata;
+              return (
+                <div className="dg2-layover">
+                  <span className="dg2-layover-pill">
+                    ⏱ {dur ? `${dur} ${t.layover}` : t.layover}{where ? ` · ${where}` : ''}
+                  </span>
+                </div>);
+
+            })()}
+
+            <div className="dg2-card" style={{ borderLeftColor: color, background: bgTint }}>
+              <div className="dg2-card-head">
+                <div className="dg2-tag" style={{ color }}>
+                  <span className="dg2-tag-icon">{icon}</span>
+                  <span>{modeLabel}</span>
+                  {seg.ref && <span className="dg2-tag-ref">{seg.ref}</span>}
+                </div>
+                <a href={seg.buyUrl} target="_blank" rel="noopener"
+                  className="dg2-cta"
+                  style={{ borderColor: color, color }}
+                  onClick={(e) => e.stopPropagation()}>
+                  {icon} {buyCopy(seg.type)} ↗
+                </a>
+              </div>
+
+              <div className="dg2-carrier">{seg.carrier}</div>
+              <div className="dg2-route">{seg.fromName || seg.from} → {seg.toName || seg.to}</div>
+
+              <div className="dg2-grid">
+                <div className="dg2-cell">
+                  <div className="dg2-cell-label">{L.depart}</div>
+                  <div className="dg2-cell-time">{seg.dep}</div>
+                </div>
+                <div className="dg2-cell">
+                  <div className="dg2-cell-label">{L.arrive}</div>
+                  <div className="dg2-cell-time">
+                    {seg.arr}
+                    {seg.nextDay && <span className="dg2-nextday">+1</span>}
+                  </div>
+                </div>
+                <div className="dg2-cell">
+                  <div className="dg2-cell-label">{L.duration}</div>
+                  <div className="dg2-cell-val">{seg.duration}</div>
+                </div>
+                <div className="dg2-cell">
+                  <div className="dg2-cell-label">{L.price}</div>
+                  <div className="dg2-cell-price-val" style={{ color }}>{fmt(seg.price)}</div>
+                </div>
+              </div>
+            </div>
+          </React.Fragment>);
+
+      })}
+    </div>);
+
+}
+
+// ── Card Detail Shell ─────────────────────────────────────────────────────────
+function CardDetailShell({ header, mapRoute, lang, journey, detailSegs, total, currency }) {
+  const [open, setOpen] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
+  return (
+    <div className="card" style={{ cursor: 'pointer' }} onClick={() => {setOpen((p) => !p);setShowMap(false);}}>
+      <div className="card-main" style={{ display: 'flex', alignItems: 'center' }}>
+        {header}
+        <span className={`card-chevron${open ? ' open' : ''}`}>▾</span>
+      </div>
+      {open &&
+      <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
+          {journey && <JourneyDiagram nodes={journey.nodes} segs={journey.segs} lang={lang} />}
+          {detailSegs && <DetailGrid segs={detailSegs} currency={currency} lang={lang} />}
+          {total &&
+        <div className="dp-total-row">
+              <span className="dp-total-label">{lang === 'tr' ? 'Toplam fiyat' : 'Total price'}</span>
+              <span className="dp-total-price">{fmt(total)}</span>
+            </div>
+        }
+          <div className="dp-actions">
+            <button className={`dp-map-btn${showMap ? ' active' : ''}`} onClick={() => setShowMap((p) => !p)}>
+              🗺 {showMap ? lang === 'tr' ? 'Haritayı Gizle' : 'Hide Map' : lang === 'tr' ? 'Haritada Gör' : 'Show on Map'}
+            </button>
+          </div>
+          {showMap && <InlineMap route={mapRoute} onClose={() => setShowMap(false)} lang={lang} />}
+        </div>
+      }
+    </div>);
+
+}
+
+// ── Flight card (direct) ──────────────────────────────────────────────────────
+function FlightCard({ d, currency, lang }) {
+  const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
+  const t = T[lang || 'tr'];
+  const route = { segments: [{ from: d.depIata, to: d.arrIata, type: 'flight', carrier: d.airline, duration: d.duration }] };
+  // Direct flight: just origin → destination in diagram (via is only a transit hub, not a stop)
+  const journey = {
+    nodes: [{ iata: d.depIata, dep: d.dep }, { iata: d.arrIata, arr: d.arr }],
+    segs: [{ type: 'flight', duration: d.duration, carrier: d.airline, ref: d.flightNo }]
+  };
+  const detailSegs = [{
+    type: 'flight', from: d.depIata, to: d.arrIata, fromName: CITY_NAMES[d.depIata], toName: CITY_NAMES[d.arrIata],
+    carrier: d.airline, ref: d.flightNo, dep: d.dep, arr: d.arr, duration: d.duration, price: d.price,
+    buyUrl: `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.arrIata}`
+  }];
+  const header =
+  <>
+      <div className="card-airline">{d.airline}<span>{d.flightNo}</span></div>
+      <div className="card-times" style={{ flex: 1 }}>
+        <div className="card-dep">{d.dep}</div>
+        <div className="card-via" style={{ flex: 1 }}>
+          <div className="via-row"><div className="via-dot" style={{ background: 'var(--or)' }} /><div className="via-line" /><span style={{ fontSize: 13 }}>✈</span><div className="via-line" /><div className="via-dot" style={{ background: 'var(--blue)' }} /></div>
+          <div className="card-via-text">via {d.viaName} ({d.via})</div>
+        </div>
+        <div className="card-arr">{d.arr}</div>
+      </div>
+      <div className="card-dur">{d.duration}<small>{d.via ? `via ${d.via}` : d.stops === 0 ? t.nonstop : '1 ' + t.transfer}</small></div>
+      <div className="card-price">{fmt(d.price)}<small>/ kişi</small></div>
+    </>;
+
+  return <CardDetailShell header={header} mapRoute={route} lang={lang || 'tr'} journey={journey} detailSegs={detailSegs} currency={currency} />;
+}
+
+// ── Transfer flight card ──────────────────────────────────────────────────────
+function TransferCard({ d, currency, lang }) {
+  const t = T[lang];
+  const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
+  const route = { segments: d.legs.map((l) => ({ from: l.from, to: l.to, type: 'flight', carrier: d.airline, duration: l.duration })) };
+  const journey = {
+    nodes: d.legs.map((l, i) => {
+      if (i === 0) return { iata: l.from, dep: l.dep };
+      return { iata: l.from, name: d.layover.city, arr: d.legs[i - 1].arr, dep: l.dep, layover: d.layover.duration };
+    }).concat([{ iata: d.legs[d.legs.length - 1].to, arr: d.legs[d.legs.length - 1].arr }]),
+    segs: d.legs.map((l) => ({ type: 'flight', duration: l.duration, carrier: d.airline, ref: l.flightNo }))
+  };
+  const detailSegs = d.legs.map((l) => ({
+    type: 'flight', from: l.from, to: l.to, fromName: CITY_NAMES[l.from], toName: CITY_NAMES[l.to],
+    carrier: d.airline, ref: l.flightNo, dep: l.dep, arr: l.arr, duration: l.duration,
+    price: d.price, buyUrl: `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.arrIata}`
+  }));
+  const header =
+  <>
+      <div className="card-airline">{d.airline}<span style={{ fontSize: 10, lineHeight: 1.4, color: 'var(--lt)' }}>{d.legs[0].flightNo}<br />{d.legs[1].flightNo}</span></div>
+      <div className="transfer-legs" style={{ flex: 1 }}>
+        <div className="tleg"><div className="tleg-time">{d.legs[0].dep}</div><div className="tleg-iata">{d.legs[0].from}</div></div>
+        <div className="tleg-sep" style={{ flex: 1 }}><div className="tleg-flight-bar"><div className="tleg-seg-line" /><span className="tleg-plane">✈</span><div className="tleg-seg-line" /></div><div className="tleg-meta">{d.legs[0].duration}</div></div>
+        <div className="tleg" style={{ flexShrink: 0 }}>
+          <div className="tleg-time" style={{ fontSize: 14 }}>{d.legs[0].arr}</div><div className="tleg-iata">{d.legs[0].to}</div>
+          <div style={{ marginTop: 3 }}><span className="layover-badge">⏱ {d.layover.duration} {t.layover}</span></div>
+          <div className="tleg-iata" style={{ marginTop: 2 }}>{d.legs[1].dep}</div>
+        </div>
+        <div className="tleg-sep" style={{ flex: 1 }}><div className="tleg-flight-bar"><div className="tleg-seg-line" /><span className="tleg-plane">✈</span><div className="tleg-seg-line" /></div><div className="tleg-meta">{d.legs[1].duration}</div></div>
+        <div className="tleg"><div className="tleg-time">{d.legs[1].arr}</div><div className="tleg-iata">{d.legs[1].to}</div></div>
+      </div>
+      <div className="card-dur">{d.totalDuration}<small>{d.stops} {t.transfer}</small></div>
+      <div className="card-price">{fmt(d.price)}<small>/ kişi</small></div>
+    </>;
+
+  return <CardDetailShell header={header} mapRoute={route} lang={lang} journey={journey} detailSegs={detailSegs} currency={currency} />;
+}
+
+// ── Combo card ────────────────────────────────────────────────────────────────
+function ComboCard({ d, currency, mode, lang }) {
+  const t = T[lang];
+  const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
+  const isBus = d.ground.type === 'Bus';
+  const gColor = isBus ? 'var(--or)' : 'var(--green)';
+  const gBg = isBus ? 'var(--or-s)' : 'var(--green-s)';
+  const gType = d.ground.type.toLowerCase();
+  const mapSegs = mode === 'flightFirst' ?
+  [{ from: d.depIata, to: d.via, type: 'flight', carrier: d.flight.airline, duration: d.flight.duration },
+   { from: d.via, to: d.arrIata, type: gType, carrier: d.ground.company, duration: d.ground.duration }] :
+  [{ from: d.depIata, to: d.via, type: gType, carrier: d.ground.company, duration: d.ground.duration },
+   { from: d.via, to: d.arrIata, type: 'flight', carrier: d.flight.airline, duration: d.flight.duration }];
+
+  const firstDep = mode === 'flightFirst' ? d.flight.dep : d.ground.dep;
+  const firstArr = mode === 'flightFirst' ? d.flight.arr : d.ground.arr;
+  const secondDep = mode === 'flightFirst' ? d.ground.dep : d.flight.dep;
+  const secondArr = mode === 'flightFirst' ? d.ground.arr : d.flight.arr;
+  const secondNextDay = mode === 'flightFirst' ? !!d.ground.nextDay : false;
+  const layoverDur = calcLayover({ arr: firstArr }, { dep: secondDep });
+  const journey = {
+    nodes: [
+      { iata: d.depIata, dep: firstDep },
+      { iata: d.via, name: CITY_NAMES[d.via], arr: firstArr, dep: secondDep, layover: layoverDur },
+      { iata: d.arrIata, arr: secondArr, arrNextDay: secondNextDay }
+    ],
+    segs: mode === 'flightFirst' ?
+    [{ type: 'flight', duration: d.flight.duration, carrier: d.flight.airline, ref: d.flight.flightNo },
+     { type: d.ground.type.toLowerCase(), duration: d.ground.duration, carrier: d.ground.company }] :
+    [{ type: d.ground.type.toLowerCase(), duration: d.ground.duration, carrier: d.ground.company },
+     { type: 'flight', duration: d.flight.duration, carrier: d.flight.airline, ref: d.flight.flightNo }]
+  };
+
+  const flightSeg = { type: 'flight', from: d.depIata, to: d.flight.toIata ?? d.via, fromName: CITY_NAMES[d.depIata], toName: CITY_NAMES[d.flight.toIata ?? d.via],
+    carrier: d.flight.airline, ref: d.flight.flightNo, dep: d.flight.dep, arr: d.flight.arr, duration: d.flight.duration, price: d.flight.price,
+    buyUrl: `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.flight.toIata ?? d.via}` };
+  const groundSeg = { type: d.ground.type.toLowerCase(), from: d.ground.from, to: d.ground.to, fromName: d.ground.from, toName: d.ground.to,
+    carrier: d.ground.company, ref: '', dep: d.ground.dep, arr: d.ground.arr, nextDay: d.ground.nextDay, duration: d.ground.duration, price: d.ground.price,
+    buyUrl: 'https://www.omio.com' };
+  const detailSegs = mode === 'flightFirst' ? [flightSeg, groundSeg] : [groundSeg, flightSeg];
+
+  const seg1 = mode === 'flightFirst' ?
+  { icon: '✈', color: 'var(--blue)', bg: 'var(--blue-s)', label: t.flightLeg, main: d.flight.airline, sub: `${d.flight.dep}→${d.flight.arr} · ${d.flight.toCity ?? ''}` } :
+  { icon: isBus ? '🚌' : '🚆', color: gColor, bg: gBg, label: isBus ? t.busLeg : t.trainLeg, main: d.ground.company, sub: `${d.ground.dep}→${d.ground.arr} · ${d.ground.from}` };
+  const seg2 = mode === 'flightFirst' ?
+  { icon: isBus ? '🚌' : '🚆', color: gColor, bg: gBg, label: isBus ? t.busLeg : t.trainLeg, main: d.ground.company, sub: `${d.ground.dep}→${d.ground.arr}${d.ground.nextDay ? ' (+1)' : ''}` } :
+  { icon: '✈', color: 'var(--blue)', bg: 'var(--blue-s)', label: t.flightLeg, main: d.flight.airline, sub: `${d.flight.dep}→${d.flight.arr} · ${d.flight.fromIata ?? ''}` };
+
+  const header =
+  <>
+      <div className="combo-seg" style={{ flex: 1 }}>
+        <div className="combo-mode" style={{ background: seg1.bg, color: seg1.color }}>{seg1.icon}</div>
+        <div className="combo-seg-info"><div className="combo-seg-label">{seg1.label}</div><div className="combo-seg-main">{seg1.main}</div><div className="combo-seg-sub">{seg1.sub}</div></div>
+      </div>
+      <div className="combo-arrow">→</div>
+      <div className="combo-seg" style={{ flex: 1 }}>
+        <div className="combo-mode" style={{ background: seg2.bg, color: seg2.color }}>{seg2.icon}</div>
+        <div className="combo-seg-info"><div className="combo-seg-label">{seg2.label}</div><div className="combo-seg-main">{seg2.main}</div><div className="combo-seg-sub">{seg2.sub}</div></div>
+      </div>
+      <div className="combo-total"><div className="combo-total-price">{fmt(d.total)}</div><div className="combo-total-sub">{t.total}</div></div>
+    </>;
+
+  return <CardDetailShell header={header} mapRoute={{ segments: mapSegs }} lang={lang} journey={journey} detailSegs={detailSegs} total={d.total} currency={currency} />;
+}
+
+// ── Ground card ───────────────────────────────────────────────────────────────
+function GroundCard({ d, currency, lang }) {
+  const t = T[lang];
+  const isBus = d.type === 'Bus';
+  const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
+  const route = { segments: [{ from: 'VCE', to: 'NUE', type: d.type.toLowerCase(), carrier: d.company, duration: d.duration }] };
+  const journey = { nodes: [{ iata: 'VCE', dep: d.dep }, { iata: 'NUE', arr: d.arr }], segs: [{ type: d.type.toLowerCase(), duration: d.duration, carrier: d.company }] };
+  const detailSegs = [{ type: d.type.toLowerCase(), from: 'Venice', to: 'Nürnberg', fromName: 'Venice', toName: 'Nürnberg',
+    carrier: d.company, ref: '', dep: d.dep, arr: d.arr, duration: d.duration, price: d.price, buyUrl: 'https://www.omio.com' }];
+  const header =
+  <>
+      <div className="ground-mode" style={{ background: isBus ? 'var(--or-s)' : 'var(--green-s)', color: isBus ? 'var(--or)' : 'var(--green)' }}>{isBus ? '🚌' : '🚆'}</div>
+      <div className="ground-info" style={{ flex: 1 }}>
+        <div className="ground-company">{d.company}</div>
+        <div className="ground-via">via {d.via} · {d.transfers} {t.transfer}</div>
+        <div className="ground-times">{d.dep}<span>→</span>{d.arr}</div>
+      </div>
+      <div className="ground-dur">{d.duration}</div>
+      <div className="ground-price">{fmt(d.price)}</div>
+    </>;
+
+  return <CardDetailShell header={header} mapRoute={route} lang={lang} journey={journey} detailSegs={detailSegs} currency={currency} />;
+}
+
+// ── CityInput ─────────────────────────────────────────────────────────────────
+function CityInput({ label, value, onChange, onAirportSelect, selectedAirport, lang }) {
+  const [focused, setFocused] = useState(false);
+  const airports = MULTI_AP[value.toLowerCase().trim()] || null;
+  const showDrop = focused && airports && airports.length > 0;
+  const t = T[lang];
+  return (
+    <div className="sf-field">
+      <div className="sf-label">{label}</div>
+      <div className="sf-input-wrap">
+        <input className="sf-input"
+        style={selectedAirport ? { paddingRight: 56 } : {}}
+        value={value}
+        onChange={(e) => {onChange(e.target.value);onAirportSelect(null);}}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setTimeout(() => setFocused(false), 180)}
+        placeholder={label === T[lang].from ? "e.g. Milan / Venice" : "e.g. Nürnberg"} />
+        
+        {selectedAirport && <span className="sf-ap-badge">{selectedAirport}</span>}
+      </div>
+      {showDrop &&
+      <div className="ap-dropdown">
+          <div style={{ padding: '8px 12px 3px', fontSize: 10, fontWeight: 700, color: 'var(--lt)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{t.selectAirport}</div>
+          {airports.map((ap) =>
+        <div key={ap.iata} className="ap-item" onMouseDown={() => {onAirportSelect(ap.iata);setFocused(false);}}>
+              <span className="ap-iata">{ap.iata}</span>
+              <div><div className="ap-name">{ap.name}</div><div className="ap-city">{ap.city}</div></div>
+            </div>
+        )}
+        </div>
+      }
+    </div>);
+
+}
+
+// ── Section content ───────────────────────────────────────────────────────────
+function SectionContent({ secIdx, data, currency, lang }) {
+  const t = T[lang];
+  if (!data || data.length === 0) return <div className="no-result"><div className="no-icon">🔍</div>{t.noResult}</div>;
+  if (secIdx === 0 || secIdx === 1) {
+    return <div className="cards-list">{data.map((d, i) =>
+      d.stops > 0 ?
+      <TransferCard key={i} d={d} currency={currency} lang={lang} /> :
+      <FlightCard key={i} d={d} currency={currency} lang={lang} />
+      )}</div>;
+  }
+  if (secIdx === 2) return <div className="cards-list">{data.map((d, i) => <ComboCard key={i} d={d} currency={currency} mode="flightFirst" lang={lang} />)}</div>;
+  if (secIdx === 3) return <div className="cards-list">{data.map((d, i) => <ComboCard key={i} d={d} currency={currency} mode="groundFirst" lang={lang} />)}</div>;
+  if (secIdx === 4) return <div className="cards-list">{data.map((d, i) => <GroundCard key={i} d={d} currency={currency} lang={lang} />)}</div>;
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App() {
+  const [lang, setLang] = useState('tr');
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const [showTweaks, setShowTweaks] = useState(false);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [fromAp, setFromAp] = useState(null);
+  const [toAp, setToAp] = useState(null);
+  const [date, setDate] = useState('2026-05-05');
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [activeSec, setActiveSec] = useState(0);
+  const t = T[lang];
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', tweaks.theme || 'light');
+  }, [tweaks.theme]);
+
+  function swap() {setFrom(to);setTo(from);setFromAp(toAp);setToAp(fromAp);}
+
+  function doSearch() {
+    if (!from || !to) return;
+    setLoading(true);setResults(null);
+    setTimeout(() => {setResults(MOCK);setLoading(false);setActiveSec(0);}, 1500);
+  }
+
+  function updateTweak(key, val) {
+    setTweaks((prev) => ({ ...prev, [key]: val }));
+  }
+
+  const cur = tweaks.currency || 'EUR';
+  const fmt = (n) => cur === "USD" ? `$${n}` : `€${n}`;
+
+  const CATS = [
+  { icon: '✈️', label: t.bestFlight, sub: t.bestFlightSub, color: '#2563EB', data: results?.bestFlights, minPrice: results ? Math.min(...results.bestFlights.map((d) => d.price)) : null },
+  { icon: '💶', label: t.cheapFlight, sub: t.cheapFlightSub, color: '#16A34A', data: results?.cheapFlights, minPrice: results ? Math.min(...results.cheapFlights.map((d) => d.price)) : null },
+  { icon: '✈🚌', label: t.flightBus, sub: t.flightBusSub, color: '#7C3AED', data: results?.flightPlusBus, minPrice: results ? Math.min(...results.flightPlusBus.map((d) => d.total)) : null },
+  { icon: '🚌✈', label: t.busFlight, sub: t.busFlightSub, color: '#0891B2', data: results?.busPlusFlight, minPrice: results ? Math.min(...results.busPlusFlight.map((d) => d.total)) : null },
+  { icon: '🚌', label: t.busOnly, sub: t.busOnlySub, color: '#475569', data: results?.busOrTrain, minPrice: results ? Math.min(...results.busOrTrain.map((d) => d.price)) : null }];
+
+
+  return (
+    <>
+      <header className="hdr" style={{ fontFamily: "\"Space Grotesk\"" }}>
+        <div className="logo"><div className="logo-icon">🗺</div>Multi Rote</div>
+        <div className="hdr-right">
+          <button className="theme-btn" onClick={() => setShowTweaks((p) => !p)} aria-label={t.tweaks}>⚙</button>
+          <button className="theme-btn" onClick={() => updateTweak('theme', tweaks.theme === 'dark' ? 'light' : 'dark')}>
+            {tweaks.theme === 'dark' ? '☀ Light' : '🌙 Dark'}
+          </button>
+          <div className="lang-toggle">
+            <button className={`lang-btn${lang === 'tr' ? ' active' : ''}`} onClick={() => setLang('tr')}>TR</button>
+            <button className={`lang-btn${lang === 'en' ? ' active' : ''}`} onClick={() => setLang('en')}>EN</button>
+          </div>
+        </div>
+      </header>
+
+      <section className="hero">
+        <div style={{ maxWidth: 900 }}>
+          <div className="hero-title">Multi Rote</div>
+          <div className="hero-sub">{t.tagline}</div>
+          <div className="search-box">
+            <CityInput label={t.from} value={from} onChange={setFrom} onAirportSelect={setFromAp} selectedAirport={fromAp} lang={lang} />
+            <button className="swap-btn" onClick={swap}>⇄</button>
+            <CityInput label={t.to} value={to} onChange={setTo} onAirportSelect={setToAp} selectedAirport={toAp} lang={lang} />
+            <div className="sf-field sf-date">
+              <div className="sf-label">{t.date}</div>
+              <div className="sf-input-wrap">
+                <input type="date" className="sf-input" value={date} onChange={(e) => setDate(e.target.value)} />
+              </div>
+            </div>
+            <button className="search-btn" onClick={doSearch} disabled={loading}>
+              {loading ? t.searching : `🔍 ${t.search}`}
+            </button>
+          </div>
+          {!results && !loading &&
+          <div style={{ marginTop: 14, color: 'rgba(255,255,255,.6)', fontSize: 13, cursor: 'pointer', userSelect: 'none' }}
+          onClick={() => {setFrom('Venice');setTo('Nürnberg');setTimeout(doSearch, 80);}}>
+              💡 {t.trySearch}
+            </div>
+          }
+        </div>
+      </section>
+
+      <main className="results">
+        {loading &&
+        <>
+            <div className="loading-bar" />
+            <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+              {[0, 1, 2, 3, 4].map((i) => <div key={i} className="sk" style={{ flex: 1, height: 110, borderRadius: 14 }} />)}
+            </div>
+            <div className="sk" style={{ height: 200, borderRadius: 12 }} />
+          </>
+        }
+
+        {results && !loading &&
+        <>
+            <div className="res-info"><b>Venice (VCE)</b> → <b>Nürnberg (NUE)</b> · {date}</div>
+            {/* CATEGORY BAR */}
+            <div className="cat-bar">
+              {CATS.map((c, i) =>
+            <div key={i} className={`cat-pill${activeSec === i ? ' active' : ''}`} onClick={() => setActiveSec(i)}>
+                  <span className="cat-pill-icon">{c.icon}</span>
+                  <span className="cat-pill-label">{c.label}</span>
+                  <span className="cat-pill-price">{c.minPrice ? fmt(c.minPrice) : '—'}</span>
+                  <span className="cat-pill-sub">{c.sub}</span>
+                  {activeSec === i && <div className="cat-active-bar" />}
+                </div>
+            )}
+            </div>
+            {/* ACTIVE SECTION */}
+            <div className="sec-body">
+              <SectionContent secIdx={activeSec} data={CATS[activeSec].data} currency={cur} lang={lang} />
+            </div>
+          </>
+        }
+
+        {!results && !loading &&
+        <div className="empty-state">
+            <div className="empty-icon">✈</div>
+            <div className="empty-title">{lang === 'tr' ? 'Seyahatini ara' : 'Search your journey'}</div>
+            <div style={{ color: 'var(--lt)', fontSize: 14, marginTop: 6 }}>{lang === 'tr' ? 'Formu doldur ve Ara\'ya bas' : 'Fill in the form above and hit Search'}</div>
+          </div>
+        }
+      </main>
+
+      {showTweaks &&
+      <div className="tweaks-panel">
+          <div className="tweaks-title">⚙ {t.tweaks}</div>
+          <div className="tw-group">
+            <div className="tw-label">{t.currency}</div>
+            <div className="tw-opts">
+              {['EUR', 'USD', 'GBP'].map((c) =>
+            <div key={c} className={`tw-opt${cur === c ? ' active' : ''}`} onClick={() => updateTweak('currency', c)}>{c}</div>
+            )}
+            </div>
+          </div>
+          <div className="tw-group">
+            <div className="tw-label">Tema</div>
+            <div className="tw-opts">
+              {[['light', '☀ Light'], ['dark', '🌙 Dark']].map(([v, l]) =>
+            <div key={v} className={`tw-opt${tweaks.theme === v ? ' active' : ''}`} onClick={() => updateTweak('theme', v)}>{l}</div>
+            )}
+            </div>
+          </div>
+        </div>
+      }
+    </>);
+
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
