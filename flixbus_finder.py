@@ -5,6 +5,8 @@ import json
 import time
 from datetime import datetime, timedelta
 
+import pandas as pd
+
 # ──────────────────────────────────────────────
 # Konfigürasyon
 # ──────────────────────────────────────────────
@@ -183,10 +185,65 @@ def search_range(from_id: str, to_id: str, start: str, end: str) -> list[dict]:
 
 
 # ──────────────────────────────────────────────
-# 6. Ana Çalıştırıcı
+# 6. Tek Metod ile Bilet Arama
 # ──────────────────────────────────────────────
+def get_trips(
+    origin: str,
+    destination: str,
+    date: str,
+    conn: sqlite3.Connection | None = None,
+) -> pd.DataFrame:
+    """
+    origin/destination: sehir adi (ornek: "Berlin", "Venice")
+    date: "DD.MM.YYYY" veya "YYYY-MM-DD" formatinda
+    conn: None verilirse fonksiyon kendi baglantisini acar
+    Returns: fiyata gore sirali pandas DataFrame, bulunamazsa bos DataFrame
+    """
+    if conn is None:
+        conn = init_db()
+
+    # Tarih formatini normalize et
+    if len(date) == 10 and date[4] == "-":
+        date = datetime.strptime(date, "%Y-%m-%d").strftime("%d.%m.%Y")
+
+    from_city = find_city(conn, origin)
+    to_city = find_city(conn, destination)
+
+    if not from_city or not to_city:
+        return pd.DataFrame()
+
+    from_id, from_name = from_city
+    to_id, to_name = to_city
+
+    tickets = search_tickets(from_id, to_id, date)
+    if not tickets:
+        return pd.DataFrame()
+
+    rows = []
+    for t in tickets:
+        dur_parts = t["süre"].split()  # "8s 45dk"
+        hours = int(dur_parts[0].replace("s", "")) if len(dur_parts) > 0 else 0
+        minutes = int(dur_parts[1].replace("dk", "")) if len(dur_parts) > 1 else 0
+
+        rows.append({
+            "origin": from_name,
+            "destination": to_name,
+            "date": date,
+            "departure_dt": pd.to_datetime(t["kalkış"], errors="coerce"),
+            "arrival_dt": pd.to_datetime(t["varış"], errors="coerce"),
+            "duration_min": hours * 60 + minutes,
+            "price_eur": float(t["fiyat"]) if t["fiyat"] is not None else None,
+            "seats_available": t["koltuk"],
+            "url": t["url"],
+        })
+
+    df = pd.DataFrame(rows)
+    df = df.sort_values("price_eur").reset_index(drop=True)
+    return df
+
+
 # ──────────────────────────────────────────────
-# 6. Ana Çalıştırıcı
+# 7. Ana Çalıştırıcı
 # ──────────────────────────────────────────────
 if __name__ == "__main__":
     conn = init_db()

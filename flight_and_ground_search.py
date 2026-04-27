@@ -17,7 +17,7 @@ GEOLOCATOR = Nominatim(user_agent="travel_planner_kerem")  # ONE instance
 COUNTRY_EN = {"DE": "Germany", "IT": "Italy"}  # extend as needed
 
 # ========================= DATA =========================
-with open("../airports.json") as f:  # put json next to script or use absolute path
+with open("./filtered_airports_it_de.json") as f:  # put json next to script or use absolute path
     airports_df = (
         pd.DataFrame.from_dict(json.load(f), orient="index")
         .query("country in ['DE', 'IT'] and iata != ''")
@@ -129,6 +129,7 @@ def explore_search(departure_id: str, outbound_date: str, target_city: str, max_
 
 # ========================= BUS / TRAIN =========================
 from checkmybus import CheckMyBusClient, CheckMyBusSearchParams
+from flixbus_finder import get_trips
 
 def bus_train_transfer(departure_location: str, arrival_location: str, departure_date: str):
     """Return DataFrame of buses/trains. departure_location must be clean 'City, Country'."""
@@ -188,34 +189,26 @@ def find_cheap_flight_plus_ground(departure_id: str,
     combined = []
     for _, row in nearby.iterrows():
         try:
-            ground_df = bus_train_transfer(                  # I renamed the variable to "ground_df" for clarity
-                departure_location=row["bus_departure_name"],
-                arrival_location=target_city,
-                departure_date=ground_date
-            )
-            if ground_df.empty or "price" not in ground_df.columns:
+            dep_city = row["bus_departure_name"].split(",")[0].strip()
+            arr_city = target_city.split(",")[0].strip()
+
+            ground_df = get_trips(dep_city, arr_city, ground_date)
+            if ground_df.empty:
                 continue
 
-            # ── NEW: handle BOTH bus and train in one clean loop ──
-            for mode in ["bus", "train"]:
-                # Filter the right transport mode (safe if column doesn't exist yet)
-                mode_df = ground_df[ground_df.get("transport_mode", pd.Series(["bus"] * len(ground_df))) == mode]
-
-                if not mode_df.empty:
-                    best = mode_df.loc[mode_df["price"].idxmin()]   # cheapest in this mode
-
-                    combined.append({
-                        **row.to_dict(),                     # all flight info
-                        "ground_type": mode.capitalize(),    # "Bus" or "Train"
-                        "ground_price": best["price"],
-                        "total_price": row["price"] + best["price"],
-                        "ground_duration": best.get("duration_min", best.get("duration", None)),
-                        "ground_link": best.get("checkmybus_url", best.get("link", None)),
-                        "ground_departure": best.get("departure_dt", best.get("departure_time", None)),
-                        "ground_arrival": best.get("arrival_dt", best.get("arrival_time", None)),
-                    })
+            best = ground_df.loc[ground_df["price_eur"].idxmin()]
+            combined.append({
+                **row.to_dict(),
+                "ground_type": "Bus",
+                "ground_price": best["price_eur"],
+                "total_price": row["price"] + best["price_eur"],
+                "ground_duration": best["duration_min"],
+                "ground_link": best["url"],
+                "ground_departure": best["departure_dt"],
+                "ground_arrival": best["arrival_dt"],
+            })
         except Exception as e:
-            print(f"Bus search failed for {row['city']}: {e}")  # or log
+            print(f"Bus search failed for {row['city']}: {e}")
 
     if combined:
         result_df = pd.DataFrame(combined).sort_values("total_price").reset_index(drop=True)

@@ -25,12 +25,15 @@
   --purple:#7C3AED;--purple-s:#F5F3FF;
   --teal:#0891B2;--teal-s:#ECFEFF;
   --slate:#475569;--slate-s:#F8FAFC;
+  --yellow:#D97706;--yellow-s:#FFFBEB;
+  --red:#DC2626;--red-s:#FEF2F2;
   --r:12px;
 }
 [data-theme="dark"]{
   --bg:#0F0A07;--white:#1C1410;--card-bg:#1C1410;--text:#F5EDE8;--mid:#C4A99E;--lt:#7A6860;
   --brd:#2E2018;--or-s:#2A1A10;--or-ss:#3A2218;--blue-s:#0D1929;--green-s:#0A1F10;
   --purple-s:#160D2A;--teal-s:#071A1F;--slate-s:#131820;
+  --yellow-s:#2A1A05;--red-s:#2A0F0F;
   --sh:0 2px 12px rgba(0,0,0,.3);--sh2:0 8px 32px rgba(0,0,0,.5);
 }
 body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
@@ -239,6 +242,14 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .dg2-layover{display:flex;justify-content:center;padding:2px 0}
 .dg2-layover-pill{display:inline-flex;align-items:center;gap:6px;background:var(--blue-s);color:var(--blue);font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;border:1.5px solid var(--brd)}
 [data-theme="dark"] .dg2-layover-pill{background:#0D1929;color:#60A5FA;border-color:#1E3A5F}
+.dg2-pkg{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1.5px solid var(--brd);border-left-width:4px;border-radius:12px;padding:12px 18px;margin-bottom:-4px}
+.dg2-pkg-left{display:flex;flex-direction:column;gap:4px;min-width:0}
+.dg2-pkg-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.5px}
+.dg2-pkg-icon{font-size:13px}
+.dg2-pkg-meta{font-size:13px;font-weight:600;color:var(--mid)}
+.dg2-pkg-right{text-align:right;flex-shrink:0}
+.dg2-pkg-price{font-size:22px;font-weight:800;line-height:1.1}
+.dg2-pkg-sub{font-size:11px;color:var(--lt);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
 @media (max-width: 640px){
   .dg2-grid{grid-template-columns:repeat(2,1fr)}
   .dg2-card{padding:16px}
@@ -274,6 +285,92 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 @keyframes lslide{0%{background-position:100%}100%{background-position:-100%}}
 .sk{border-radius:6px;background:linear-gradient(90deg,var(--brd) 25%,var(--or-s) 50%,var(--brd) 75%);background-size:200%;animation:sk 1.4s ease infinite}
 @keyframes sk{0%{background-position:200%}100%{background-position:-200%}}
+.cat-pill-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--brd);border-top-color:var(--or);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* HUB MASTER CARD */
+.hub-card{border:1.5px solid var(--brd);border-radius:14px;margin-bottom:14px;background:var(--card-bg);overflow:hidden;transition:.2s}
+.hub-card:last-child{margin-bottom:0}
+.hub-card.no-pairing{opacity:.85}
+.hub-card-head{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1.5px solid var(--brd);background:linear-gradient(90deg,var(--or-s),transparent 60%)}
+[data-theme="dark"] .hub-card-head{background:linear-gradient(90deg,var(--or-s),transparent 60%)}
+.hub-iata-badge{font-size:13px;font-weight:800;background:var(--or);color:#fff;padding:6px 11px;border-radius:8px;letter-spacing:.4px;flex-shrink:0}
+.hub-head-info{flex:1;min-width:0}
+.hub-head-title{font-size:17px;font-weight:700;color:var(--text);line-height:1.2}
+.hub-head-sub{font-size:11px;color:var(--lt);margin-top:3px;letter-spacing:.3px}
+.hub-head-min{text-align:right;flex-shrink:0}
+.hub-head-min-label{font-size:10px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.5px}
+.hub-head-min-price{font-size:22px;font-weight:800;color:var(--or);line-height:1.1;margin-top:2px}
+.hub-head-min-warn{font-size:10px;color:var(--lt)}
+
+/* AI BAR */
+.ai-bar{display:flex;align-items:center;gap:8px;padding:12px 20px;border-bottom:1.5px solid var(--brd);flex-wrap:wrap;background:var(--bg)}
+.ai-bar-label{font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.6px;margin-right:4px}
+.ai-chip{padding:6px 12px;border:1.5px solid var(--brd);border-radius:18px;background:var(--card-bg);color:var(--mid);font-family:var(--f);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+.ai-chip:hover{border-color:var(--or);color:var(--or);background:var(--or-s);transform:translateY(-1px)}
+.ai-chip.active{border-color:var(--or);color:var(--or-d);background:var(--or-s);box-shadow:0 0 0 2px var(--or-ss)}
+[data-theme="dark"] .ai-chip.active{color:var(--or-l)}
+.ai-chip:disabled{opacity:.4;cursor:not-allowed}
+
+/* HUB SELECTION GRID */
+.hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:0}
+@media (max-width:760px){.hub-grid{grid-template-columns:1fr}}
+.hub-col{padding:12px 18px;border-right:1.5px solid var(--brd);min-width:0}
+.hub-col:last-child{border-right:none}
+@media (max-width:760px){.hub-col{border-right:none;border-bottom:1.5px solid var(--brd)}.hub-col:last-child{border-bottom:none}}
+.hub-col-title{font-size:11px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.hub-col-icon{font-size:13px}
+.hub-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 10px;border:1.5px solid transparent;border-radius:10px;cursor:pointer;transition:.15s;margin-bottom:5px}
+.hub-row:last-child{margin-bottom:0}
+.hub-row:hover{background:var(--or-s);border-color:var(--or-ss)}
+.hub-row.selected{background:var(--or-s);border-color:var(--or)}
+.hub-row.disabled{opacity:.5;cursor:not-allowed}
+.hub-row-radio{width:16px;height:16px;border:1.5px solid var(--brd);border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--card-bg);transition:.15s}
+.hub-row.selected .hub-row-radio{border-color:var(--or)}
+.hub-row.selected .hub-row-radio::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--or)}
+.hub-row-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hub-row-line1{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
+.hub-row-line1 .hub-row-time{font-variant-numeric:tabular-nums}
+.hub-row-line1 .hub-row-arrow{color:var(--lt);font-size:11px}
+.hub-row-line2{font-size:11px;color:var(--lt);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hub-row-tag{font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
+.hub-row-tag.cheap{background:var(--green-s);color:var(--green)}
+.hub-row-tag.fast{background:var(--purple-s);color:var(--purple)}
+.hub-row-tag.early{background:var(--yellow-s);color:var(--yellow)}
+.hub-row-tag.best{background:var(--blue-s);color:var(--blue)}
+.hub-row-tag.next{background:var(--or-ss);color:var(--or)}
+.hub-row-price{font-size:14px;font-weight:800;color:var(--or);text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+
+/* CONNECTION PILL */
+.connection-row{display:flex;align-items:center;justify-content:center;padding:10px 18px;border-top:1.5px solid var(--brd);background:var(--bg)}
+.connection-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid;letter-spacing:.2px}
+.connection-pill .conn-dot{font-size:10px;line-height:1}
+.connection-pill .conn-time{font-variant-numeric:tabular-nums}
+.connection-pill .conn-status{font-size:11px;font-weight:600;opacity:.85}
+.connection-pill.green{background:var(--green-s);color:var(--green);border-color:var(--green)}
+.connection-pill.yellow{background:var(--yellow-s);color:var(--yellow);border-color:var(--yellow)}
+.connection-pill.red{background:var(--red-s);color:var(--red);border-color:var(--red)}
+
+/* SUMMARY FOOTER */
+.summary-footer{padding:14px 18px;border-top:1.5px solid var(--brd);background:var(--card-bg);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.summary-left{flex:1;min-width:200px}
+.summary-label{font-size:10px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.5px}
+.summary-timeline{font-size:13px;font-weight:600;color:var(--text);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.summary-timeline .st-mode{display:inline-flex;align-items:center;gap:4px}
+.summary-timeline .st-arrow{color:var(--lt)}
+.summary-total{text-align:right;flex-shrink:0;min-width:90px}
+.summary-total-label{font-size:10px;color:var(--lt);text-transform:uppercase;font-weight:700;letter-spacing:.5px}
+.summary-total-price{font-size:24px;font-weight:800;color:var(--or);line-height:1.05}
+.summary-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.summary-btn{display:inline-flex;align-items:center;gap:5px;padding:9px 14px;border:1.5px solid var(--brd);border-radius:10px;background:var(--card-bg);font-family:var(--f);font-size:12px;font-weight:700;cursor:pointer;color:var(--mid);transition:.15s;white-space:nowrap}
+.summary-btn:hover{border-color:var(--or);color:var(--or)}
+.summary-btn.primary{background:var(--or);border-color:var(--or);color:#fff}
+.summary-btn.primary:hover{background:var(--or-d);transform:translateY(-1px)}
+.summary-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;background:var(--card-bg);color:var(--lt);border-color:var(--brd)}
+.summary-btn.active{border-color:var(--or);color:var(--or);background:var(--or-s)}
+
+.hub-no-pairing-banner{padding:10px 18px;background:var(--red-s);color:var(--red);font-size:12px;font-weight:600;border-bottom:1.5px solid var(--brd);text-align:center}
+[data-theme="dark"] .hub-no-pairing-banner{background:#2A0F0F}
 </style>
 </head>
 <body>
@@ -298,9 +395,21 @@ const T = {
     flightBusSub: "Uç, yerden devam et", busFlightSub: "Git, oradan uç", busOnlySub: "Karada tüm yol",
     via: "via", nonstop: "aktarmasız", transfer: "aktarma", layover: "bekleme", total: "toplam",
     flightLeg: "Uçuş", busLeg: "Otobüs", trainLeg: "Tren",
+    includedInFlight: "Tüm uçuşa dahil",
+    flightPackage: "Uçuş Paketi", flightPackageLegs: "leg", flightPackageTotal: "toplam",
     noResult: "Sonuç yok", mapTitle: "Rota Haritası",
     selectAirport: "Havalimanı seç:", trySearch: "Milano → Nürnberg dene",
-    tweaks: "Tweaks", currency: "Para Birimi", cardStyle: "Kart Stili", comfortable: "Rahat", compact: "Kompakt"
+    tweaks: "Tweaks", currency: "Para Birimi", cardStyle: "Kart Stili", comfortable: "Rahat", compact: "Kompakt",
+    hubViaTitle: "üzerinden", hubMinFromLabel: "En düşük",
+    hubDistance: "uzaklık", hubBusOptions: "otobüs", hubFlightOptions: "uçuş",
+    chooseBusLabel: "Otobüs seç", chooseFlightLabel: "Uçuş seç",
+    aiSuggestLabel: "AI önerisi:", aiCheapest: "💰 En ucuz", aiFastest: "⚡ En hızlı", aiMorning: "🌅 Sabah erken",
+    connectionLabel: "Bağlantı süresi",
+    connectionGreen: "Rahat aktarma", connectionYellow: "Sıkışık aktarma", connectionRed: "Çok kısa", connectionInvalid: "Geçersiz sıralama",
+    selectTripBtn: "Bu seferi seç", viewDetailsBtn: "Detayları gör", showOnMapBtn: "Haritada göster",
+    cheapestBadge: "💰 En ucuz", fastestBadge: "⚡ En hızlı", earliestBadge: "🌅 İlk",
+    noValidPairing: "Bu hub'da 2 saatlik bağlantıyla eşleşen sefer yok",
+    summarySelected: "Seçili sefer", summaryTotal: "Toplam"
   },
   en: { tagline: "Smart multi-modal travel search", from: "From", to: "To", date: "Departure",
     search: "Search", searching: "Searching...",
@@ -310,9 +419,21 @@ const T = {
     flightBusSub: "Fly, continue by ground", busFlightSub: "Ground to hub, then fly", busOnlySub: "Fully overland",
     via: "via", nonstop: "non-stop", transfer: "transfer", layover: "layover", total: "total",
     flightLeg: "Flight", busLeg: "Bus", trainLeg: "Train",
+    includedInFlight: "Included in flight",
+    flightPackage: "Flight Package", flightPackageLegs: "legs", flightPackageTotal: "total",
     noResult: "No results", mapTitle: "Route Map",
     selectAirport: "Select airport:", trySearch: "Try Milan → Nürnberg",
-    tweaks: "Tweaks", currency: "Currency", cardStyle: "Card Style", comfortable: "Comfortable", compact: "Compact"
+    tweaks: "Tweaks", currency: "Currency", cardStyle: "Card Style", comfortable: "Comfortable", compact: "Compact",
+    hubViaTitle: "via", hubMinFromLabel: "From",
+    hubDistance: "away", hubBusOptions: "buses", hubFlightOptions: "flights",
+    chooseBusLabel: "Pick a bus", chooseFlightLabel: "Pick a flight",
+    aiSuggestLabel: "AI suggestion:", aiCheapest: "💰 Cheapest", aiFastest: "⚡ Fastest", aiMorning: "🌅 Early morning",
+    connectionLabel: "Connection time",
+    connectionGreen: "Comfortable", connectionYellow: "Tight transfer", connectionRed: "Too short", connectionInvalid: "Invalid ordering",
+    selectTripBtn: "Select this trip", viewDetailsBtn: "View details", showOnMapBtn: "Show on map",
+    cheapestBadge: "💰 Cheapest", fastestBadge: "⚡ Fastest", earliestBadge: "🌅 First",
+    noValidPairing: "No pairing in this hub meets the 2h connection rule",
+    summarySelected: "Selected trip", summaryTotal: "Total"
   }
 };
 
@@ -589,7 +710,7 @@ function calcLayover(prev, next) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function DetailGrid({ segs, currency, lang }) {
+function DetailGrid({ segs, currency, lang, flightPackage }) {
   const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
   const t = T[lang] || T.tr;
   const L = lang === 'tr' ?
@@ -605,8 +726,23 @@ function DetailGrid({ segs, currency, lang }) {
         const bgTint = MODE_TINT[seg.type];
         const modeLabel = (seg.type === 'flight' ? t.flightLeg : seg.type === 'bus' ? t.busLeg : t.trainLeg).toUpperCase();
         const icon = seg.type === 'flight' ? '✈' : seg.type === 'bus' ? '🚌' : '🚆';
+        const isFlightGroupStart = flightPackage && seg.type === 'flight' && (i === 0 || segs[i - 1].type !== 'flight');
         return (
           <React.Fragment key={i}>
+            {isFlightGroupStart &&
+              <div className="dg2-pkg" style={{ borderColor: SEG_COLOR.flight, background: MODE_TINT.flight }}>
+                <div className="dg2-pkg-left">
+                  <div className="dg2-pkg-tag" style={{ color: SEG_COLOR.flight }}>
+                    <span className="dg2-pkg-icon">✈</span>{t.flightPackage.toUpperCase()}
+                  </div>
+                  <div className="dg2-pkg-meta">{flightPackage.airline} · {flightPackage.legCount} {t.flightPackageLegs}</div>
+                </div>
+                <div className="dg2-pkg-right">
+                  <div className="dg2-pkg-price" style={{ color: SEG_COLOR.flight }}>{fmt(flightPackage.price)}</div>
+                  <div className="dg2-pkg-sub">{t.flightPackageTotal}</div>
+                </div>
+              </div>
+            }
             {i > 0 && (() => {
               const prev = segs[i - 1];
               const dur = calcLayover(prev, seg);
@@ -658,7 +794,10 @@ function DetailGrid({ segs, currency, lang }) {
                 </div>
                 <div className="dg2-cell">
                   <div className="dg2-cell-label">{L.price}</div>
-                  <div className="dg2-cell-price-val" style={{ color }}>{fmt(seg.price)}</div>
+                  {seg.price == null ?
+                    <div className="dg2-cell-val" style={{ color: 'var(--lt)' }}>—</div> :
+                    <div className="dg2-cell-price-val" style={{ color }}>{fmt(seg.price)}</div>
+                  }
                 </div>
               </div>
             </div>
@@ -670,7 +809,7 @@ function DetailGrid({ segs, currency, lang }) {
 }
 
 // ── Card Detail Shell ─────────────────────────────────────────────────────────
-function CardDetailShell({ header, mapRoute, lang, journey, detailSegs, total, currency }) {
+function CardDetailShell({ header, mapRoute, lang, journey, detailSegs, total, currency, flightPackage }) {
   const [open, setOpen] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
@@ -683,7 +822,7 @@ function CardDetailShell({ header, mapRoute, lang, journey, detailSegs, total, c
       {open &&
       <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
           {journey && <JourneyDiagram nodes={journey.nodes} segs={journey.segs} lang={lang} />}
-          {detailSegs && <DetailGrid segs={detailSegs} currency={currency} lang={lang} />}
+          {detailSegs && <DetailGrid segs={detailSegs} currency={currency} lang={lang} flightPackage={flightPackage} />}
           {total &&
         <div className="dp-total-row">
               <span className="dp-total-label">{lang === 'tr' ? 'Toplam fiyat' : 'Total price'}</span>
@@ -724,7 +863,7 @@ function FlightCard({ d, currency, lang }) {
         <div className="card-dep">{d.dep}</div>
         <div className="card-via" style={{ flex: 1 }}>
           <div className="via-row"><div className="via-dot" style={{ background: 'var(--or)' }} /><div className="via-line" /><span style={{ fontSize: 13 }}>✈</span><div className="via-line" /><div className="via-dot" style={{ background: 'var(--blue)' }} /></div>
-          <div className="card-via-text">via {d.viaName} ({d.via})</div>
+          <div className="card-via-text">{d.via ? `via ${d.viaName || ''} (${d.via})` : t.nonstop}</div>
         </div>
         <div className="card-arr">{d.arr}</div>
       </div>
@@ -747,11 +886,12 @@ function TransferCard({ d, currency, lang }) {
     }).concat([{ iata: d.legs[d.legs.length - 1].to, arr: d.legs[d.legs.length - 1].arr }]),
     segs: d.legs.map((l) => ({ type: 'flight', duration: l.duration, carrier: d.airline, ref: l.flightNo }))
   };
-  const detailSegs = d.legs.map((l) => ({
+  const detailSegs = d.legs.map((l, i) => ({
     type: 'flight', from: l.from, to: l.to, fromName: CITY_NAMES[l.from], toName: CITY_NAMES[l.to],
     carrier: d.airline, ref: l.flightNo, dep: l.dep, arr: l.arr, duration: l.duration,
-    price: d.price, buyUrl: `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.arrIata}`
+    price: i === 0 ? d.price : null, buyUrl: `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.arrIata}`
   }));
+  const flightPackage = d.legs.length > 1 ? { price: d.price, legCount: d.legs.length, airline: d.airline } : null;
   const header =
   <>
       <div className="card-airline">{d.airline}<span style={{ fontSize: 10, lineHeight: 1.4, color: 'var(--lt)' }}>{d.legs[0].flightNo}<br />{d.legs[1].flightNo}</span></div>
@@ -770,7 +910,7 @@ function TransferCard({ d, currency, lang }) {
       <div className="card-price">{fmt(d.price)}<small>/ kişi</small></div>
     </>;
 
-  return <CardDetailShell header={header} mapRoute={route} lang={lang} journey={journey} detailSegs={detailSegs} currency={currency} />;
+  return <CardDetailShell header={header} mapRoute={route} lang={lang} journey={journey} detailSegs={detailSegs} currency={currency} flightPackage={flightPackage} />;
 }
 
 // ── Combo card ────────────────────────────────────────────────────────────────
@@ -781,45 +921,116 @@ function ComboCard({ d, currency, mode, lang }) {
   const gColor = isBus ? 'var(--or)' : 'var(--green)';
   const gBg = isBus ? 'var(--or-s)' : 'var(--green-s)';
   const gType = d.ground.type.toLowerCase();
-  const mapSegs = mode === 'flightFirst' ?
-  [{ from: d.depIata, to: d.via, type: 'flight', carrier: d.flight.airline, duration: d.flight.duration },
-   { from: d.via, to: d.arrIata, type: gType, carrier: d.ground.company, duration: d.ground.duration }] :
-  [{ from: d.depIata, to: d.via, type: gType, carrier: d.ground.company, duration: d.ground.duration },
-   { from: d.via, to: d.arrIata, type: 'flight', carrier: d.flight.airline, duration: d.flight.duration }];
+  const flightAirline = d.flight.airline || '';
 
-  const firstDep = mode === 'flightFirst' ? d.flight.dep : d.ground.dep;
-  const firstArr = mode === 'flightFirst' ? d.flight.arr : d.ground.arr;
-  const secondDep = mode === 'flightFirst' ? d.ground.dep : d.flight.dep;
-  const secondArr = mode === 'flightFirst' ? d.ground.arr : d.flight.arr;
-  const secondNextDay = mode === 'flightFirst' ? !!d.ground.nextDay : false;
-  const layoverDur = calcLayover({ arr: firstArr }, { dep: secondDep });
+  // Normalize flight legs so a direct flight and a multi-stop one share the
+  // same rendering path. Each leg is { dep, arr, from, to, fromName, toName,
+  // duration, flightNo, airline }.
+  const hasMultiLeg = Array.isArray(d.flight.legs) && d.flight.legs.length > 0;
+  const fallbackFlightFrom = d.flight.fromIata || (mode === 'flightFirst' ? d.depIata : d.via);
+  const fallbackFlightTo = d.flight.toIata || (mode === 'flightFirst' ? d.via : d.arrIata);
+  const flightLegs = hasMultiLeg ? d.flight.legs : [{
+    dep: d.flight.dep, arr: d.flight.arr,
+    from: fallbackFlightFrom, to: fallbackFlightTo,
+    fromName: '', toName: '',
+    duration: d.flight.duration,
+    flightNo: d.flight.flightNo,
+    airline: flightAirline,
+  }];
+  const flightLayovers = Array.isArray(d.flight.layovers) ? d.flight.layovers : [];
+  const stopsCount = (typeof d.flight.stops === 'number' ? d.flight.stops : flightLegs.length - 1);
+  const flightFirstDep = flightLegs[0].dep;
+  const flightLastArr = flightLegs[flightLegs.length - 1].arr;
+
+  // Map segments — every flight leg is its own arc, plus the ground leg.
+  const flightMapSegs = flightLegs.map((l) => ({
+    from: l.from, to: l.to, type: 'flight',
+    carrier: l.airline || flightAirline, duration: l.duration }));
+
+  const groundMapSeg = mode === 'flightFirst' ?
+  { from: d.via, to: d.arrIata, type: gType, carrier: d.ground.company, duration: d.ground.duration } :
+  { from: d.depIata, to: d.via, type: gType, carrier: d.ground.company, duration: d.ground.duration };
+  const mapSegs = mode === 'flightFirst' ? [...flightMapSegs, groundMapSeg] : [groundMapSeg, ...flightMapSegs];
+
+  // Layover nodes for stops between consecutive flight legs.
+  const flightLayoverNodes = flightLegs.slice(1).map((l, i) => {
+    const lay = flightLayovers[i] || {};
+    return {
+      iata: l.from,
+      name: lay.city || CITY_NAMES[l.from] || l.from,
+      arr: flightLegs[i].arr,
+      dep: l.dep,
+      layover: lay.duration || calcLayover({ arr: flightLegs[i].arr }, { dep: l.dep })
+    };
+  });
+
+  let nodes;
+  if (mode === 'flightFirst') {
+    const viaLayover = calcLayover({ arr: flightLastArr }, { dep: d.ground.dep });
+    nodes = [
+    { iata: d.depIata, dep: flightFirstDep },
+    ...flightLayoverNodes,
+    { iata: d.via, name: CITY_NAMES[d.via], arr: flightLastArr, dep: d.ground.dep, layover: viaLayover },
+    { iata: d.arrIata, arr: d.ground.arr, arrNextDay: !!d.ground.nextDay }];
+
+  } else {
+    const viaLayover = calcLayover({ arr: d.ground.arr }, { dep: flightFirstDep });
+    nodes = [
+    { iata: d.depIata, dep: d.ground.dep },
+    { iata: d.via, name: CITY_NAMES[d.via], arr: d.ground.arr, dep: flightFirstDep, layover: viaLayover },
+    ...flightLayoverNodes,
+    { iata: d.arrIata, arr: flightLastArr }];
+
+  }
+
+  const flightJourneySegs = flightLegs.map((l) => ({
+    type: 'flight', duration: l.duration,
+    carrier: l.airline || flightAirline, ref: l.flightNo }));
+
+  const groundJourneySeg = { type: gType, duration: d.ground.duration, carrier: d.ground.company };
   const journey = {
-    nodes: [
-      { iata: d.depIata, dep: firstDep },
-      { iata: d.via, name: CITY_NAMES[d.via], arr: firstArr, dep: secondDep, layover: layoverDur },
-      { iata: d.arrIata, arr: secondArr, arrNextDay: secondNextDay }
-    ],
-    segs: mode === 'flightFirst' ?
-    [{ type: 'flight', duration: d.flight.duration, carrier: d.flight.airline, ref: d.flight.flightNo },
-     { type: d.ground.type.toLowerCase(), duration: d.ground.duration, carrier: d.ground.company }] :
-    [{ type: d.ground.type.toLowerCase(), duration: d.ground.duration, carrier: d.ground.company },
-     { type: 'flight', duration: d.flight.duration, carrier: d.flight.airline, ref: d.flight.flightNo }]
+    nodes,
+    segs: mode === 'flightFirst' ? [...flightJourneySegs, groundJourneySeg] : [groundJourneySeg, ...flightJourneySegs]
   };
 
-  const flightSeg = { type: 'flight', from: d.depIata, to: d.flight.toIata ?? d.via, fromName: CITY_NAMES[d.depIata], toName: CITY_NAMES[d.flight.toIata ?? d.via],
-    carrier: d.flight.airline, ref: d.flight.flightNo, dep: d.flight.dep, arr: d.flight.arr, duration: d.flight.duration, price: d.flight.price,
-    buyUrl: `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.flight.toIata ?? d.via}` };
-  const groundSeg = { type: d.ground.type.toLowerCase(), from: d.ground.from, to: d.ground.to, fromName: d.ground.from, toName: d.ground.to,
-    carrier: d.ground.company, ref: '', dep: d.ground.dep, arr: d.ground.arr, nextDay: d.ground.nextDay, duration: d.ground.duration, price: d.ground.price,
-    buyUrl: 'https://www.omio.com' };
-  const detailSegs = mode === 'flightFirst' ? [flightSeg, groundSeg] : [groundSeg, flightSeg];
+  // Detail panel — one card per real leg (flight legs split out individually).
+  const flightFirstFromIata = flightLegs[0].from;
+  const flightLastToIata = flightLegs[flightLegs.length - 1].to;
+  const flightDetailSegs = flightLegs.map((l, i) => ({
+    type: 'flight',
+    from: l.from, to: l.to,
+    fromName: l.fromName || CITY_NAMES[l.from] || l.from,
+    toName: l.toName || CITY_NAMES[l.to] || l.to,
+    carrier: l.airline || flightAirline,
+    ref: l.flightNo,
+    dep: l.dep, arr: l.arr,
+    duration: l.duration,
+    price: i === 0 ? d.flight.price : null,
+    buyUrl: `https://www.google.com/travel/flights?q=${flightFirstFromIata}+to+${flightLastToIata}`
+  }));
+  const groundDetailSeg = {
+    type: gType, from: d.ground.from, to: d.ground.to,
+    fromName: d.ground.from, toName: d.ground.to,
+    carrier: d.ground.company, ref: '',
+    dep: d.ground.dep, arr: d.ground.arr, nextDay: d.ground.nextDay,
+    duration: d.ground.duration, price: d.ground.price,
+    buyUrl: 'https://www.omio.com'
+  };
+  const detailSegs = mode === 'flightFirst' ? [...flightDetailSegs, groundDetailSeg] : [groundDetailSeg, ...flightDetailSegs];
 
+  const flightPackage = flightLegs.length > 1 ? {
+    price: d.flight.price,
+    legCount: flightLegs.length,
+    airline: flightAirline
+  } : null;
+
+  const stopsSuffix = stopsCount > 0 ? ` · ${stopsCount} ${t.transfer}` : '';
   const seg1 = mode === 'flightFirst' ?
-  { icon: '✈', color: 'var(--blue)', bg: 'var(--blue-s)', label: t.flightLeg, main: d.flight.airline, sub: `${d.flight.dep}→${d.flight.arr} · ${d.flight.toCity ?? ''}` } :
+  { icon: '✈', color: 'var(--blue)', bg: 'var(--blue-s)', label: t.flightLeg, main: flightAirline, sub: `${flightFirstDep}→${flightLastArr} · ${d.flight.toCity ?? ''}${stopsSuffix}` } :
   { icon: isBus ? '🚌' : '🚆', color: gColor, bg: gBg, label: isBus ? t.busLeg : t.trainLeg, main: d.ground.company, sub: `${d.ground.dep}→${d.ground.arr} · ${d.ground.from}` };
   const seg2 = mode === 'flightFirst' ?
   { icon: isBus ? '🚌' : '🚆', color: gColor, bg: gBg, label: isBus ? t.busLeg : t.trainLeg, main: d.ground.company, sub: `${d.ground.dep}→${d.ground.arr}${d.ground.nextDay ? ' (+1)' : ''}` } :
-  { icon: '✈', color: 'var(--blue)', bg: 'var(--blue-s)', label: t.flightLeg, main: d.flight.airline, sub: `${d.flight.dep}→${d.flight.arr} · ${d.flight.fromIata ?? ''}` };
+  { icon: '✈', color: 'var(--blue)', bg: 'var(--blue-s)', label: t.flightLeg, main: flightAirline, sub: `${flightFirstDep}→${flightLastArr} · ${d.flight.fromIata ?? d.via}${stopsSuffix}` };
 
   const header =
   <>
@@ -835,7 +1046,7 @@ function ComboCard({ d, currency, mode, lang }) {
       <div className="combo-total"><div className="combo-total-price">{fmt(d.total)}</div><div className="combo-total-sub">{t.total}</div></div>
     </>;
 
-  return <CardDetailShell header={header} mapRoute={{ segments: mapSegs }} lang={lang} journey={journey} detailSegs={detailSegs} total={d.total} currency={currency} />;
+  return <CardDetailShell header={header} mapRoute={{ segments: mapSegs }} lang={lang} journey={journey} detailSegs={detailSegs} total={d.total} currency={currency} flightPackage={flightPackage} />;
 }
 
 // ── Ground card ───────────────────────────────────────────────────────────────
@@ -897,6 +1108,426 @@ function CityInput({ label, value, onChange, onAirportSelect, selectedAirport, l
 
 }
 
+// ── HUB CARD HELPERS ─────────────────────────────────────────────────────────
+// Connection thresholds (minutes). Backend's 2h rule lives only in min_total_price.
+// Frontend pill is a visual signal: green ≥ 90min, yellow 45–89min, red < 45min.
+const CONN_GREEN_MIN = 90;
+const CONN_RED_MIN = 45;
+
+function parseISO(s) {
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function fmtConnMinutes(mins) {
+  if (mins == null) return '—';
+  const sign = mins < 0 ? '-' : '';
+  const abs = Math.abs(mins);
+  const h = Math.floor(abs / 60), m = abs % 60;
+  return sign + (h > 0 ? `${h}s ${String(m).padStart(2, '0')}dk` : `${m}dk`);
+}
+
+function calcConnection(bus, flight, mode) {
+  // mode='bus_plus_flight': bus arrives, then flight departs
+  // mode='flight_plus_bus': flight arrives, then bus departs
+  if (!bus || !flight) return { minutes: null, level: 'red', valid: false };
+  const fromISO = mode === 'bus_plus_flight' ? bus.arrISO : flight.arrISO;
+  const toISO = mode === 'bus_plus_flight' ? flight.depISO : bus.depISO;
+  const a = parseISO(fromISO), b = parseISO(toISO);
+  if (!a || !b) return { minutes: null, level: 'red', valid: false };
+  const minutes = Math.round((b.getTime() - a.getTime()) / 60000);
+  let level = 'red';
+  if (minutes < 0) level = 'red';
+  else if (minutes >= CONN_GREEN_MIN) level = 'green';
+  else if (minutes >= CONN_RED_MIN) level = 'yellow';
+  return { minutes, level, valid: minutes >= 0 };
+}
+
+function pickCheapest(buses, flights, mode) {
+  let best = null;
+  for (const b of buses) for (const f of flights) {
+    if (b.price == null || f.price == null) continue;
+    const c = calcConnection(b, f, mode);
+    if (c.level === 'red') continue;
+    const total = b.price + f.price;
+    if (!best || total < best.total) best = { busId: b.id, flightId: f.id, total, conn: c };
+  }
+  return best;
+}
+
+function pickFastest(buses, flights, mode) {
+  let best = null;
+  for (const b of buses) for (const f of flights) {
+    const c = calcConnection(b, f, mode);
+    if (!c.valid) continue;
+    const bd = b.durationMin ?? 0, fd = f.durationMin ?? 0;
+    const total = bd + (c.minutes ?? 0) + fd;
+    if (!best || total < best.total) best = { busId: b.id, flightId: f.id, total, conn: c };
+  }
+  return best;
+}
+
+function hourFromISO(iso) {
+  const d = parseISO(iso);
+  return d ? d.getHours() : null;
+}
+
+function pickEarliest(buses, flights, mode) {
+  // Earliest "first leg" departure between 05:00 and 11:59, paired with first valid second leg.
+  const firstPool = mode === 'bus_plus_flight' ? buses : flights;
+  const secondPool = mode === 'bus_plus_flight' ? flights : buses;
+  const sortedFirst = [...firstPool].sort((a, b) => {
+    const ha = parseISO(a.depISO)?.getTime() ?? Infinity;
+    const hb = parseISO(b.depISO)?.getTime() ?? Infinity;
+    return ha - hb;
+  });
+  for (const first of sortedFirst) {
+    const h = hourFromISO(first.depISO);
+    if (h == null || h < 5 || h >= 12) continue;
+    for (const second of secondPool) {
+      const [bus, flight] = mode === 'bus_plus_flight' ? [first, second] : [second, first];
+      const c = calcConnection(bus, flight, mode);
+      if (c.level === 'red') continue;
+      return { busId: bus.id, flightId: flight.id, conn: c };
+    }
+  }
+  return null;
+}
+
+// ── HUB ROW (one bus or flight option in the matrix) ─────────────────────────
+function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang }) {
+  const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
+  const time = opt.dep && opt.arr ? `${opt.dep}→${opt.arr}` : (opt.dep || '—');
+  const meta = kind === 'bus' ?
+    `${opt.duration || ''} · ${opt.company || 'FlixBus'}` :
+    `${opt.duration || ''} · ${opt.airline || ''}${opt.flightNo ? ' ' + opt.flightNo : ''}${(opt.stops ?? 0) > 0 ? ` · ${opt.stops} ${T[lang].transfer}` : ''}`;
+  return (
+    <div className={`hub-row${selected ? ' selected' : ''}`} onClick={onSelect}>
+      <div className="hub-row-radio" />
+      <div className="hub-row-body">
+        <div className="hub-row-line1">
+          <span className="hub-row-time">{time}</span>
+          {opt.nextDay && <span className="hub-row-tag next">+1</span>}
+          {kind === 'flight' && opt.flightType === 'Best' && <span className="hub-row-tag best">{T[lang].bestFlight.split(' ')[0]}</span>}
+        </div>
+        <div className="hub-row-line2">
+          <span>{meta}</span>
+          {badges?.cheap && <span className="hub-row-tag cheap">{T[lang].cheapestBadge}</span>}
+          {badges?.fast && <span className="hub-row-tag fast">{T[lang].fastestBadge}</span>}
+          {badges?.early && <span className="hub-row-tag early">{T[lang].earliestBadge}</span>}
+        </div>
+      </div>
+      <div className="hub-row-price">{opt.price != null ? fmt(opt.price) : '—'}</div>
+    </div>);
+}
+
+// ── HUB MASTER CARD ──────────────────────────────────────────────────────────
+function HubMasterCard({ hubData, currency, lang }) {
+  const t = T[lang];
+  const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
+  const mode = hubData.mode;
+  const { busOptions, flightOptions, hub } = hubData;
+
+  // Heuristic picks (mock AI). Memo would be nice but recomputing is cheap.
+  const cheapestPick = pickCheapest(busOptions, flightOptions, mode);
+  const fastestPick = pickFastest(busOptions, flightOptions, mode);
+  const earliestPick = pickEarliest(busOptions, flightOptions, mode);
+
+  const initial = cheapestPick || (busOptions[0] && flightOptions[0]
+    ? { busId: busOptions[0].id, flightId: flightOptions[0].id }
+    : { busId: null, flightId: null });
+  const [sel, setSel] = useState(initial);
+  const [aiActive, setAiActive] = useState('cheapest');
+  const [showDetails, setShowDetails] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+
+  // Reset selection when a new search lands (hubData identity changes).
+  useEffect(() => {
+    const fresh = pickCheapest(busOptions, flightOptions, mode);
+    if (fresh) {
+      setSel({ busId: fresh.busId, flightId: fresh.flightId });
+      setAiActive('cheapest');
+    } else if (busOptions[0] && flightOptions[0]) {
+      setSel({ busId: busOptions[0].id, flightId: flightOptions[0].id });
+      setAiActive(null);
+    }
+  }, [hubData]);
+
+  const selBus = busOptions.find((b) => b.id === sel.busId) || null;
+  const selFlight = flightOptions.find((f) => f.id === sel.flightId) || null;
+  const conn = (selBus && selFlight) ? calcConnection(selBus, selFlight, mode) : null;
+  const total = (selBus?.price ?? 0) + (selFlight?.price ?? 0);
+
+  const applyPick = (pick, key) => {
+    if (!pick) return;
+    setSel({ busId: pick.busId, flightId: pick.flightId });
+    setAiActive(key);
+  };
+  const onPickBus = (id) => { setSel((s) => ({ ...s, busId: id })); setAiActive(null); };
+  const onPickFlight = (id) => { setSel((s) => ({ ...s, flightId: id })); setAiActive(null); };
+
+  // Per-row badge map (which option belongs to a heuristic pick)
+  const badgesFor = (kind, id) => ({
+    cheap: cheapestPick && cheapestPick[kind === 'bus' ? 'busId' : 'flightId'] === id,
+    fast: fastestPick && fastestPick[kind === 'bus' ? 'busId' : 'flightId'] === id,
+    early: earliestPick && earliestPick[kind === 'bus' ? 'busId' : 'flightId'] === id,
+  });
+
+  const noPairing = hubData.minTotal == null;
+
+  // Build journey + detail segs from the current selection (reuses existing primitives)
+  const journey = (selBus && selFlight) ? buildHubJourney(hubData, selBus, selFlight, lang) : null;
+  const detailSegs = (selBus && selFlight) ? buildHubDetailSegs(hubData, selBus, selFlight) : null;
+  const flightPackage = selFlight && Array.isArray(selFlight.legs) && selFlight.legs.length > 1 ?
+    { price: selFlight.price, legCount: selFlight.legs.length, airline: selFlight.airline } : null;
+  const mapRoute = (selBus && selFlight) ? { segments: buildHubMapSegs(hubData, selBus, selFlight) } : null;
+
+  const busColTitle = (
+    <div className="hub-col-title">
+      <span className="hub-col-icon">🚌</span>{t.chooseBusLabel}
+    </div>);
+  const flightColTitle = (
+    <div className="hub-col-title">
+      <span className="hub-col-icon">✈</span>{t.chooseFlightLabel}
+    </div>);
+
+  const busCol = (
+    <div className="hub-col">
+      {busColTitle}
+      {busOptions.map((b) => (
+        <HubOptionRow key={b.id} kind="bus" opt={b}
+          selected={b.id === sel.busId}
+          onSelect={() => onPickBus(b.id)}
+          badges={badgesFor('bus', b.id)}
+          currency={currency} lang={lang} />
+      ))}
+    </div>);
+  const flightCol = (
+    <div className="hub-col">
+      {flightColTitle}
+      {flightOptions.map((f) => (
+        <HubOptionRow key={f.id} kind="flight" opt={f}
+          selected={f.id === sel.flightId}
+          onSelect={() => onPickFlight(f.id)}
+          badges={badgesFor('flight', f.id)}
+          currency={currency} lang={lang} />
+      ))}
+    </div>);
+
+  return (
+    <div className={`hub-card${noPairing ? ' no-pairing' : ''}`}>
+      <div className="hub-card-head">
+        <div className="hub-iata-badge">{hub.iata}</div>
+        <div className="hub-head-info">
+          <div className="hub-head-title">{hub.city} {t.hubViaTitle}</div>
+          <div className="hub-head-sub">
+            {hub.distanceKm != null ? `${Math.round(hub.distanceKm)} km ${t.hubDistance}` : ''}
+            {' · '}{busOptions.length} {t.hubBusOptions} · {flightOptions.length} {t.hubFlightOptions}
+          </div>
+        </div>
+        <div className="hub-head-min">
+          <div className="hub-head-min-label">{t.hubMinFromLabel}</div>
+          <div className="hub-head-min-price">{hubData.minTotal != null ? fmt(hubData.minTotal) : '—'}</div>
+          {noPairing && <div className="hub-head-min-warn">⚠ &lt;2h</div>}
+        </div>
+      </div>
+
+      {noPairing && <div className="hub-no-pairing-banner">⚠ {t.noValidPairing}</div>}
+
+      <div className="ai-bar">
+        <span className="ai-bar-label">{t.aiSuggestLabel}</span>
+        <button className={`ai-chip${aiActive === 'cheapest' ? ' active' : ''}`}
+          onClick={() => applyPick(cheapestPick, 'cheapest')} disabled={!cheapestPick}>
+          {t.aiCheapest}
+        </button>
+        <button className={`ai-chip${aiActive === 'fastest' ? ' active' : ''}`}
+          onClick={() => applyPick(fastestPick, 'fastest')} disabled={!fastestPick}>
+          {t.aiFastest}
+        </button>
+        <button className={`ai-chip${aiActive === 'earliest' ? ' active' : ''}`}
+          onClick={() => applyPick(earliestPick, 'earliest')} disabled={!earliestPick}>
+          {t.aiMorning}
+        </button>
+      </div>
+
+      <div className="hub-grid">
+        {mode === 'bus_plus_flight' ? <>{busCol}{flightCol}</> : <>{flightCol}{busCol}</>}
+      </div>
+
+      {conn && (
+        <div className="connection-row">
+          <span className={`connection-pill ${conn.level}`}>
+            <span className="conn-dot">{conn.level === 'green' ? '🟢' : conn.level === 'yellow' ? '🟡' : '🔴'}</span>
+            <span>{t.connectionLabel}:</span>
+            <span className="conn-time">{fmtConnMinutes(conn.minutes)}</span>
+            <span className="conn-status">· {conn.level === 'green' ? t.connectionGreen : conn.level === 'yellow' ? t.connectionYellow : (conn.valid ? t.connectionRed : t.connectionInvalid)}</span>
+          </span>
+        </div>
+      )}
+
+      <div className="summary-footer">
+        <div className="summary-left">
+          <div className="summary-label">{t.summarySelected}</div>
+          <div className="summary-timeline">
+            {mode === 'bus_plus_flight' ? (
+              <>
+                <span className="st-mode">🚌 {selBus?.dep || '—'}</span>
+                <span className="st-arrow">→</span>
+                <span>{hub.iata}</span>
+                <span className="st-arrow">→</span>
+                <span className="st-mode">✈ {selFlight?.dep || '—'} · {selFlight?.airline || ''}</span>
+              </>
+            ) : (
+              <>
+                <span className="st-mode">✈ {selFlight?.dep || '—'} · {selFlight?.airline || ''}</span>
+                <span className="st-arrow">→</span>
+                <span>{hub.iata}</span>
+                <span className="st-arrow">→</span>
+                <span className="st-mode">🚌 {selBus?.dep || '—'}</span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="summary-total">
+          <div className="summary-total-label">{t.summaryTotal}</div>
+          <div className="summary-total-price">{(selBus && selFlight) ? fmt(total) : '—'}</div>
+        </div>
+        <div className="summary-actions">
+          <button className="summary-btn primary"
+            disabled={!selBus || !selFlight || (conn && conn.level === 'red')}
+            onClick={() => alert(`${t.selectTripBtn}: ${hub.iata} — ${fmt(total)}`)}>
+            ✓ {t.selectTripBtn}
+          </button>
+          <button className={`summary-btn${showDetails ? ' active' : ''}`}
+            onClick={() => setShowDetails((p) => !p)}
+            disabled={!selBus || !selFlight}>
+            ▾ {t.viewDetailsBtn}
+          </button>
+          <button className={`summary-btn${showMap ? ' active' : ''}`}
+            onClick={() => setShowMap((p) => !p)}
+            disabled={!selBus || !selFlight}>
+            🗺 {t.showOnMapBtn}
+          </button>
+        </div>
+      </div>
+
+      {showDetails && journey && detailSegs && (
+        <div className="detail-panel">
+          <JourneyDiagram nodes={journey.nodes} segs={journey.segs} lang={lang} />
+          <DetailGrid segs={detailSegs} currency={currency} lang={lang} flightPackage={flightPackage} />
+        </div>
+      )}
+      {showMap && mapRoute && (
+        <InlineMap route={mapRoute} onClose={() => setShowMap(false)} lang={lang} />
+      )}
+    </div>);
+}
+
+// Build a Journey + DetailSegs + Map shape from the user's current pick.
+function buildHubJourney(hubData, bus, flight, lang) {
+  const mode = hubData.mode;
+  const hub = hubData.hub;
+  const flightLegs = Array.isArray(flight.legs) && flight.legs.length > 0 ? flight.legs : [{
+    dep: flight.dep, arr: flight.arr,
+    from: flight.fromIata, to: flight.toIata,
+    fromName: '', toName: '',
+    duration: flight.duration, flightNo: flight.flightNo, airline: flight.airline,
+  }];
+  const flightFirstDep = flightLegs[0].dep;
+  const flightLastArr = flightLegs[flightLegs.length - 1].arr;
+  const flightFirstFrom = flightLegs[0].from;
+  const flightLastTo = flightLegs[flightLegs.length - 1].to;
+  const layoverNodes = flightLegs.slice(1).map((l, i) => {
+    const lay = (flight.layovers || [])[i] || {};
+    return {
+      iata: l.from,
+      name: lay.city || CITY_NAMES[l.from] || l.from,
+      arr: flightLegs[i].arr,
+      dep: l.dep,
+      layover: lay.duration || calcLayover({ arr: flightLegs[i].arr }, { dep: l.dep })
+    };
+  });
+  const flightSegs = flightLegs.map((l) => ({
+    type: 'flight', duration: l.duration,
+    carrier: l.airline || flight.airline, ref: l.flightNo
+  }));
+  const groundSeg = { type: 'bus', duration: bus.duration, carrier: bus.company || 'FlixBus' };
+
+  let nodes, segs;
+  if (mode === 'bus_plus_flight') {
+    // depCity (bus dep) → hub (bus arr / flight dep) → [layovers] → arrIata (flight arr)
+    const viaLayover = calcLayover({ arr: bus.arr }, { dep: flightFirstDep });
+    nodes = [
+      { iata: hubData.depIata, name: bus.from, dep: bus.dep },
+      { iata: flightFirstFrom, name: hub.city, arr: bus.arr, dep: flightFirstDep, layover: viaLayover },
+      ...layoverNodes,
+      { iata: flightLastTo, arr: flightLastArr },
+    ];
+    segs = [groundSeg, ...flightSegs];
+  } else {
+    // flight_plus_bus: depIata (flight dep) → [layovers] → hub (flight arr / bus dep) → arrCity (bus arr)
+    const viaLayover = calcLayover({ arr: flightLastArr }, { dep: bus.dep });
+    nodes = [
+      { iata: flightFirstFrom, dep: flightFirstDep },
+      ...layoverNodes,
+      { iata: flightLastTo, name: hub.city, arr: flightLastArr, dep: bus.dep, layover: viaLayover },
+      { iata: hubData.arrIata, name: bus.to, arr: bus.arr, arrNextDay: !!bus.nextDay },
+    ];
+    segs = [...flightSegs, groundSeg];
+  }
+  return { nodes, segs };
+}
+
+function buildHubDetailSegs(hubData, bus, flight) {
+  const mode = hubData.mode;
+  const flightLegs = Array.isArray(flight.legs) && flight.legs.length > 0 ? flight.legs : [{
+    dep: flight.dep, arr: flight.arr,
+    from: flight.fromIata, to: flight.toIata,
+    fromName: '', toName: '',
+    duration: flight.duration, flightNo: flight.flightNo, airline: flight.airline,
+  }];
+  const flightFirstFrom = flightLegs[0].from;
+  const flightLastTo = flightLegs[flightLegs.length - 1].to;
+  const flightDetail = flightLegs.map((l, i) => ({
+    type: 'flight',
+    from: l.from, to: l.to,
+    fromName: l.fromName || CITY_NAMES[l.from] || l.from,
+    toName: l.toName || CITY_NAMES[l.to] || l.to,
+    carrier: l.airline || flight.airline,
+    ref: l.flightNo,
+    dep: l.dep, arr: l.arr, duration: l.duration,
+    price: i === 0 ? flight.price : null,
+    buyUrl: flight.link || `https://www.google.com/travel/flights?q=${flightFirstFrom}+to+${flightLastTo}`,
+  }));
+  const groundDetail = {
+    type: 'bus', from: bus.from, to: bus.to,
+    fromName: bus.from, toName: bus.to,
+    carrier: bus.company || 'FlixBus', ref: '',
+    dep: bus.dep, arr: bus.arr, nextDay: bus.nextDay,
+    duration: bus.duration, price: bus.price,
+    buyUrl: bus.url || 'https://www.flixbus.com',
+  };
+  return mode === 'bus_plus_flight' ? [groundDetail, ...flightDetail] : [...flightDetail, groundDetail];
+}
+
+function buildHubMapSegs(hubData, bus, flight) {
+  const mode = hubData.mode;
+  const flightLegs = Array.isArray(flight.legs) && flight.legs.length > 0 ? flight.legs : [{
+    from: flight.fromIata, to: flight.toIata,
+    duration: flight.duration, airline: flight.airline,
+  }];
+  const flightSegs = flightLegs.map((l) => ({
+    from: l.from, to: l.to, type: 'flight',
+    carrier: l.airline || flight.airline, duration: l.duration,
+  }));
+  const hubIata = hubData.hub.iata;
+  const groundSeg = mode === 'bus_plus_flight' ?
+    { from: hubData.depIata, to: hubIata, type: 'bus', carrier: bus.company || 'FlixBus', duration: bus.duration } :
+    { from: hubIata, to: hubData.arrIata, type: 'bus', carrier: bus.company || 'FlixBus', duration: bus.duration };
+  return mode === 'bus_plus_flight' ? [groundSeg, ...flightSegs] : [...flightSegs, groundSeg];
+}
+
 // ── Section content ───────────────────────────────────────────────────────────
 function SectionContent({ secIdx, data, currency, lang }) {
   const t = T[lang];
@@ -908,8 +1539,11 @@ function SectionContent({ secIdx, data, currency, lang }) {
       <FlightCard key={i} d={d} currency={currency} lang={lang} />
       )}</div>;
   }
-  if (secIdx === 2) return <div className="cards-list">{data.map((d, i) => <ComboCard key={i} d={d} currency={currency} mode="flightFirst" lang={lang} />)}</div>;
-  if (secIdx === 3) return <div className="cards-list">{data.map((d, i) => <ComboCard key={i} d={d} currency={currency} mode="groundFirst" lang={lang} />)}</div>;
+  if (secIdx === 2 || secIdx === 3) {
+    return <div className="cards-list">{data.map((h, i) =>
+      <HubMasterCard key={`${h.hub?.iata || i}-${i}`} hubData={h} currency={currency} lang={lang} />
+    )}</div>;
+  }
   if (secIdx === 4) return <div className="cards-list">{data.map((d, i) => <GroundCard key={i} d={d} currency={currency} lang={lang} />)}</div>;
 }
 
@@ -925,6 +1559,7 @@ function App() {
   const [date, setDate] = useState('2026-05-05');
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingCards, setLoadingCards] = useState({ flights: false, flightBus: false, busFlight: false });
   const [activeSec, setActiveSec] = useState(0);
   const t = T[lang];
 
@@ -934,10 +1569,82 @@ function App() {
 
   function swap() {setFrom(to);setTo(from);setFromAp(toAp);setToAp(fromAp);}
 
-  function doSearch() {
+  function mergeAirports(data) {
+    if (!data || !data.airports) return;
+    for (const [iata, info] of Object.entries(data.airports)) {
+      if (info && typeof info.lat === 'number' && typeof info.lon === 'number') {
+        LATLNG[iata] = [info.lat, info.lon];
+      }
+      if (info && info.city && !CITY_NAMES[iata]) {
+        CITY_NAMES[iata] = info.city;
+      }
+    }
+  }
+
+  async function fetchPart(url, body) {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: 'HTTP ' + resp.status }));
+      throw new Error(err.error || 'HTTP ' + resp.status);
+    }
+    return resp.json();
+  }
+
+  async function doSearch() {
     if (!from || !to) return;
-    setLoading(true);setResults(null);
-    setTimeout(() => {setResults(MOCK);setLoading(false);setActiveSec(0);}, 1500);
+    const body = { from_city: from, to_city: to, date, from_iata: fromAp, to_iata: toAp };
+
+    setLoading(true);
+    setLoadingCards({ flights: true, flightBus: true, busFlight: true });
+    setResults({
+      bestFlights: [],
+      cheapFlights: [],
+      flightPlusBus: [],
+      busPlusFlight: [],
+      busOrTrain: MOCK.busOrTrain,
+    });
+    setActiveSec(0);
+
+    const flightsTask = fetchPart('/api/flights', body)
+      .then((data) => {
+        mergeAirports(data);
+        setResults((prev) => ({
+          ...(prev || {}),
+          bestFlights: data.bestFlights ?? [],
+          cheapFlights: data.cheapFlights ?? [],
+        }));
+      })
+      .catch((err) => console.error('/api/flights failed:', err))
+      .finally(() => setLoadingCards((prev) => ({ ...prev, flights: false })));
+
+    const flightBusTask = fetchPart('/api/flight-plus-bus', body)
+      .then((data) => {
+        mergeAirports(data);
+        setResults((prev) => ({
+          ...(prev || {}),
+          flightPlusBus: data.flightPlusBus ?? [],
+        }));
+      })
+      .catch((err) => console.error('/api/flight-plus-bus failed:', err))
+      .finally(() => setLoadingCards((prev) => ({ ...prev, flightBus: false })));
+
+    const busFlightTask = fetchPart('/api/bus-plus-flight', body)
+      .then((data) => {
+        mergeAirports(data);
+        setResults((prev) => ({
+          ...(prev || {}),
+          busPlusFlight: data.busPlusFlight ?? [],
+        }));
+      })
+      .catch((err) => console.error('/api/bus-plus-flight failed:', err))
+      .finally(() => setLoadingCards((prev) => ({ ...prev, busFlight: false })));
+
+    await Promise.all([flightsTask, flightBusTask, busFlightTask]);
+    setLoading(false);
   }
 
   function updateTweak(key, val) {
@@ -947,12 +1654,18 @@ function App() {
   const cur = tweaks.currency || 'EUR';
   const fmt = (n) => cur === "USD" ? `$${n}` : `€${n}`;
 
+  const minPriceOf = (arr, key) => {
+    if (!arr || !arr.length) return null;
+    const prices = arr.map((d) => d[key]).filter((p) => typeof p === 'number' && isFinite(p));
+    return prices.length ? Math.min(...prices) : null;
+  };
+
   const CATS = [
-  { icon: '✈️', label: t.bestFlight, sub: t.bestFlightSub, color: '#2563EB', data: results?.bestFlights, minPrice: results ? Math.min(...results.bestFlights.map((d) => d.price)) : null },
-  { icon: '💶', label: t.cheapFlight, sub: t.cheapFlightSub, color: '#16A34A', data: results?.cheapFlights, minPrice: results ? Math.min(...results.cheapFlights.map((d) => d.price)) : null },
-  { icon: '✈🚌', label: t.flightBus, sub: t.flightBusSub, color: '#7C3AED', data: results?.flightPlusBus, minPrice: results ? Math.min(...results.flightPlusBus.map((d) => d.total)) : null },
-  { icon: '🚌✈', label: t.busFlight, sub: t.busFlightSub, color: '#0891B2', data: results?.busPlusFlight, minPrice: results ? Math.min(...results.busPlusFlight.map((d) => d.total)) : null },
-  { icon: '🚌', label: t.busOnly, sub: t.busOnlySub, color: '#475569', data: results?.busOrTrain, minPrice: results ? Math.min(...results.busOrTrain.map((d) => d.price)) : null }];
+  { icon: '✈️', label: t.bestFlight, sub: t.bestFlightSub, color: '#2563EB', data: results?.bestFlights, minPrice: minPriceOf(results?.bestFlights, 'price'), loading: loadingCards.flights },
+  { icon: '💶', label: t.cheapFlight, sub: t.cheapFlightSub, color: '#16A34A', data: results?.cheapFlights, minPrice: minPriceOf(results?.cheapFlights, 'price'), loading: loadingCards.flights },
+  { icon: '✈🚌', label: t.flightBus, sub: t.flightBusSub, color: '#7C3AED', data: results?.flightPlusBus, minPrice: minPriceOf(results?.flightPlusBus, 'minTotal'), loading: loadingCards.flightBus },
+  { icon: '🚌✈', label: t.busFlight, sub: t.busFlightSub, color: '#0891B2', data: results?.busPlusFlight, minPrice: minPriceOf(results?.busPlusFlight, 'minTotal'), loading: loadingCards.busFlight },
+  { icon: '🚌', label: t.busOnly, sub: t.busOnlySub, color: '#475569', data: results?.busOrTrain, minPrice: minPriceOf(results?.busOrTrain, 'price'), loading: false }];
 
 
   return (
@@ -999,18 +1712,9 @@ function App() {
       </section>
 
       <main className="results">
-        {loading &&
+        {results &&
         <>
-            <div className="loading-bar" />
-            <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
-              {[0, 1, 2, 3, 4].map((i) => <div key={i} className="sk" style={{ flex: 1, height: 110, borderRadius: 14 }} />)}
-            </div>
-            <div className="sk" style={{ height: 200, borderRadius: 12 }} />
-          </>
-        }
-
-        {results && !loading &&
-        <>
+            {loading && <div className="loading-bar" />}
             <div className="res-info"><b>Venice (VCE)</b> → <b>Nürnberg (NUE)</b> · {date}</div>
             {/* CATEGORY BAR */}
             <div className="cat-bar">
@@ -1018,7 +1722,9 @@ function App() {
             <div key={i} className={`cat-pill${activeSec === i ? ' active' : ''}`} onClick={() => setActiveSec(i)}>
                   <span className="cat-pill-icon">{c.icon}</span>
                   <span className="cat-pill-label">{c.label}</span>
-                  <span className="cat-pill-price">{c.minPrice ? fmt(c.minPrice) : '—'}</span>
+                  <span className="cat-pill-price">
+                    {c.loading ? <span className="cat-pill-spinner" /> : (c.minPrice != null ? fmt(c.minPrice) : '—')}
+                  </span>
                   <span className="cat-pill-sub">{c.sub}</span>
                   {activeSec === i && <div className="cat-active-bar" />}
                 </div>
@@ -1026,12 +1732,15 @@ function App() {
             </div>
             {/* ACTIVE SECTION */}
             <div className="sec-body">
-              <SectionContent secIdx={activeSec} data={CATS[activeSec].data} currency={cur} lang={lang} />
+              {CATS[activeSec].loading && (!CATS[activeSec].data || CATS[activeSec].data.length === 0) ?
+                <div className="sk" style={{ height: 200, borderRadius: 12 }} /> :
+                <SectionContent secIdx={activeSec} data={CATS[activeSec].data} currency={cur} lang={lang} />
+              }
             </div>
           </>
         }
 
-        {!results && !loading &&
+        {!results &&
         <div className="empty-state">
             <div className="empty-icon">✈</div>
             <div className="empty-title">{lang === 'tr' ? 'Seyahatini ara' : 'Search your journey'}</div>

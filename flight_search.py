@@ -31,20 +31,48 @@ def flight_search(departure_id: str, arrival_id: str, outbound_date: str):
         rows = []
 
         def extract_flight(flight_data, flight_type: str):
-            # Safely handle possible multi-leg flights
-            leg = flight_data["flights"][0] if flight_data.get("flights") else {}
+            flights = flight_data.get("flights", []) or []
+            first = flights[0] if flights else {}
+            last = flights[-1] if flights else {}
+            legs = [
+                {
+                    "airline": f.get("airline", ""),
+                    "flight_number": f.get("flight_number", ""),
+                    "dep": f.get("departure_airport", {}).get("time", ""),
+                    "arr": f.get("arrival_airport", {}).get("time", ""),
+                    "from": f.get("departure_airport", {}).get("id", ""),
+                    "to": f.get("arrival_airport", {}).get("id", ""),
+                    "from_name": f.get("departure_airport", {}).get("name", ""),
+                    "to_name": f.get("arrival_airport", {}).get("name", ""),
+                    "duration": f.get("duration", 0),
+                }
+                for f in flights
+            ]
+            layovers = [
+                {
+                    "duration": lay.get("duration", 0),
+                    "airport": lay.get("id", ""),
+                    "name": lay.get("name", ""),
+                }
+                for lay in (flight_data.get("layovers") or [])
+            ]
+            stops = flight_data.get("stops")
+            if stops is None:
+                stops = max(0, len(flights) - 1)
             return {
                 "flight_type": flight_type,
-                "airline": leg.get("airline", "Unknown"),
+                "airline": first.get("airline", "Unknown"),
                 "price": flight_data.get("price"),
-                "departure_time": leg.get("departure_airport", {}).get("time"),
-                "departure_iata": leg.get("departure_airport", {}).get("id"),
-                "arrival_time": leg.get("arrival_airport", {}).get("time"),
-                "arrival_iata": leg.get("arrival_airport", {}).get("id"),
+                "departure_time": first.get("departure_airport", {}).get("time"),
+                "departure_iata": first.get("departure_airport", {}).get("id"),
+                "arrival_time": last.get("arrival_airport", {}).get("time"),
+                "arrival_iata": last.get("arrival_airport", {}).get("id"),
                 "duration": flight_data.get("total_duration"),
-                "stops": flight_data.get("stops", 0),                    # new
-                "flight_number": leg.get("flight_number", ""),           # new
-                "link": flight_data.get("link"),                         # booking link if present
+                "stops": stops,
+                "flight_number": first.get("flight_number", ""),
+                "link": flight_data.get("link"),
+                "legs": legs,
+                "layovers": layovers,
             }
 
         # Best flights
@@ -59,10 +87,10 @@ def flight_search(departure_id: str, arrival_id: str, outbound_date: str):
 
         if df.empty:
             print(f"⚠️  No flights found from {departure_id} to {arrival_id}")
-        else:
-            print(f"✅ Flight search DONE: {len(df)} flights found "
-                  f"({len(df[df['flight_type']=='Best'])} best)")
+            return df
 
+        print(f"✅ Flight search DONE: {len(df)} flights found "
+              f"({len(df[df['flight_type']=='Best'])} best)")
         return df.sort_values("price").reset_index(drop=True)
 
     except Exception as e:
