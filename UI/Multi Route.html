@@ -385,6 +385,64 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 
 .hub-no-pairing-banner{padding:10px 18px;background:var(--red-s);color:var(--red);font-size:12px;font-weight:600;border-bottom:1.5px solid var(--brd);text-align:center}
 [data-theme="dark"] .hub-no-pairing-banner{background:#2A0F0F}
+
+/* ── SMART PICKS BAR (replaces ai-bar chips) ──────────────────────────────── */
+.hub-smart-bar{padding:12px 18px;border-bottom:1.5px solid var(--brd);background:var(--bg)}
+.hub-smart-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--or-d),var(--or));color:#fff;border:0;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s;font-family:var(--f)}
+.hub-smart-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(244,97,30,.35)}
+.hub-smart-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.hub-smart-btn small{font-size:10px;opacity:.85;font-weight:500}
+.hub-smart-loading{padding:11px 14px;background:var(--or-s);border:1px dashed var(--or);border-radius:10px;color:var(--or-d);font-size:13px;font-weight:600;text-align:center}
+.hub-smart-row{position:relative;background:linear-gradient(135deg,var(--or-s),var(--or-ss));border:1px solid var(--or);border-radius:12px;padding:12px}
+.hub-smart-title{font-size:11px;font-weight:700;color:var(--or-d);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.hub-smart-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hub-smart-card{text-align:left;background:var(--card-bg);border:1.5px solid var(--or);border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:4px;font-family:var(--f)}
+.hub-smart-card:hover{border-color:var(--or-d);transform:translateY(-2px);box-shadow:0 4px 10px rgba(244,97,30,.18)}
+.hub-smart-label{font-size:13px;font-weight:700;color:var(--text)}
+.hub-smart-reason{font-size:11px;color:var(--mid);line-height:1.35}
+.hub-smart-meta{font-size:11px;font-weight:700;color:var(--or-d);margin-top:auto;padding-top:4px}
+.hub-smart-clear{position:absolute;top:8px;right:8px;background:transparent;border:0;color:var(--lt);font-size:14px;cursor:pointer;padding:4px;line-height:1;border-radius:50%}
+.hub-smart-clear:hover{color:var(--text);background:var(--or-ss)}
+@media (max-width:900px){.hub-smart-cards{grid-template-columns:1fr}}
+
+/* Wait line under second-leg option rows */
+.hub-row-wait{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+.hub-row-wait-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+
+/* SEÇTİĞİN KOMBİNASYON summary panel (replaces summary-footer) */
+.hub-summary{padding:14px 18px;border-top:1.5px solid var(--brd);background:var(--card-bg)}
+.hub-summary-title{font-size:11px;font-weight:700;color:var(--or-d);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.hub-summary-timeline{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;margin-bottom:14px}
+.hubs-leg{background:var(--bg);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.hubs-leg-label{font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em}
+.hubs-leg-times{font-size:18px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.hubs-leg-meta{font-size:11px;color:var(--lt);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hubs-wait{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1.5px solid;min-width:200px;max-width:280px}
+.hubs-wait-icon{font-size:18px;flex-shrink:0}
+.hubs-wait-time{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.hubs-wait-label{font-size:11px;font-weight:600;line-height:1.2}
+.hubs-wait-desc{font-size:10px;font-weight:500;opacity:.85;line-height:1.2;margin-top:1px}
+.hub-summary-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hub-summary-stats{display:flex;gap:18px}
+.hub-summary-stats > div{display:flex;flex-direction:column;gap:1px}
+.hub-summary-stats small{font-size:10px;color:var(--lt);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.hub-summary-stats span{font-size:18px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.hub-summary-stats span.price{color:var(--or);font-size:22px}
+.hub-summary-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hub-buy-btn{font-size:12px;font-weight:700;padding:9px 13px;border-radius:8px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:transform .15s,box-shadow .15s;border:1.5px solid transparent;cursor:pointer;font-family:var(--f)}
+.hub-buy-btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.12)}
+.hub-buy-btn.flight{background:var(--or);color:#fff}
+.hub-buy-btn.bus{background:#1F2937;color:#fff}
+[data-theme="dark"] .hub-buy-btn.bus{background:#374151}
+.hub-buy-btn.map{background:var(--card-bg);color:var(--text);border-color:var(--brd)}
+.hub-buy-btn.map:hover{border-color:var(--or);color:var(--or)}
+@media (max-width:900px){.hub-summary-timeline{grid-template-columns:1fr}.hubs-wait{max-width:none}}
+
+/* Map hub wait badge */
+.map-hub-wait{font-weight:700;padding:3px 7px;border-radius:6px;font-size:11px;letter-spacing:.02em;border:1.5px solid;font-variant-numeric:tabular-nums;background:rgba(255,255,255,.95);box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.map-hub-hit{background:transparent;cursor:default}
+.leaflet-tooltip.map-hub-wait-tip{background:transparent;border:0;box-shadow:none;padding:0}
+.leaflet-tooltip.map-hub-wait-tip:before{display:none}
 </style>
 </head>
 <body>
@@ -425,7 +483,22 @@ const T = {
     noValidPairing: "Bu hub'da 2 saatlik bağlantıyla eşleşen sefer yok",
     summarySelected: "Seçili sefer", summaryTotal: "Toplam",
     showMoreOptions: "Daha fazla seçenek", showAllOptions: "Hepsini göster",
-    showFewer: "Daha az göster", optionDisabledHint: "Seçili sefere uygun değil"
+    showFewer: "Daha az göster", optionDisabledHint: "Seçili sefere uygun değil",
+    aiTopBtn: "✨ En iyi 3 kombinasyonu öner", aiTopBtnSmall: "(AI)",
+    aiTopLoading: "✨ Akıllı öneriler hazırlanıyor...",
+    aiSmartTitle: "✨ Akıllı Öneriler",
+    aiClearTitle: "Önerileri kapat",
+    summaryHeader: "Seçtiğin kombinasyon",
+    flightLegLabel: "Uçuş", busLegLabel: "Otobüs",
+    bookFlightBtn: "Bu uçuşu al", bookBusBtn: "Otobüsü al", mapShowBtn: "Haritada Gör", mapHideBtn: "Haritayı Gizle",
+    totalTripLabel: "Toplam yolculuk", totalPriceLabel: "Toplam fiyat",
+    waitWord: "bekleme", waitMissing: "—",
+    connComfort: "Rahat", connTight: "Sıkışık", connRisk: "Riskli", connLong: "Uzun",
+    connComfortDesc: "Bol zaman var", connTightDesc: "Yeterli ama dar", connRiskDesc: "Çok sıkı bağlantı", connLongDesc: "Hub'da bekleme uzun",
+    transferDescF2B: "havalimanından otobüs durağına geçiş",
+    transferDescB2F: "otobüs durağından havalimanına geçiş",
+    aiPickEmpty: "Lütfen önce iki bacak için de seçim yapın.",
+    aiError: "Akıllı öneri alınamadı, manuel seçim yapabilirsiniz."
   },
   en: { tagline: "Smart multi-modal travel search", from: "From", to: "To", date: "Departure",
     search: "Search", searching: "Searching...",
@@ -451,7 +524,22 @@ const T = {
     noValidPairing: "No pairing in this hub meets the 2h connection rule",
     summarySelected: "Selected trip", summaryTotal: "Total",
     showMoreOptions: "More options", showAllOptions: "Show all",
-    showFewer: "Show fewer", optionDisabledHint: "Doesn't fit the selected leg"
+    showFewer: "Show fewer", optionDisabledHint: "Doesn't fit the selected leg",
+    aiTopBtn: "✨ Suggest top 3 combos", aiTopBtnSmall: "(AI)",
+    aiTopLoading: "✨ Generating smart picks...",
+    aiSmartTitle: "✨ Smart Picks",
+    aiClearTitle: "Dismiss suggestions",
+    summaryHeader: "Your selection",
+    flightLegLabel: "Flight", busLegLabel: "Bus",
+    bookFlightBtn: "Book flight", bookBusBtn: "Book bus", mapShowBtn: "Show on map", mapHideBtn: "Hide map",
+    totalTripLabel: "Total trip", totalPriceLabel: "Total price",
+    waitWord: "wait", waitMissing: "—",
+    connComfort: "Comfortable", connTight: "Tight", connRisk: "Risky", connLong: "Long",
+    connComfortDesc: "Plenty of time", connTightDesc: "Enough but tight", connRiskDesc: "Very tight connection", connLongDesc: "Long wait at hub",
+    transferDescF2B: "airport to bus station",
+    transferDescB2F: "bus station to airport",
+    aiPickEmpty: "Please pick both legs first.",
+    aiError: "Could not generate picks. Please choose manually."
   }
 };
 
@@ -550,7 +638,9 @@ function arcLatLng(a, b, steps = 48) {
   return out;
 }
 
-function InlineMap({ route, onClose, lang }) {
+// `hubIata` + `hubWait` are optional. When present, the marker for that IATA
+// gets a permanent badge below the city tooltip showing layover time/colour.
+function InlineMap({ route, onClose, lang, hubIata, hubWait }) {
   const t = T[lang];
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -620,14 +710,43 @@ function InlineMap({ route, onClose, lang }) {
       if (!c) return;
       const isOrigin = route.segments[0].from === iata;
       const color = isOrigin ? '#F4611E' : '#2563EB';
+      const cityName = CITY_NAMES[iata] || iata;
+      // The visible pin + permanent city tooltip stays minimal so it never
+      // collides with neighbouring segment labels.
       L.circleMarker(c, {
         radius: 7, fillColor: '#fff', color, weight: 3, fillOpacity: 1
-      }).addTo(map).bindTooltip(CITY_NAMES[iata] || iata, {
+      }).addTo(map).bindTooltip(cityName, {
         permanent: true,
         direction: 'top',
         offset: [0, -8],
         className: 'map-city-label' + (isOrigin ? ' origin' : '')
       });
+      // Hub-only: stack a second, invisible hit-area marker on the same point
+      // and bind a NON-permanent tooltip with the layover badge. Leaflet only
+      // allows one tooltip per layer, so this two-marker trick is what lets us
+      // keep the city name always visible while showing the wait badge only
+      // on hover (avoids the overlap users were hitting in dense maps).
+      const isHub = hubIata && hubWait && hubWait.minutes != null && iata === hubIata;
+      if (isHub) {
+        const css = `color:${hubWait.color || '#5C4A3D'};border-color:${hubWait.color || '#E8DDD8'};background:${hubWait.bg || 'rgba(255,255,255,.95)'}`;
+        const html = `<span class="map-hub-wait" style="${css}">⏱ ${fmtConnMinutes(hubWait.minutes)} ${hubWait.label || ''}</span>`;
+        L.marker(c, {
+          icon: L.divIcon({
+            className: 'map-hub-hit',
+            html: '',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+          }),
+          interactive: true,
+          keyboard: false
+        }).addTo(map).bindTooltip(html, {
+          direction: 'bottom',
+          offset: [0, 14],
+          className: 'map-hub-wait-tip',
+          sticky: false,
+          opacity: 1
+        });
+      }
       bounds.push(c);
     });
 
@@ -1149,6 +1268,33 @@ function fmtConnMinutes(mins) {
   return sign + (h > 0 ? `${h}s ${String(m).padStart(2, '0')}dk` : `${m}dk`);
 }
 
+// Map a calcConnection level → palette + i18n labels for the new summary panel
+// and the per-row wait line. Uses CSS color tokens so themes propagate.
+function connStyleFor(level, t) {
+  switch (level) {
+    case 'green':  return { color: 'var(--green)',  bg: 'var(--green-s)',  label: t.connComfort, desc: t.connComfortDesc };
+    case 'yellow': return { color: 'var(--yellow)', bg: 'var(--yellow-s)', label: t.connTight,   desc: t.connTightDesc };
+    case 'gray':   return { color: 'var(--slate)',  bg: 'var(--slate-s)',  label: t.connLong,    desc: t.connLongDesc };
+    default:       return { color: 'var(--red)',    bg: 'var(--red-s)',    label: t.connRisk,    desc: t.connRiskDesc };
+  }
+}
+
+// Convert "2026-05-05" → "260505" for the Skyscanner URL shape.
+function ymdToYYMMDD(date) {
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
+  return date.slice(2, 4) + date.slice(5, 7) + date.slice(8, 10);
+}
+
+// Total trip duration (first leg dep → second leg arr) in minutes.
+function totalTripMin(selBus, selFlight, mode) {
+  if (!selBus || !selFlight) return null;
+  const startISO = mode === 'bus_plus_flight' ? selBus.depISO : selFlight.depISO;
+  const endISO   = mode === 'bus_plus_flight' ? selFlight.arrISO : selBus.arrISO;
+  const a = parseISO(startISO), b = parseISO(endISO);
+  if (!a || !b) return null;
+  return Math.round((b.getTime() - a.getTime()) / 60000);
+}
+
 function calcConnection(bus, flight, mode) {
   // mode='bus_plus_flight': bus arrives, then flight departs
   // mode='flight_plus_bus': flight arrives, then bus departs
@@ -1218,15 +1364,18 @@ function pickEarliest(buses, flights, mode) {
 }
 
 // ── HUB ROW (one bus or flight option in the matrix) ─────────────────────────
-function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang, disabled }) {
+// `waitInfo`: when this row is the second leg AND a first-leg pick exists, render
+// a colored "Xs Ydk bekleme" line below the carrier meta to expose the layover.
+function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang, disabled, waitInfo }) {
+  const t = T[lang];
   const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
   const time = opt.dep && opt.arr ? `${opt.dep}→${opt.arr}` : (opt.dep || '—');
   const meta = kind === 'bus' ?
     `${opt.duration || ''} · ${opt.company || 'FlixBus'}` :
-    `${opt.duration || ''} · ${opt.airline || ''}${opt.flightNo ? ' ' + opt.flightNo : ''}${(opt.stops ?? 0) > 0 ? ` · ${opt.stops} ${T[lang].transfer}` : ''}`;
+    `${opt.duration || ''} · ${opt.airline || ''}${opt.flightNo ? ' ' + opt.flightNo : ''}${(opt.stops ?? 0) > 0 ? ` · ${opt.stops} ${t.transfer}` : ''}`;
   const cls = `hub-row${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}`;
   const handleClick = disabled ? undefined : onSelect;
-  const title = disabled ? T[lang].optionDisabledHint : undefined;
+  const title = disabled ? t.optionDisabledHint : undefined;
   return (
     <div className={cls} onClick={handleClick} title={title}>
       <div className="hub-row-radio" />
@@ -1234,13 +1383,18 @@ function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang, d
         <div className="hub-row-line1">
           <span className="hub-row-time">{time}</span>
           {opt.nextDay && <span className="hub-row-tag next">+1</span>}
-          {kind === 'flight' && opt.flightType === 'Best' && <span className="hub-row-tag best">{T[lang].bestFlight.split(' ')[0]}</span>}
+          {kind === 'flight' && opt.flightType === 'Best' && <span className="hub-row-tag best">{t.bestFlight.split(' ')[0]}</span>}
         </div>
         <div className="hub-row-line2">
           <span>{meta}</span>
-          {badges?.cheap && <span className="hub-row-tag cheap">{T[lang].cheapestBadge}</span>}
-          {badges?.fast && <span className="hub-row-tag fast">{T[lang].fastestBadge}</span>}
-          {badges?.early && <span className="hub-row-tag early">{T[lang].earliestBadge}</span>}
+          {badges?.cheap && <span className="hub-row-tag cheap">{t.cheapestBadge}</span>}
+          {badges?.fast && <span className="hub-row-tag fast">{t.fastestBadge}</span>}
+          {waitInfo && waitInfo.minutes != null && (
+            <span className="hub-row-wait" style={{ color: waitInfo.color }}>
+              <span className="hub-row-wait-dot" style={{ background: waitInfo.color }} />
+              {fmtConnMinutes(waitInfo.minutes)} {t.waitWord}
+            </span>
+          )}
         </div>
       </div>
       <div className="hub-row-price">{opt.price != null ? fmt(opt.price) : '—'}</div>
@@ -1277,23 +1431,20 @@ function visibleOptions(sortedOpts, selectedId, limit, totalLen) {
 }
 
 // ── HUB MASTER CARD ──────────────────────────────────────────────────────────
-function HubMasterCard({ hubData, currency, lang, defaultExpanded = false }) {
+function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date }) {
   const t = T[lang];
   const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
   const mode = hubData.mode;
   const { busOptions, flightOptions, hub } = hubData;
 
-  // Heuristic picks (mock AI). Memo would be nice but recomputing is cheap.
+  // Heuristic picks (used for the in-row badges next to the price).
   const cheapestPick = pickCheapest(busOptions, flightOptions, mode);
   const fastestPick = pickFastest(busOptions, flightOptions, mode);
-  const earliestPick = pickEarliest(busOptions, flightOptions, mode);
 
   const initial = cheapestPick || (busOptions[0] && flightOptions[0]
     ? { busId: busOptions[0].id, flightId: flightOptions[0].id }
     : { busId: null, flightId: null });
   const [sel, setSel] = useState(initial);
-  const [aiActive, setAiActive] = useState('cheapest');
-  const [showDetails, setShowDetails] = useState(false);
   const [showMap, setShowMap] = useState(false);
   // 0=collapsed (5 options), 1=mid (+6 more), 2=all
   const [busStage, setBusStage] = useState(0);
@@ -1302,49 +1453,60 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false }) {
   // The top card in a section gets defaultExpanded=true so users don't open an
   // entirely shut accordion on first paint.
   const [expanded, setExpanded] = useState(defaultExpanded);
+  // Smart picks (AI top-3 button) — null = not requested, [] = no result
+  const [smart, setSmart] = useState(null);
+  const [smartLoading, setSmartLoading] = useState(false);
 
   // Reset selection when a new search lands (hubData identity changes).
   useEffect(() => {
     const fresh = pickCheapest(busOptions, flightOptions, mode);
     if (fresh) {
       setSel({ busId: fresh.busId, flightId: fresh.flightId });
-      setAiActive('cheapest');
     } else if (busOptions[0] && flightOptions[0]) {
       setSel({ busId: busOptions[0].id, flightId: flightOptions[0].id });
-      setAiActive(null);
     }
     setBusStage(0);
     setFlightStage(0);
     setExpanded(defaultExpanded);
+    setSmart(null);
   }, [hubData]);
 
   const selBus = busOptions.find((b) => b.id === sel.busId) || null;
   const selFlight = flightOptions.find((f) => f.id === sel.flightId) || null;
   const conn = (selBus && selFlight) ? calcConnection(selBus, selFlight, mode) : null;
+  const connStyle = conn ? connStyleFor(conn.level, t) : null;
   const total = (selBus?.price ?? 0) + (selFlight?.price ?? 0);
+  const overallMin = totalTripMin(selBus, selFlight, mode);
 
-  const applyPick = (pick, key) => {
-    if (!pick) return;
-    setSel({ busId: pick.busId, flightId: pick.flightId });
-    setAiActive(key);
-  };
-  const onPickBus = (id) => { setSel((s) => ({ ...s, busId: id })); setAiActive(null); };
-  const onPickFlight = (id) => { setSel((s) => ({ ...s, flightId: id })); setAiActive(null); };
+  // Toggle picks: clicking a row that is already selected clears it. This unlocks
+  // any rows that were disabled because they could not connect to that pick —
+  // exactly the "tıklanan elemana bir daha tıkladığında, tıklanma kalkıcak ve
+  // tıklanamayan elemanlar tıklanabilir olacak" behavior.
+  const onPickBus = (id) => { setSel((s) => ({ ...s, busId: s.busId === id ? null : id })); };
+  const onPickFlight = (id) => { setSel((s) => ({ ...s, flightId: s.flightId === id ? null : id })); };
 
   // Per-row badge map (which option belongs to a heuristic pick)
   const badgesFor = (kind, id) => ({
     cheap: cheapestPick && cheapestPick[kind === 'bus' ? 'busId' : 'flightId'] === id,
     fast: fastestPick && fastestPick[kind === 'bus' ? 'busId' : 'flightId'] === id,
-    early: earliestPick && earliestPick[kind === 'bus' ? 'busId' : 'flightId'] === id,
   });
+
+  // Wait info for an option in the SECOND leg column, paired with the current
+  // first-leg pick. Returns null when the first leg isn't picked yet (so we
+  // skip rendering the "X bekleme" line until both sides exist).
+  const waitInfoFor = (kind, opt) => {
+    const firstSel = mode === 'bus_plus_flight' ? selBus : selFlight;
+    if (!firstSel) return null;
+    const isSecondLeg = mode === 'bus_plus_flight' ? kind === 'flight' : kind === 'bus';
+    if (!isSecondLeg) return null;
+    const [bus, flight] = mode === 'bus_plus_flight' ? [firstSel, opt] : [opt, firstSel];
+    const c = calcConnection(bus, flight, mode);
+    if (c.minutes == null) return null;
+    return { minutes: c.minutes, color: connStyleFor(c.level, t).color };
+  };
 
   const noPairing = hubData.minTotal == null;
 
-  // Build journey + detail segs from the current selection (reuses existing primitives)
-  const journey = (selBus && selFlight) ? buildHubJourney(hubData, selBus, selFlight, lang) : null;
-  const detailSegs = (selBus && selFlight) ? buildHubDetailSegs(hubData, selBus, selFlight) : null;
-  const flightPackage = selFlight && Array.isArray(selFlight.legs) && selFlight.legs.length > 1 ?
-    { price: selFlight.price, legCount: selFlight.legs.length, airline: selFlight.airline } : null;
   const mapRoute = (selBus && selFlight) ? { segments: buildHubMapSegs(hubData, selBus, selFlight) } : null;
 
   const busColTitle = (
@@ -1356,8 +1518,8 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false }) {
       <span className="hub-col-icon">✈</span>{t.chooseFlightLabel}
     </div>);
 
-  // Sort chronologically. Stage-based collapse: 0 → 5, 1 → 5+6, 2 → all.
-  const COLLAPSE_BASE = 5;
+  // Sort chronologically. Stage-based collapse: 0 → 6, 1 → 6+6, 2 → all.
+  const COLLAPSE_BASE = 6;
   const COLLAPSE_STEP = 6;
   const sortedBuses = sortByDep(busOptions);
   const sortedFlights = sortByPrice(flightOptions);
@@ -1405,6 +1567,7 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false }) {
           disabled={isBusDisabled(b)}
           onSelect={() => onPickBus(b.id)}
           badges={badgesFor('bus', b.id)}
+          waitInfo={waitInfoFor('bus', b)}
           currency={currency} lang={lang} />
       ))}
       {sortedBuses.length > COLLAPSE_BASE && (
@@ -1426,6 +1589,7 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false }) {
           disabled={isFlightDisabled(f)}
           onSelect={() => onPickFlight(f.id)}
           badges={badgesFor('flight', f.id)}
+          waitInfo={waitInfoFor('flight', f)}
           currency={currency} lang={lang} />
       ))}
       {sortedFlights.length > COLLAPSE_BASE && (
@@ -1438,6 +1602,103 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false }) {
         </button>
       )}
     </div>);
+
+  // ── AI smart picks (global Top-3 across all valid combos) ──────────────────
+  // Walk every (bus,flight) pair, drop ones that don't satisfy the 2h rule, pass
+  // a compact summary to the model and ask for a 3-element JSON ranking. We
+  // only pass the prompt+combos and let the model attach a label and reason.
+  async function getSmartPicks() {
+    setSmartLoading(true);
+    try {
+      const combos = [];
+      for (const f of flightOptions) {
+        for (const b of busOptions) {
+          const c = calcConnection(b, f, mode);
+          if (c.minutes == null || c.minutes < PICK_MIN_CONNECTION) continue;
+          const overall = totalTripMin(b, f, mode);
+          combos.push({
+            flight: f, bus: b,
+            wait: c.minutes,
+            overall,
+            price: (b.price ?? 0) + (f.price ?? 0)
+          });
+        }
+      }
+      if (combos.length === 0) {
+        setSmart([{ label: '⚠️', reason: t.aiPickEmpty, combo: null }]);
+        setSmartLoading(false);
+        return;
+      }
+      const summary = combos.map((c) => ({
+        f: `${c.flight.airline || ''} ${c.flight.flightNo || ''} ${c.flight.dep}-${c.flight.arr} €${c.flight.price}`.trim(),
+        b: `${c.bus.company || 'Bus'} ${c.bus.dep}-${c.bus.arr} €${c.bus.price}`,
+        wait: fmtConnMinutes(c.wait), overall: fmtConnMinutes(c.overall), price: `€${c.price}`
+      }));
+      const prompt = `Sen seyahat asistanısın. Aşağıdaki ${mode === 'flight_plus_bus' ? 'uçak+otobüs' : 'otobüs+uçak'} kombinasyonlarından en iyi 3'ünü seç. Her biri için: bir kategori etiketi (örn: "🌅 Sabah erken", "💰 En ucuz", "⚡ En hızlı", "🌙 Gece yolculuğu") ve 1 cümlelik tavsiye yaz.
+Kombinasyonlar:
+${summary.map((s, i) => `${i + 1}. ${mode === 'flight_plus_bus' ? `Uçak ${s.f}, sonra Otobüs ${s.b}` : `Otobüs ${s.b}, sonra Uçak ${s.f}`} | bekleme: ${s.wait} | toplam yolculuk: ${s.overall} | toplam: ${s.price}`).join('\n')}
+
+Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason": "..."}]
+3 öğe içersin.`;
+      let txt = '';
+      if (window.claude && typeof window.claude.complete === 'function') {
+        txt = await window.claude.complete(prompt);
+      } else {
+        // Fallback: pick three deterministic combos so the panel is still useful
+        // when the page is opened outside the Claude harness.
+        const cheap = [...combos].sort((a, b) => a.price - b.price)[0];
+        const fast = [...combos].sort((a, b) => a.overall - b.overall)[0];
+        const balanced = [...combos].sort((a, b) => (a.price * 2 + a.overall) - (b.price * 2 + b.overall))[0];
+        const fakePicks = [];
+        const seen = new Set();
+        for (const [c, label, reason] of [
+          [cheap, '💰 En ucuz', 'Toplam fiyatta en avantajlı seçenek.'],
+          [fast, '⚡ En hızlı', 'Toplam yolculuk süresi en kısa.'],
+          [balanced, '🎯 Dengeli', 'Fiyat ve süre dengesinde en iyi.']
+        ]) {
+          if (!c) continue;
+          const key = `${c.flight.id}|${c.bus.id}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          fakePicks.push({ index: combos.indexOf(c) + 1, label, reason });
+        }
+        txt = JSON.stringify(fakePicks);
+      }
+      const jsonMatch = txt.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const picks = JSON.parse(jsonMatch[0]);
+        setSmart(picks.map((p) => ({ ...p, combo: combos[p.index - 1] })).filter((p) => p.combo));
+      } else {
+        setSmart([{ label: '⚠️', reason: t.aiError, combo: null }]);
+      }
+    } catch (e) {
+      console.error(e);
+      setSmart([{ label: '⚠️', reason: t.aiError, combo: null }]);
+    }
+    setSmartLoading(false);
+  }
+
+  const applySmartCombo = (c) => {
+    if (!c) return;
+    setSel({ busId: c.bus.id, flightId: c.flight.id });
+  };
+
+  // ── Booking links ──────────────────────────────────────────────────────────
+  // Skyscanner: lowercase IATAs, YYMMDD date, EUR query string.
+  // Bus URL stays as a flat https://www.omio.com — wire the proper Omio search
+  // shape later when we know which fields it accepts.
+  const yymmdd = ymdToYYMMDD(date);
+  // Flight leg endpoints depend on the trip shape: in flight_plus_bus the flight
+  // goes origin → hub; in bus_plus_flight it goes hub → destination. Prefer the
+  // flight option's own fromIata/toIata when present, fall back to hubData.
+  const derivedFlightFrom = mode === 'flight_plus_bus' ? hubData.depIata : hub.iata;
+  const derivedFlightTo   = mode === 'flight_plus_bus' ? hub.iata        : hubData.arrIata;
+  const flightFromIata = (selFlight?.fromIata || derivedFlightFrom || '').toLowerCase();
+  const flightToIata   = (selFlight?.toIata   || derivedFlightTo   || '').toLowerCase();
+  const skyscannerUrl = flightFromIata && flightToIata && yymmdd
+    ? `https://www.skyscanner.net/transport/flights/${flightFromIata}/${flightToIata}/${yymmdd}/?currency=EUR`
+    : `https://www.skyscanner.net/`;
+  const omioUrl = 'https://www.omio.com/';
 
   return (
     <div className={`hub-card${noPairing ? ' no-pairing' : ''}${expanded ? ' expanded' : ' collapsed'}`}>
@@ -1467,100 +1728,123 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false }) {
       {noPairing && expanded && <div className="hub-no-pairing-banner">⚠ {t.noValidPairing}</div>}
 
       {expanded && <>
-      <div className="ai-bar">
-        <span className="ai-bar-label">{t.aiSuggestLabel}</span>
-        <button className={`ai-chip${aiActive === 'cheapest' ? ' active' : ''}`}
-          onClick={() => applyPick(cheapestPick, 'cheapest')} disabled={!cheapestPick}>
-          {t.aiCheapest}
-        </button>
-        <button className={`ai-chip${aiActive === 'fastest' ? ' active' : ''}`}
-          onClick={() => applyPick(fastestPick, 'fastest')} disabled={!fastestPick}>
-          {t.aiFastest}
-        </button>
-        <button className={`ai-chip${aiActive === 'earliest' ? ' active' : ''}`}
-          onClick={() => applyPick(earliestPick, 'earliest')} disabled={!earliestPick}>
-          {t.aiMorning}
-        </button>
+      {/* Global AI Top-3 picker — replaces the old En ucuz/En hızlı/Sabah erken chips. */}
+      <div className="hub-smart-bar">
+        {!smart && !smartLoading && (
+          <button className="hub-smart-btn" onClick={getSmartPicks}>
+            {t.aiTopBtn} <small>{t.aiTopBtnSmall}</small>
+          </button>
+        )}
+        {smartLoading && <div className="hub-smart-loading">{t.aiTopLoading}</div>}
+        {smart && (
+          <div className="hub-smart-row">
+            <div className="hub-smart-title">{t.aiSmartTitle}</div>
+            <div className="hub-smart-cards">
+              {smart.map((s, i) => (
+                <button key={i} className="hub-smart-card"
+                  onClick={() => applySmartCombo(s.combo)}
+                  disabled={!s.combo}>
+                  <div className="hub-smart-label">{s.label}</div>
+                  <div className="hub-smart-reason">{s.reason}</div>
+                  {s.combo && (
+                    <div className="hub-smart-meta">{fmt(s.combo.price)} · {fmtConnMinutes(s.combo.overall)}</div>
+                  )}
+                </button>
+              ))}
+            </div>
+            <button className="hub-smart-clear" title={t.aiClearTitle} onClick={() => setSmart(null)}>✕</button>
+          </div>
+        )}
       </div>
 
       <div className="hub-grid">
         {mode === 'bus_plus_flight' ? <>{busCol}{flightCol}</> : <>{flightCol}{busCol}</>}
       </div>
 
-      {conn && (
-        <div className="connection-row">
-          <span className={`connection-pill ${conn.level}`}>
-            <span className="conn-dot">{
-              conn.level === 'green' ? '🟢'
-              : conn.level === 'yellow' ? '🟡'
-              : conn.level === 'gray' ? '⚪'
-              : '🔴'}</span>
-            <span>{t.connectionLabel}:</span>
-            <span className="conn-time">{fmtConnMinutes(conn.minutes)}</span>
-            <span className="conn-status">· {
-              conn.level === 'green' ? t.connectionGreen
-              : conn.level === 'yellow' ? t.connectionYellow
-              : conn.level === 'gray' ? t.connectionLong
-              : (conn.valid ? t.connectionRed : t.connectionInvalid)}</span>
-          </span>
+      {/* SEÇTİĞİN KOMBİNASYON: 3-card timeline (leg1 / wait / leg2) + totals + buy buttons. */}
+      <div className="hub-summary">
+        <div className="hub-summary-title">{t.summaryHeader}</div>
+        <div className="hub-summary-timeline">
+          {(() => {
+            const flightCarrier = `${selFlight?.airline || ''}${selFlight?.flightNo ? ' ' + selFlight.flightNo : ''}`.trim();
+            const busCarrier = selBus?.company || (lang === 'tr' ? 'Otobüs' : 'Bus');
+            const flightCard = (
+              <div className="hubs-leg">
+                <div className="hubs-leg-label">✈ {t.flightLegLabel}</div>
+                <div className="hubs-leg-times">
+                  {selFlight ? `${selFlight.dep} → ${selFlight.arr}` : '— → —'}
+                </div>
+                <div className="hubs-leg-meta">
+                  {selFlight ? `${flightCarrier} · ${fmt(selFlight.price)}` : '—'}
+                </div>
+              </div>);
+            const busCard = (
+              <div className="hubs-leg">
+                <div className="hubs-leg-label">🚌 {t.busLegLabel}</div>
+                <div className="hubs-leg-times">
+                  {selBus ? `${selBus.dep} → ${selBus.arr}${selBus.nextDay ? ' (+1)' : ''}` : '— → —'}
+                </div>
+                <div className="hubs-leg-meta">
+                  {selBus ? `${busCarrier} · ${fmt(selBus.price)}` : '—'}
+                </div>
+              </div>);
+            const waitCard = (
+              <div className="hubs-wait" style={connStyle ? {
+                background: connStyle.bg, color: connStyle.color, borderColor: connStyle.color
+              } : {
+                background: 'var(--bg)', color: 'var(--lt)', borderColor: 'var(--brd)'
+              }}>
+                <div className="hubs-wait-icon">⏱</div>
+                <div>
+                  <div className="hubs-wait-time">
+                    {(conn && conn.minutes != null) ? fmtConnMinutes(conn.minutes) : t.waitMissing}
+                  </div>
+                  <div className="hubs-wait-label">
+                    {connStyle ? <><strong>{connStyle.label}</strong> · {hub.iata} {t.waitWord}</> : `${hub.iata} ${t.waitWord}`}
+                  </div>
+                  {connStyle && (
+                    <div className="hubs-wait-desc">
+                      {connStyle.desc} · {mode === 'flight_plus_bus' ? t.transferDescF2B : t.transferDescB2F}
+                    </div>
+                  )}
+                </div>
+              </div>);
+            return mode === 'bus_plus_flight'
+              ? <>{busCard}{waitCard}{flightCard}</>
+              : <>{flightCard}{waitCard}{busCard}</>;
+          })()}
         </div>
-      )}
-
-      <div className="summary-footer">
-        <div className="summary-left">
-          <div className="summary-label">{t.summarySelected}</div>
-          <div className="summary-timeline">
-            {mode === 'bus_plus_flight' ? (
-              <>
-                <span className="st-mode">🚌 {selBus?.dep || '—'}</span>
-                <span className="st-arrow">→</span>
-                <span>{hub.iata}</span>
-                <span className="st-arrow">→</span>
-                <span className="st-mode">✈ {selFlight?.dep || '—'} · {selFlight?.airline || ''}</span>
-              </>
-            ) : (
-              <>
-                <span className="st-mode">✈ {selFlight?.dep || '—'} · {selFlight?.airline || ''}</span>
-                <span className="st-arrow">→</span>
-                <span>{hub.iata}</span>
-                <span className="st-arrow">→</span>
-                <span className="st-mode">🚌 {selBus?.dep || '—'}</span>
-              </>
-            )}
+        <div className="hub-summary-bottom">
+          <div className="hub-summary-stats">
+            <div>
+              <small>{t.totalTripLabel}</small>
+              <span>{overallMin != null ? fmtConnMinutes(overallMin) : '—'}</span>
+            </div>
+            <div>
+              <small>{t.totalPriceLabel}</small>
+              <span className="price">{(selBus && selFlight) ? fmt(total) : '—'}</span>
+            </div>
+          </div>
+          <div className="hub-summary-actions">
+            <button className="hub-buy-btn map" onClick={() => setShowMap((p) => !p)}>
+              🗺 {showMap ? t.mapHideBtn : t.mapShowBtn}
+            </button>
+            <a className="hub-buy-btn flight" href={skyscannerUrl} target="_blank" rel="noopener noreferrer">
+              ✈ {t.bookFlightBtn} ↗
+            </a>
+            <a className="hub-buy-btn bus" href={omioUrl} target="_blank" rel="noopener noreferrer">
+              🚌 {t.bookBusBtn} ↗
+            </a>
           </div>
         </div>
-        <div className="summary-total">
-          <div className="summary-total-label">{t.summaryTotal}</div>
-          <div className="summary-total-price">{(selBus && selFlight) ? fmt(total) : '—'}</div>
-        </div>
-        <div className="summary-actions">
-          <button className="summary-btn primary"
-            disabled={!selBus || !selFlight || (conn && conn.level === 'red')}
-            onClick={() => alert(`${t.selectTripBtn}: ${hub.iata} — ${fmt(total)}`)}>
-            ✓ {t.selectTripBtn}
-          </button>
-          <button className={`summary-btn${showDetails ? ' active' : ''}`}
-            onClick={() => setShowDetails((p) => !p)}
-            disabled={!selBus || !selFlight}>
-            ▾ {t.viewDetailsBtn}
-          </button>
-          <button className={`summary-btn${showMap ? ' active' : ''}`}
-            onClick={() => setShowMap((p) => !p)}
-            disabled={!selBus || !selFlight}>
-            🗺 {t.showOnMapBtn}
-          </button>
-        </div>
+        {showMap && mapRoute && (
+          <div style={{ marginTop: 12 }}>
+            <InlineMap route={mapRoute} onClose={() => setShowMap(false)} lang={lang}
+              hubIata={hub.iata}
+              hubWait={conn && conn.minutes != null ? { minutes: conn.minutes, color: connStyle?.color, bg: connStyle?.bg, label: t.waitWord } : null} />
+          </div>
+        )}
       </div>
-
-      {showDetails && journey && detailSegs && (
-        <div className="detail-panel">
-          <JourneyDiagram nodes={journey.nodes} segs={journey.segs} lang={lang} />
-          <DetailGrid segs={detailSegs} currency={currency} lang={lang} flightPackage={flightPackage} />
-        </div>
-      )}
-      {showMap && mapRoute && (
-        <InlineMap route={mapRoute} onClose={() => setShowMap(false)} lang={lang} />
-      )}
       </>}
     </div>);
 }
@@ -1670,7 +1954,7 @@ function buildHubMapSegs(hubData, bus, flight) {
 }
 
 // ── Section content ───────────────────────────────────────────────────────────
-function SectionContent({ secIdx, data, currency, lang }) {
+function SectionContent({ secIdx, data, currency, lang, date }) {
   const t = T[lang];
   if (!data || data.length === 0) return <div className="no-result"><div className="no-icon">🔍</div>{t.noResult}</div>;
   if (secIdx === 0 || secIdx === 1) {
@@ -1682,7 +1966,7 @@ function SectionContent({ secIdx, data, currency, lang }) {
   }
   if (secIdx === 2 || secIdx === 3) {
     return <div className="cards-list">{data.map((h, i) =>
-      <HubMasterCard key={`${h.hub?.iata || i}-${i}`} hubData={h} currency={currency} lang={lang} defaultExpanded={i === 0} />
+      <HubMasterCard key={`${h.hub?.iata || i}-${i}`} hubData={h} currency={currency} lang={lang} defaultExpanded={i === 0} date={date} />
     )}</div>;
   }
   if (secIdx === 4) return <div className="cards-list">{data.map((d, i) => <GroundCard key={i} d={d} currency={currency} lang={lang} />)}</div>;
@@ -1892,7 +2176,7 @@ function App() {
             <div className="sec-body">
               {CATS[activeSec].loading && (!CATS[activeSec].data || CATS[activeSec].data.length === 0) ?
                 <div className="sk" style={{ height: 200, borderRadius: 12 }} /> :
-                <SectionContent secIdx={activeSec} data={CATS[activeSec].data} currency={cur} lang={lang} />
+                <SectionContent secIdx={activeSec} data={CATS[activeSec].data} currency={cur} lang={lang} date={date} />
               }
             </div>
           </>
