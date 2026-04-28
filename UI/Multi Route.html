@@ -292,7 +292,12 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .hub-card{border:1.5px solid var(--brd);border-radius:14px;margin-bottom:14px;background:var(--card-bg);overflow:hidden;transition:.2s}
 .hub-card:last-child{margin-bottom:0}
 .hub-card.no-pairing{opacity:.85}
-.hub-card-head{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1.5px solid var(--brd);background:linear-gradient(90deg,var(--or-s),transparent 60%)}
+.hub-card-head{display:flex;align-items:center;gap:14px;padding:16px 20px;background:linear-gradient(90deg,var(--or-s),transparent 60%);cursor:pointer;user-select:none;transition:background .15s}
+.hub-card.expanded .hub-card-head{border-bottom:1.5px solid var(--brd)}
+.hub-card-head:hover{background:linear-gradient(90deg,var(--or-s),var(--or-ss) 60%)}
+.hub-card-head:focus-visible{outline:2px solid var(--or);outline-offset:-3px}
+.hub-card-caret{font-size:18px;color:var(--lt);transition:transform .2s;flex-shrink:0;margin-left:4px}
+.hub-card-caret.open{transform:rotate(180deg);color:var(--or)}
 [data-theme="dark"] .hub-card-head{background:linear-gradient(90deg,var(--or-s),transparent 60%)}
 .hub-iata-badge{font-size:13px;font-weight:800;background:var(--or);color:#fff;padding:6px 11px;border-radius:8px;letter-spacing:.4px;flex-shrink:0}
 .hub-head-info{flex:1;min-width:0}
@@ -324,7 +329,14 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .hub-row:last-child{margin-bottom:0}
 .hub-row:hover{background:var(--or-s);border-color:var(--or-ss)}
 .hub-row.selected{background:var(--or-s);border-color:var(--or)}
-.hub-row.disabled{opacity:.5;cursor:not-allowed}
+.hub-row.disabled{opacity:.45;cursor:not-allowed;background:transparent}
+.hub-row.disabled:hover{background:transparent;border-color:transparent}
+.hub-row.disabled .hub-row-radio{border-color:var(--brd);background:var(--bg-2,#f7f7f9)}
+.hub-row.disabled .hub-row-time,.hub-row.disabled .hub-row-price{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:var(--lt)}
+.hub-col-toggle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:8px;padding:8px 12px;border:1.5px dashed var(--brd);border-radius:10px;background:transparent;color:var(--lt);font-size:12px;font-weight:700;cursor:pointer;transition:.15s;font-family:inherit}
+.hub-col-toggle:hover{border-color:var(--or);color:var(--or);background:var(--or-s)}
+.hub-col-toggle .arrow{font-size:10px;transition:transform .2s}
+.hub-col-toggle.expanded .arrow{transform:rotate(180deg)}
 .hub-row-radio{width:16px;height:16px;border:1.5px solid var(--brd);border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--card-bg);transition:.15s}
 .hub-row.selected .hub-row-radio{border-color:var(--or)}
 .hub-row.selected .hub-row-radio::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--or)}
@@ -350,6 +362,8 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .connection-pill.green{background:var(--green-s);color:var(--green);border-color:var(--green)}
 .connection-pill.yellow{background:var(--yellow-s);color:var(--yellow);border-color:var(--yellow)}
 .connection-pill.red{background:var(--red-s);color:var(--red);border-color:var(--red)}
+.connection-pill.gray{background:#eceef2;color:#5b6472;border-color:#c9cdd5}
+[data-theme="dark"] .connection-pill.gray{background:#2b2f36;color:#a8aeb8;border-color:#3a3f48}
 
 /* SUMMARY FOOTER */
 .summary-footer{padding:14px 18px;border-top:1.5px solid var(--brd);background:var(--card-bg);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -405,11 +419,13 @@ const T = {
     chooseBusLabel: "Otobüs seç", chooseFlightLabel: "Uçuş seç",
     aiSuggestLabel: "AI önerisi:", aiCheapest: "💰 En ucuz", aiFastest: "⚡ En hızlı", aiMorning: "🌅 Sabah erken",
     connectionLabel: "Bağlantı süresi",
-    connectionGreen: "Rahat aktarma", connectionYellow: "Sıkışık aktarma", connectionRed: "Çok kısa", connectionInvalid: "Geçersiz sıralama",
+    connectionGreen: "Rahat aktarma", connectionYellow: "Sıkışık aktarma", connectionRed: "Çok kısa", connectionInvalid: "Geçersiz sıralama", connectionLong: "Aktarma süresi uzun",
     selectTripBtn: "Bu seferi seç", viewDetailsBtn: "Detayları gör", showOnMapBtn: "Haritada göster",
     cheapestBadge: "💰 En ucuz", fastestBadge: "⚡ En hızlı", earliestBadge: "🌅 İlk",
     noValidPairing: "Bu hub'da 2 saatlik bağlantıyla eşleşen sefer yok",
-    summarySelected: "Seçili sefer", summaryTotal: "Toplam"
+    summarySelected: "Seçili sefer", summaryTotal: "Toplam",
+    showMoreOptions: "Daha fazla seçenek", showAllOptions: "Hepsini göster",
+    showFewer: "Daha az göster", optionDisabledHint: "Seçili sefere uygun değil"
   },
   en: { tagline: "Smart multi-modal travel search", from: "From", to: "To", date: "Departure",
     search: "Search", searching: "Searching...",
@@ -429,11 +445,13 @@ const T = {
     chooseBusLabel: "Pick a bus", chooseFlightLabel: "Pick a flight",
     aiSuggestLabel: "AI suggestion:", aiCheapest: "💰 Cheapest", aiFastest: "⚡ Fastest", aiMorning: "🌅 Early morning",
     connectionLabel: "Connection time",
-    connectionGreen: "Comfortable", connectionYellow: "Tight transfer", connectionRed: "Too short", connectionInvalid: "Invalid ordering",
+    connectionGreen: "Comfortable", connectionYellow: "Tight transfer", connectionRed: "Too short", connectionInvalid: "Invalid ordering", connectionLong: "Long transfer",
     selectTripBtn: "Select this trip", viewDetailsBtn: "View details", showOnMapBtn: "Show on map",
     cheapestBadge: "💰 Cheapest", fastestBadge: "⚡ Fastest", earliestBadge: "🌅 First",
     noValidPairing: "No pairing in this hub meets the 2h connection rule",
-    summarySelected: "Selected trip", summaryTotal: "Total"
+    summarySelected: "Selected trip", summaryTotal: "Total",
+    showMoreOptions: "More options", showAllOptions: "Show all",
+    showFewer: "Show fewer", optionDisabledHint: "Doesn't fit the selected leg"
   }
 };
 
@@ -1109,10 +1127,13 @@ function CityInput({ label, value, onChange, onAirportSelect, selectedAirport, l
 }
 
 // ── HUB CARD HELPERS ─────────────────────────────────────────────────────────
-// Connection thresholds (minutes). Backend's 2h rule lives only in min_total_price.
-// Frontend pill is a visual signal: green ≥ 90min, yellow 45–89min, red < 45min.
+// Connection thresholds (minutes). Pill is a visual signal: green ≥ 90, yellow 45–89, red < 45.
+// AI picks (cheapest/fastest/earliest) require the project-wide 2h floor matching backend's
+// min_total_price rule, so suggestions never include impractical sub-2h transfers.
 const CONN_GREEN_MIN = 90;
 const CONN_RED_MIN = 45;
+const CONN_LONG_MIN = 480; // 8h: above this the layover is "too long" (gray pill).
+const PICK_MIN_CONNECTION = 120;
 
 function parseISO(s) {
   if (!s) return null;
@@ -1139,6 +1160,7 @@ function calcConnection(bus, flight, mode) {
   const minutes = Math.round((b.getTime() - a.getTime()) / 60000);
   let level = 'red';
   if (minutes < 0) level = 'red';
+  else if (minutes >= CONN_LONG_MIN) level = 'gray';
   else if (minutes >= CONN_GREEN_MIN) level = 'green';
   else if (minutes >= CONN_RED_MIN) level = 'yellow';
   return { minutes, level, valid: minutes >= 0 };
@@ -1149,7 +1171,7 @@ function pickCheapest(buses, flights, mode) {
   for (const b of buses) for (const f of flights) {
     if (b.price == null || f.price == null) continue;
     const c = calcConnection(b, f, mode);
-    if (c.level === 'red') continue;
+    if (c.minutes == null || c.minutes < PICK_MIN_CONNECTION) continue;
     const total = b.price + f.price;
     if (!best || total < best.total) best = { busId: b.id, flightId: f.id, total, conn: c };
   }
@@ -1160,9 +1182,9 @@ function pickFastest(buses, flights, mode) {
   let best = null;
   for (const b of buses) for (const f of flights) {
     const c = calcConnection(b, f, mode);
-    if (!c.valid) continue;
+    if (c.minutes == null || c.minutes < PICK_MIN_CONNECTION) continue;
     const bd = b.durationMin ?? 0, fd = f.durationMin ?? 0;
-    const total = bd + (c.minutes ?? 0) + fd;
+    const total = bd + c.minutes + fd;
     if (!best || total < best.total) best = { busId: b.id, flightId: f.id, total, conn: c };
   }
   return best;
@@ -1188,7 +1210,7 @@ function pickEarliest(buses, flights, mode) {
     for (const second of secondPool) {
       const [bus, flight] = mode === 'bus_plus_flight' ? [first, second] : [second, first];
       const c = calcConnection(bus, flight, mode);
-      if (c.level === 'red') continue;
+      if (c.minutes == null || c.minutes < PICK_MIN_CONNECTION) continue;
       return { busId: bus.id, flightId: flight.id, conn: c };
     }
   }
@@ -1196,14 +1218,17 @@ function pickEarliest(buses, flights, mode) {
 }
 
 // ── HUB ROW (one bus or flight option in the matrix) ─────────────────────────
-function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang }) {
+function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang, disabled }) {
   const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
   const time = opt.dep && opt.arr ? `${opt.dep}→${opt.arr}` : (opt.dep || '—');
   const meta = kind === 'bus' ?
     `${opt.duration || ''} · ${opt.company || 'FlixBus'}` :
     `${opt.duration || ''} · ${opt.airline || ''}${opt.flightNo ? ' ' + opt.flightNo : ''}${(opt.stops ?? 0) > 0 ? ` · ${opt.stops} ${T[lang].transfer}` : ''}`;
+  const cls = `hub-row${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}`;
+  const handleClick = disabled ? undefined : onSelect;
+  const title = disabled ? T[lang].optionDisabledHint : undefined;
   return (
-    <div className={`hub-row${selected ? ' selected' : ''}`} onClick={onSelect}>
+    <div className={cls} onClick={handleClick} title={title}>
       <div className="hub-row-radio" />
       <div className="hub-row-body">
         <div className="hub-row-line1">
@@ -1222,8 +1247,37 @@ function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang })
     </div>);
 }
 
+// Sort options chronologically by departure (missing depISO sinks to bottom).
+function sortByDep(options) {
+  return [...options].sort((a, b) => {
+    const ta = parseISO(a.depISO)?.getTime() ?? Infinity;
+    const tb = parseISO(b.depISO)?.getTime() ?? Infinity;
+    return ta - tb;
+  });
+}
+
+// Sort options by ascending price (missing prices sink to bottom).
+function sortByPrice(options) {
+  return [...options].sort((a, b) => {
+    const pa = a.price ?? Infinity;
+    const pb = b.price ?? Infinity;
+    return pa - pb;
+  });
+}
+
+// Slice the sorted list according to stage (0=collapsed, 1=mid, 2=all). The selected
+// option always stays visible — if it falls outside the slice we swap it into the
+// last visible slot so the user never loses their pick when the list collapses.
+function visibleOptions(sortedOpts, selectedId, limit, totalLen) {
+  if (limit >= sortedOpts.length) return sortedOpts;
+  const top = sortedOpts.slice(0, limit);
+  if (!selectedId || top.some((o) => o.id === selectedId)) return top;
+  const sel = sortedOpts.find((o) => o.id === selectedId);
+  return sel ? [sel, ...top.slice(0, limit - 1)] : top;
+}
+
 // ── HUB MASTER CARD ──────────────────────────────────────────────────────────
-function HubMasterCard({ hubData, currency, lang }) {
+function HubMasterCard({ hubData, currency, lang, defaultExpanded = false }) {
   const t = T[lang];
   const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
   const mode = hubData.mode;
@@ -1241,6 +1295,13 @@ function HubMasterCard({ hubData, currency, lang }) {
   const [aiActive, setAiActive] = useState('cheapest');
   const [showDetails, setShowDetails] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  // 0=collapsed (5 options), 1=mid (+6 more), 2=all
+  const [busStage, setBusStage] = useState(0);
+  const [flightStage, setFlightStage] = useState(0);
+  // Card itself starts collapsed — user expands it from the header click.
+  // The top card in a section gets defaultExpanded=true so users don't open an
+  // entirely shut accordion on first paint.
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   // Reset selection when a new search lands (hubData identity changes).
   useEffect(() => {
@@ -1252,6 +1313,9 @@ function HubMasterCard({ hubData, currency, lang }) {
       setSel({ busId: busOptions[0].id, flightId: flightOptions[0].id });
       setAiActive(null);
     }
+    setBusStage(0);
+    setFlightStage(0);
+    setExpanded(defaultExpanded);
   }, [hubData]);
 
   const selBus = busOptions.find((b) => b.id === sel.busId) || null;
@@ -1292,32 +1356,98 @@ function HubMasterCard({ hubData, currency, lang }) {
       <span className="hub-col-icon">✈</span>{t.chooseFlightLabel}
     </div>);
 
+  // Sort chronologically. Stage-based collapse: 0 → 5, 1 → 5+6, 2 → all.
+  const COLLAPSE_BASE = 5;
+  const COLLAPSE_STEP = 6;
+  const sortedBuses = sortByDep(busOptions);
+  const sortedFlights = sortByPrice(flightOptions);
+
+  const stageLimit = (stage, total) => {
+    if (stage >= 2) return total;
+    if (stage === 1) return Math.min(total, COLLAPSE_BASE + COLLAPSE_STEP);
+    return Math.min(total, COLLAPSE_BASE);
+  };
+  const busLimit = stageLimit(busStage, sortedBuses.length);
+  const flightLimit = stageLimit(flightStage, sortedFlights.length);
+  const visibleBuses = visibleOptions(sortedBuses, sel.busId, busLimit);
+  const visibleFlights = visibleOptions(sortedFlights, sel.flightId, flightLimit);
+
+  // Disable rule: a bus that can't connect to the currently-selected flight (and vice versa)
+  // becomes unclickable. Mirrors the 2h rule used by min_total_price.
+  const isBusDisabled = (b) => {
+    if (!selFlight) return false;
+    if (b.id === sel.busId) return false;
+    return calcConnection(b, selFlight, mode).level === 'red';
+  };
+  const isFlightDisabled = (f) => {
+    if (!selBus) return false;
+    if (f.id === sel.flightId) return false;
+    return calcConnection(selBus, f, mode).level === 'red';
+  };
+
+  const stepBusStage = () => setBusStage((s) => Math.min(2, s + 1));
+  const stepFlightStage = () => setFlightStage((s) => Math.min(2, s + 1));
+
+  const toggleLabel = (stage, total) => {
+    if (stage >= 2) return t.showFewer;
+    const nextLimit = stageLimit(stage + 1, total);
+    return stage + 1 >= 2 || nextLimit >= total
+      ? `${t.showAllOptions} (${total})`
+      : t.showMoreOptions;
+  };
+
   const busCol = (
     <div className="hub-col">
       {busColTitle}
-      {busOptions.map((b) => (
+      {visibleBuses.map((b) => (
         <HubOptionRow key={b.id} kind="bus" opt={b}
           selected={b.id === sel.busId}
+          disabled={isBusDisabled(b)}
           onSelect={() => onPickBus(b.id)}
           badges={badgesFor('bus', b.id)}
           currency={currency} lang={lang} />
       ))}
+      {sortedBuses.length > COLLAPSE_BASE && (
+        <button
+          className={`hub-col-toggle${busStage >= 2 ? ' expanded' : ''}`}
+          onClick={() => (busStage >= 2 ? setBusStage(0) : stepBusStage())}
+          type="button">
+          <span>{toggleLabel(busStage, sortedBuses.length)}</span>
+          <span className="arrow">▾</span>
+        </button>
+      )}
     </div>);
   const flightCol = (
     <div className="hub-col">
       {flightColTitle}
-      {flightOptions.map((f) => (
+      {visibleFlights.map((f) => (
         <HubOptionRow key={f.id} kind="flight" opt={f}
           selected={f.id === sel.flightId}
+          disabled={isFlightDisabled(f)}
           onSelect={() => onPickFlight(f.id)}
           badges={badgesFor('flight', f.id)}
           currency={currency} lang={lang} />
       ))}
+      {sortedFlights.length > COLLAPSE_BASE && (
+        <button
+          className={`hub-col-toggle${flightStage >= 2 ? ' expanded' : ''}`}
+          onClick={() => (flightStage >= 2 ? setFlightStage(0) : stepFlightStage())}
+          type="button">
+          <span>{toggleLabel(flightStage, sortedFlights.length)}</span>
+          <span className="arrow">▾</span>
+        </button>
+      )}
     </div>);
 
   return (
-    <div className={`hub-card${noPairing ? ' no-pairing' : ''}`}>
-      <div className="hub-card-head">
+    <div className={`hub-card${noPairing ? ' no-pairing' : ''}${expanded ? ' expanded' : ' collapsed'}`}>
+      <div
+        className="hub-card-head"
+        role="button"
+        tabIndex={0}
+        onClick={() => setExpanded((v) => !v)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded((v) => !v); } }}
+      >
         <div className="hub-iata-badge">{hub.iata}</div>
         <div className="hub-head-info">
           <div className="hub-head-title">{hub.city} {t.hubViaTitle}</div>
@@ -1331,10 +1461,12 @@ function HubMasterCard({ hubData, currency, lang }) {
           <div className="hub-head-min-price">{hubData.minTotal != null ? fmt(hubData.minTotal) : '—'}</div>
           {noPairing && <div className="hub-head-min-warn">⚠ &lt;2h</div>}
         </div>
+        <div className={`hub-card-caret${expanded ? ' open' : ''}`} aria-hidden="true">▾</div>
       </div>
 
-      {noPairing && <div className="hub-no-pairing-banner">⚠ {t.noValidPairing}</div>}
+      {noPairing && expanded && <div className="hub-no-pairing-banner">⚠ {t.noValidPairing}</div>}
 
+      {expanded && <>
       <div className="ai-bar">
         <span className="ai-bar-label">{t.aiSuggestLabel}</span>
         <button className={`ai-chip${aiActive === 'cheapest' ? ' active' : ''}`}
@@ -1358,10 +1490,18 @@ function HubMasterCard({ hubData, currency, lang }) {
       {conn && (
         <div className="connection-row">
           <span className={`connection-pill ${conn.level}`}>
-            <span className="conn-dot">{conn.level === 'green' ? '🟢' : conn.level === 'yellow' ? '🟡' : '🔴'}</span>
+            <span className="conn-dot">{
+              conn.level === 'green' ? '🟢'
+              : conn.level === 'yellow' ? '🟡'
+              : conn.level === 'gray' ? '⚪'
+              : '🔴'}</span>
             <span>{t.connectionLabel}:</span>
             <span className="conn-time">{fmtConnMinutes(conn.minutes)}</span>
-            <span className="conn-status">· {conn.level === 'green' ? t.connectionGreen : conn.level === 'yellow' ? t.connectionYellow : (conn.valid ? t.connectionRed : t.connectionInvalid)}</span>
+            <span className="conn-status">· {
+              conn.level === 'green' ? t.connectionGreen
+              : conn.level === 'yellow' ? t.connectionYellow
+              : conn.level === 'gray' ? t.connectionLong
+              : (conn.valid ? t.connectionRed : t.connectionInvalid)}</span>
           </span>
         </div>
       )}
@@ -1421,6 +1561,7 @@ function HubMasterCard({ hubData, currency, lang }) {
       {showMap && mapRoute && (
         <InlineMap route={mapRoute} onClose={() => setShowMap(false)} lang={lang} />
       )}
+      </>}
     </div>);
 }
 
@@ -1541,7 +1682,7 @@ function SectionContent({ secIdx, data, currency, lang }) {
   }
   if (secIdx === 2 || secIdx === 3) {
     return <div className="cards-list">{data.map((h, i) =>
-      <HubMasterCard key={`${h.hub?.iata || i}-${i}`} hubData={h} currency={currency} lang={lang} />
+      <HubMasterCard key={`${h.hub?.iata || i}-${i}`} hubData={h} currency={currency} lang={lang} defaultExpanded={i === 0} />
     )}</div>;
   }
   if (secIdx === 4) return <div className="cards-list">{data.map((d, i) => <GroundCard key={i} d={d} currency={currency} lang={lang} />)}</div>;
@@ -1562,6 +1703,7 @@ function App() {
   const [loadingCards, setLoadingCards] = useState({ flights: false, flightBus: false, busFlight: false });
   const [activeSec, setActiveSec] = useState(0);
   const t = T[lang];
+  const resultsRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', tweaks.theme || 'light');
@@ -1608,6 +1750,16 @@ function App() {
       busOrTrain: MOCK.busOrTrain,
     });
     setActiveSec(0);
+
+    // Smooth-scroll the results area into view so the loading state is the
+    // first thing the user sees instead of staring at the dominant search hero.
+    // Use requestAnimationFrame so the layout has settled after setResults({}).
+    requestAnimationFrame(() => {
+      const el = resultsRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - 24;
+      window.scrollTo({ top, behavior: 'smooth' });
+    });
 
     const flightsTask = fetchPart('/api/flights', body)
       .then((data) => {
@@ -1711,7 +1863,7 @@ function App() {
         </div>
       </section>
 
-      <main className="results">
+      <main className="results" ref={resultsRef}>
         {results &&
         <>
             {loading && <div className="loading-bar" />}
