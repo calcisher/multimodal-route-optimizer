@@ -11,7 +11,7 @@ import pandas as pd
 from flask import Flask, jsonify, request, send_from_directory
 
 from bus_and_flight_search import _to_naive, find_cheap_ground_plus_flight
-from flight_and_ground_search import airports_df
+from flight_and_ground_search import airports_df, geocode_city, haversine_km
 from flight_plus_bus_search import find_cheap_flight_plus_ground_v2
 from flight_search import flight_search
 
@@ -28,6 +28,15 @@ _CITY_ALIASES = {
     "nurnberg": "nuremberg", "munchen": "munich", "koln": "cologne",
     "milano": "milan", "venezia": "venice", "roma": "rome",
     "firenze": "florence", "torino": "turin", "napoli": "naples",
+}
+
+# For cities with multiple airports, force the preferred (larger) one.
+# Checked against airports_df at resolve time so typos don't hard-crash.
+_PREFERRED_IATA = {
+    "roma":  "FCO",  # Fiumicino > Ciampino
+    "rome":  "FCO",
+    "milan": "MXP",  # Malpensa > Linate
+    "milano": "MXP",
 }
 
 ROOT = Path(__file__).parent
@@ -98,7 +107,14 @@ def _norm(s: str) -> str:
 
 
 def resolve_iata(q: str) -> str | None:
-    """Resolve a user-entered string (IATA code or city name) to an IATA code."""
+    """Resolve a user-entered string (IATA code or city name) to an IATA code.
+
+    Resolution order:
+      1. Exact 3-letter IATA code in the DB
+      2. Exact city name match (with alias expansion and diacritic stripping)
+      3. Partial city/airport name match
+      4. Geocode the city and return the nearest airport in the DB (fallback)
+    """
     if not q:
         return None
     q = q.strip()
@@ -107,10 +123,15 @@ def resolve_iata(q: str) -> str | None:
         if (airports_df["iata"] == up).any():
             return up
     base = _norm(q)
+
+    # Preferred airport override for multi-airport cities.
+    preferred = _PREFERRED_IATA.get(base)
+    if preferred and (airports_df["iata"] == preferred).any():
+        return preferred
+
     candidates = [base]
     if base in _CITY_ALIASES:
         candidates.append(_CITY_ALIASES[base])
-    # also check reverse direction: user typed English, data has Italian
     for k, v in _CITY_ALIASES.items():
         if v == base:
             candidates.append(k)
@@ -124,7 +145,22 @@ def resolve_iata(q: str) -> str | None:
         partial = airports_df[city_norm.str.contains(target, na=False) | name_norm.str.contains(target, na=False)]
         if not partial.empty:
             return str(partial.iloc[0]["iata"])
-    return None
+
+    # Fallback: geocode the city and find the nearest airport in the DB.
+    try:
+        lat, lon = geocode_city(q)
+        dists = airports_df.apply(
+            lambda r: haversine_km(lat, lon, r["lat"], r["lon"]), axis=1
+        )
+        idx = dists.idxmin()
+        nearest = airports_df.loc[idx]
+        dist_km = dists[idx]
+        print(f"ℹ️  resolve_iata: '{q}' not in DB → nearest airport "
+              f"{nearest['iata']} ({nearest['city']}, {dist_km:.0f} km away)")
+        return str(nearest["iata"])
+    except Exception as e:
+        print(f"⚠️  resolve_iata geocode fallback failed for '{q}': {e}")
+        return None
 
 
 def _to_float(v):
@@ -173,6 +209,7 @@ def _flight_row_to_ui(row: pd.Series) -> dict:
             "totalDuration": _fmt_minutes(row.get("duration")),
             "legs": ui_legs,
             "layover": layover,
+            "skyscanner_url": _clean(row.get("skyscanner_url")),
         }
 
     # Single-leg / direct
@@ -186,6 +223,7 @@ def _flight_row_to_ui(row: pd.Series) -> dict:
         "arrIata": _clean(row.get("arrival_iata")) or "",
         "duration": _fmt_minutes(row.get("duration")),
         "stops": 0,
+        "skyscanner_url": _clean(row.get("skyscanner_url")),
     }
 
 
@@ -302,6 +340,7 @@ def _flight_to_ui(f: dict, outbound_date: str, hub_iata: str,
         "durationMin": int(f["duration_min"]) if f.get("duration_min") is not None else None,
         "stops": int(f.get("stops") or 0),
         "link": f.get("link"),
+        "skyscanner_url": f.get("skyscanner_url"),
     }
 
     if len(legs_raw) > 1:

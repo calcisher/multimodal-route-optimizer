@@ -872,7 +872,7 @@ function FlightCard({ d, currency, lang }) {
   const detailSegs = [{
     type: 'flight', from: d.depIata, to: d.arrIata, fromName: CITY_NAMES[d.depIata], toName: CITY_NAMES[d.arrIata],
     carrier: d.airline, ref: d.flightNo, dep: d.dep, arr: d.arr, duration: d.duration, price: d.price,
-    buyUrl: `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.arrIata}`
+    buyUrl: d.skyscanner_url || `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.arrIata}`
   }];
   const header =
   <>
@@ -907,7 +907,7 @@ function TransferCard({ d, currency, lang }) {
   const detailSegs = d.legs.map((l, i) => ({
     type: 'flight', from: l.from, to: l.to, fromName: CITY_NAMES[l.from], toName: CITY_NAMES[l.to],
     carrier: d.airline, ref: l.flightNo, dep: l.dep, arr: l.arr, duration: l.duration,
-    price: i === 0 ? d.price : null, buyUrl: `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.arrIata}`
+    price: i === 0 ? d.price : null, buyUrl: d.skyscanner_url || `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.arrIata}`
   }));
   const flightPackage = d.legs.length > 1 ? { price: d.price, legCount: d.legs.length, airline: d.airline } : null;
   const header =
@@ -1639,7 +1639,7 @@ function buildHubDetailSegs(hubData, bus, flight) {
     ref: l.flightNo,
     dep: l.dep, arr: l.arr, duration: l.duration,
     price: i === 0 ? flight.price : null,
-    buyUrl: flight.link || `https://www.google.com/travel/flights?q=${flightFirstFrom}+to+${flightLastTo}`,
+    buyUrl: flight.skyscanner_url || flight.link || `https://www.google.com/travel/flights?q=${flightFirstFrom}+to+${flightLastTo}`,
   }));
   const groundDetail = {
     type: 'bus', from: bus.from, to: bus.to,
@@ -1768,6 +1768,7 @@ function App() {
           ...(prev || {}),
           bestFlights: data.bestFlights ?? [],
           cheapFlights: data.cheapFlights ?? [],
+          resolved: data.resolved ?? null,
         }));
       })
       .catch((err) => console.error('/api/flights failed:', err))
@@ -1867,7 +1868,12 @@ function App() {
         {results &&
         <>
             {loading && <div className="loading-bar" />}
-            <div className="res-info"><b>Venice (VCE)</b> → <b>Nürnberg (NUE)</b> · {date}</div>
+            <div className="res-info">
+              <b>{results.resolved ? `${results.resolved.fromCity} (${results.resolved.from})` : from}</b>
+              {' → '}
+              <b>{results.resolved ? `${results.resolved.toCity} (${results.resolved.to})` : to}</b>
+              · {date}
+            </div>
             {/* CATEGORY BAR */}
             <div className="cat-bar">
               {CATS.map((c, i) =>

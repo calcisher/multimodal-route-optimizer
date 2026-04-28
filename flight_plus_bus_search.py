@@ -157,6 +157,14 @@ def find_cheap_flight_plus_ground_v2(
         print(f"⚠️  No airports within {max_distance_km}km of {target_city!r}.")
         return []
 
+    # Skip hubs whose city is the same as the target city — bus from hub to
+    # destination wouldn't exist if they're the same place.
+    target_query = target_city.split(",")[0].strip().lower()
+    nearby = nearby[nearby["city"].str.lower().str.strip() != target_query].reset_index(drop=True)
+    if nearby.empty:
+        print(f"⚠️  All nearby airports are in the destination city ({target_city!r}). No bus leg possible.")
+        return []
+
     print(
         f"Found {len(nearby)} nearby airport(s) for {target_city!r}; "
         f"fetching flights from {departure_id} + buses for each (parallel)."

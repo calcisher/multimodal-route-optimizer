@@ -157,6 +157,7 @@ def _flight_option(idx: int, row: pd.Series, hub_iata: str, target_iata: str) ->
         "legs": legs,
         "layovers": layovers,
         "link": row.get("link"),
+        "skyscanner_url": row.get("skyscanner_url"),
     }
 
 
@@ -285,12 +286,20 @@ def find_cheap_ground_plus_flight(
         print(f"⚠️  No airports within {max_distance_km}km of {departure_city!r}.")
         return []
 
+    dep_query = departure_city.split(",")[0].strip()
+    dep_query_norm = dep_query.lower().strip()
+
+    # Skip hubs whose city is the same as the departure city — a bus from a
+    # city to itself makes no sense and FlixBus would return nothing.
+    nearby = nearby[nearby["city"].str.lower().str.strip() != dep_query_norm].reset_index(drop=True)
+    if nearby.empty:
+        print(f"⚠️  All nearby airports share the departure city ({dep_query!r}). No bus leg possible.")
+        return []
+
     print(
         f"Found {len(nearby)} nearby airport(s) for {departure_city!r}; "
         f"fetching flights to {arrival_id} + buses for each (parallel)."
     )
-
-    dep_query = departure_city.split(",")[0].strip()
 
     hub_rows = list(nearby.iterrows())
     with ThreadPoolExecutor(max_workers=min(5, len(hub_rows) or 1)) as pool:
