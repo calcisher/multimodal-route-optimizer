@@ -1,7 +1,6 @@
 from serpapi import Client as SerpApiClient  # clearer import
 import pandas as pd
 import os
-from skyscanner_url import build_skyscanner_url
 
 def flight_search(departure_id: str, arrival_id: str, outbound_date: str):
     """
@@ -60,30 +59,18 @@ def flight_search(departure_id: str, arrival_id: str, outbound_date: str):
             stops = flight_data.get("stops")
             if stops is None:
                 stops = max(0, len(flights) - 1)
-            dep_iata = first.get("departure_airport", {}).get("id", "")
-            arr_iata = last.get("arrival_airport", {}).get("id", "")
-            dep_time = first.get("departure_airport", {}).get("time", "")
-            total_dur = flight_data.get("total_duration")
-            try:
-                sky_url = build_skyscanner_url(
-                    dep_iata, arr_iata, dep_time, stops,
-                    total_duration_min=int(total_dur) if total_dur is not None else None,
-                ) if dep_iata and arr_iata and dep_time else None
-            except Exception:
-                sky_url = None
             return {
                 "flight_type": flight_type,
                 "airline": first.get("airline", "Unknown"),
                 "price": flight_data.get("price"),
-                "departure_time": dep_time,
-                "departure_iata": dep_iata,
+                "departure_time": first.get("departure_airport", {}).get("time"),
+                "departure_iata": first.get("departure_airport", {}).get("id"),
                 "arrival_time": last.get("arrival_airport", {}).get("time"),
-                "arrival_iata": arr_iata,
+                "arrival_iata": last.get("arrival_airport", {}).get("id"),
                 "duration": flight_data.get("total_duration"),
                 "stops": stops,
                 "flight_number": first.get("flight_number", ""),
                 "link": flight_data.get("link"),
-                "skyscanner_url": sky_url,
                 "legs": legs,
                 "layovers": layovers,
             }

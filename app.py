@@ -209,7 +209,6 @@ def _flight_row_to_ui(row: pd.Series) -> dict:
             "totalDuration": _fmt_minutes(row.get("duration")),
             "legs": ui_legs,
             "layover": layover,
-            "skyscanner_url": _clean(row.get("skyscanner_url")),
         }
 
     # Single-leg / direct
@@ -223,7 +222,6 @@ def _flight_row_to_ui(row: pd.Series) -> dict:
         "arrIata": _clean(row.get("arrival_iata")) or "",
         "duration": _fmt_minutes(row.get("duration")),
         "stops": 0,
-        "skyscanner_url": _clean(row.get("skyscanner_url")),
     }
 
 
@@ -340,7 +338,6 @@ def _flight_to_ui(f: dict, outbound_date: str, hub_iata: str,
         "durationMin": int(f["duration_min"]) if f.get("duration_min") is not None else None,
         "stops": int(f.get("stops") or 0),
         "link": f.get("link"),
-        "skyscanner_url": f.get("skyscanner_url"),
     }
 
     if len(legs_raw) > 1:

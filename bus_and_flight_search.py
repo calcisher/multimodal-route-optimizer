@@ -157,7 +157,6 @@ def _flight_option(idx: int, row: pd.Series, hub_iata: str, target_iata: str) ->
         "legs": legs,
         "layovers": layovers,
         "link": row.get("link"),
-        "skyscanner_url": row.get("skyscanner_url"),
     }
 
 

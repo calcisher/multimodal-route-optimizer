@@ -1039,7 +1039,7 @@ function CardDetailShell({ header, mapRoute, lang, journey, detailSegs, total, c
 }
 
 // ── Flight card (direct) ──────────────────────────────────────────────────────
-function FlightCard({ d, currency, lang }) {
+function FlightCard({ d, currency, lang, date }) {
   const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
   const t = T[lang || 'tr'];
   const route = { segments: [{ from: d.depIata, to: d.arrIata, type: 'flight', carrier: d.airline, duration: d.duration }] };
@@ -1048,10 +1048,13 @@ function FlightCard({ d, currency, lang }) {
     nodes: [{ iata: d.depIata, dep: d.dep }, { iata: d.arrIata, arr: d.arr }],
     segs: [{ type: 'flight', duration: d.duration, carrier: d.airline, ref: d.flightNo }]
   };
+  const buyUrl = buildSkyscannerUrl({
+    fromIata: d.depIata, toIata: d.arrIata, date, depTime: d.dep, stops: d.stops,
+  });
   const detailSegs = [{
     type: 'flight', from: d.depIata, to: d.arrIata, fromName: CITY_NAMES[d.depIata], toName: CITY_NAMES[d.arrIata],
     carrier: d.airline, ref: d.flightNo, dep: d.dep, arr: d.arr, duration: d.duration, price: d.price,
-    buyUrl: d.skyscanner_url || `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.arrIata}`
+    buyUrl,
   }];
   const header =
   <>
@@ -1072,7 +1075,7 @@ function FlightCard({ d, currency, lang }) {
 }
 
 // ── Transfer flight card ──────────────────────────────────────────────────────
-function TransferCard({ d, currency, lang }) {
+function TransferCard({ d, currency, lang, date }) {
   const t = T[lang];
   const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
   const route = { segments: d.legs.map((l) => ({ from: l.from, to: l.to, type: 'flight', carrier: d.airline, duration: l.duration })) };
@@ -1083,10 +1086,13 @@ function TransferCard({ d, currency, lang }) {
     }).concat([{ iata: d.legs[d.legs.length - 1].to, arr: d.legs[d.legs.length - 1].arr }]),
     segs: d.legs.map((l) => ({ type: 'flight', duration: l.duration, carrier: d.airline, ref: l.flightNo }))
   };
+  const buyUrl = buildSkyscannerUrl({
+    fromIata: d.depIata, toIata: d.arrIata, date, depTime: d.legs[0]?.dep || d.dep, stops: d.stops,
+  });
   const detailSegs = d.legs.map((l, i) => ({
     type: 'flight', from: l.from, to: l.to, fromName: CITY_NAMES[l.from], toName: CITY_NAMES[l.to],
     carrier: d.airline, ref: l.flightNo, dep: l.dep, arr: l.arr, duration: l.duration,
-    price: i === 0 ? d.price : null, buyUrl: d.skyscanner_url || `https://www.google.com/travel/flights?q=${d.depIata}+to+${d.arrIata}`
+    price: i === 0 ? d.price : null, buyUrl,
   }));
   const flightPackage = d.legs.length > 1 ? { price: d.price, legCount: d.legs.length, airline: d.airline } : null;
   const header =
@@ -1598,6 +1604,39 @@ function ymdToYYMMDD(date) {
   return date.slice(2, 4) + date.slice(5, 7) + date.slice(8, 10);
 }
 
+// Build a pre-filtered Skyscanner URL. Lives in the UI layer so the backend
+// stays free of presentation concerns; if Skyscanner changes their URL shape,
+// this is the single edit point.
+//   filters applied (each one optional — drops cleanly if data missing):
+//     departure-times → ±30 min window around depTime
+//     stops           → exact stop count via Skyscanner's exclusion params
+//     duration        → max trip duration in minutes
+function buildSkyscannerUrl({ fromIata, toIata, date, depTime, stops, durationMin, currency }) {
+  const fallback = 'https://www.skyscanner.com.tr/';
+  if (!fromIata || !toIata) return fallback;
+  const yymmdd = ymdToYYMMDD(date);
+  if (!yymmdd) return fallback;
+  const dep = String(fromIata).toLowerCase();
+  const arr = String(toIata).toLowerCase();
+  const cur = currency || 'EUR';
+  const fixed = 'adultsv2=1&cabinclass=economy&childrenv2=&ref=home&rtn=0&outboundaltsenabled=false&inboundaltsenabled=false';
+  const parts = [`${fixed}&currency=${cur}`];
+  if (Number.isFinite(durationMin)) parts.push(`duration=${Math.round(durationMin)}`);
+  if (typeof depTime === 'string' && /^\d{1,2}:\d{2}/.test(depTime)) {
+    const [h, m] = depTime.slice(0, 5).split(':').map(Number);
+    if (Number.isFinite(h) && Number.isFinite(m)) {
+      const tMin = h * 60 + m;
+      parts.push(`departure-times=${Math.max(0, tMin - 30)}-${Math.min(1440, tMin + 30)}`);
+    }
+  }
+  if (Number.isFinite(stops)) {
+    if (stops === 0)      parts.push('stops=!oneStop,!twoPlusStops');
+    else if (stops === 1) parts.push('stops=!direct,!twoPlusStops');
+    else                  parts.push('stops=!direct,!oneStop');
+  }
+  return `https://www.skyscanner.com.tr/tasima/ucak-bileti/${dep}/${arr}/${yymmdd}/?${parts.join('&')}`;
+}
+
 // Total trip duration (first leg dep → second leg arr) in minutes.
 function totalTripMin(selBus, selFlight, mode) {
   if (!selBus || !selFlight) return null;
@@ -1997,20 +2036,21 @@ Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason":
   };
 
   // ── Booking links ──────────────────────────────────────────────────────────
-  // Skyscanner: lowercase IATAs, YYMMDD date, EUR query string.
   // Bus URL stays as a flat https://www.omio.com — wire the proper Omio search
   // shape later when we know which fields it accepts.
-  const yymmdd = ymdToYYMMDD(date);
   // Flight leg endpoints depend on the trip shape: in flight_plus_bus the flight
   // goes origin → hub; in bus_plus_flight it goes hub → destination. Prefer the
   // flight option's own fromIata/toIata when present, fall back to hubData.
   const derivedFlightFrom = mode === 'flight_plus_bus' ? hubData.depIata : hub.iata;
   const derivedFlightTo   = mode === 'flight_plus_bus' ? hub.iata        : hubData.arrIata;
-  const flightFromIata = (selFlight?.fromIata || derivedFlightFrom || '').toLowerCase();
-  const flightToIata   = (selFlight?.toIata   || derivedFlightTo   || '').toLowerCase();
-  const skyscannerUrl = flightFromIata && flightToIata && yymmdd
-    ? `https://www.skyscanner.net/transport/flights/${flightFromIata}/${flightToIata}/${yymmdd}/?currency=EUR`
-    : `https://www.skyscanner.net/`;
+  const skyscannerUrl = buildSkyscannerUrl({
+    fromIata: selFlight?.fromIata || derivedFlightFrom,
+    toIata:   selFlight?.toIata   || derivedFlightTo,
+    date,
+    depTime:     selFlight?.dep,
+    stops:       selFlight?.stops,
+    durationMin: selFlight?.durationMin,
+  });
   const omioUrl = 'https://www.omio.com/';
 
   return (
@@ -2236,7 +2276,7 @@ function buildHubDetailSegs(hubData, bus, flight) {
     ref: l.flightNo,
     dep: l.dep, arr: l.arr, duration: l.duration,
     price: i === 0 ? flight.price : null,
-    buyUrl: flight.skyscanner_url || flight.link || `https://www.google.com/travel/flights?q=${flightFirstFrom}+to+${flightLastTo}`,
+    buyUrl: flight.link || `https://www.google.com/travel/flights?q=${flightFirstFrom}+to+${flightLastTo}`,
   }));
   const groundDetail = {
     type: 'bus', from: bus.from, to: bus.to,
@@ -2273,8 +2313,8 @@ function SectionContent({ secIdx, data, currency, lang, date }) {
   if (secIdx === 0 || secIdx === 1) {
     return <div className="cards-list">{data.map((d, i) =>
       d.stops > 0 ?
-      <TransferCard key={i} d={d} currency={currency} lang={lang} /> :
-      <FlightCard key={i} d={d} currency={currency} lang={lang} />
+      <TransferCard key={i} d={d} currency={currency} lang={lang} date={date} /> :
+      <FlightCard key={i} d={d} currency={currency} lang={lang} date={date} />
       )}</div>;
   }
   if (secIdx === 2 || secIdx === 3) {
