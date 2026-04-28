@@ -95,6 +95,54 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .cat-pill.active .cat-pill-label{color:var(--or-d)}
 [data-theme="dark"] .cat-pill.active .cat-pill-label{color:var(--or-l)}
 .cat-active-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--or);border-radius:0 0 12px 12px}
+.cat-pill-filtered{position:absolute;top:8px;right:10px;font-size:9px;font-weight:700;color:var(--or);background:var(--or-ss);padding:2px 6px;border-radius:99px;letter-spacing:.3px}
+
+/* ADVANCED FILTER */
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.filter-toggle{display:flex;align-items:center;gap:8px;background:var(--card-bg);border:1.5px solid var(--brd);border-radius:10px;padding:9px 14px;font-family:var(--f);font-size:13px;font-weight:700;color:var(--text);cursor:pointer;transition:.15s;position:relative}
+.filter-toggle:hover{border-color:var(--or);color:var(--or)}
+.filter-toggle.open{border-color:var(--or);background:var(--or-s);color:var(--or)}
+.filter-toggle-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--or);color:#fff;font-size:11px;font-weight:800;letter-spacing:0}
+.filter-chip-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1}
+.filter-chip{display:inline-flex;align-items:center;gap:6px;background:var(--or-s);color:var(--or);border:1.5px solid var(--or);border-radius:99px;padding:5px 10px;font-size:12px;font-weight:700;cursor:default}
+.filter-chip-x{background:none;border:0;color:var(--or);cursor:pointer;font-size:14px;line-height:1;padding:0;margin-left:2px;opacity:.7;transition:.15s}
+.filter-chip-x:hover{opacity:1}
+.filter-reset-btn{background:transparent;border:1.5px solid var(--brd);color:var(--mid);border-radius:8px;padding:5px 10px;font-family:var(--f);font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+.filter-reset-btn:hover{border-color:var(--or-l);color:var(--or)}
+.filter-panel{background:var(--card-bg);border:1.5px solid var(--brd);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:var(--sh);animation:fpIn .22s ease;overflow:hidden}
+@keyframes fpIn{from{opacity:0;max-height:0;padding-top:0;padding-bottom:0;margin-bottom:0}to{opacity:1;max-height:600px;padding-top:18px;padding-bottom:18px;margin-bottom:14px}}
+.fp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px 22px}
+.fp-group{display:flex;flex-direction:column;gap:9px}
+.fp-label{font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;justify-content:space-between}
+.fp-label-val{color:var(--or);font-weight:800;letter-spacing:0;font-size:12px;text-transform:none}
+.fp-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:var(--brd);border-radius:2px;outline:none;cursor:pointer}
+.fp-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:var(--or);cursor:pointer;border:3px solid var(--card-bg);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.fp-slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--or);cursor:pointer;border:3px solid var(--card-bg);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.fp-dual{position:relative;height:32px;padding:0}
+.fp-dual-track{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:4px;background:var(--brd);border-radius:2px}
+.fp-dual-fill{position:absolute;top:50%;transform:translateY(-50%);height:4px;background:var(--or);border-radius:2px}
+.fp-dual input[type=range]{-webkit-appearance:none;appearance:none;position:absolute;left:0;right:0;top:0;width:100%;height:32px;background:transparent;pointer-events:none;outline:none;margin:0}
+.fp-dual input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;pointer-events:auto;width:18px;height:18px;border-radius:50%;background:var(--or);cursor:pointer;border:3px solid var(--card-bg);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.fp-dual input[type=range]::-moz-range-thumb{pointer-events:auto;width:18px;height:18px;border-radius:50%;background:var(--or);cursor:pointer;border:3px solid var(--card-bg);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.fp-dual input[type=range]::-webkit-slider-runnable-track{background:transparent;border:0}
+.fp-dual input[type=range]::-moz-range-track{background:transparent;border:0}
+.fp-chips{display:flex;gap:6px;flex-wrap:wrap}
+.fp-chip{padding:6px 12px;border:1.5px solid var(--brd);border-radius:8px;background:var(--card-bg);font-family:var(--f);font-size:12px;font-weight:600;color:var(--mid);cursor:pointer;transition:.15s}
+.fp-chip:hover{border-color:var(--or-l);color:var(--or)}
+.fp-chip.active{background:var(--or-s);border-color:var(--or);color:var(--or)}
+.fp-toggle{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.fp-toggle-track{width:36px;height:20px;border-radius:99px;background:var(--brd);position:relative;transition:.2s;flex-shrink:0}
+.fp-toggle-thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.fp-toggle.on .fp-toggle-track{background:var(--or)}
+.fp-toggle.on .fp-toggle-thumb{transform:translateX(16px)}
+.fp-toggle-label{font-size:13px;font-weight:600;color:var(--text)}
+.fp-help{font-size:11px;color:var(--lt);margin-top:-2px}
+.filter-banner{display:flex;align-items:center;gap:10px;background:var(--or-s);border:1.5px solid var(--or);border-radius:10px;padding:10px 14px;margin-bottom:14px;color:var(--or-d);font-size:13px;font-weight:600}
+[data-theme="dark"] .filter-banner{color:var(--or-l)}
+.filter-banner.info{background:var(--blue-s);border-color:var(--blue);color:var(--blue)}
+.filter-banner-icon{font-size:18px}
+.filter-banner-action{margin-left:auto;background:var(--or);color:#fff;border:0;border-radius:8px;padding:6px 12px;font-family:var(--f);font-size:12px;font-weight:700;cursor:pointer}
+.filter-banner-action:hover{filter:brightness(1.1)}
 
 /* SECTION BODY */
 .sec-body{background:var(--card-bg);border:1.5px solid var(--brd);border-radius:var(--r);overflow:hidden;transition:background .3s}
@@ -498,7 +546,13 @@ const T = {
     transferDescF2B: "havalimanından otobüs durağına geçiş",
     transferDescB2F: "otobüs durağından havalimanına geçiş",
     aiPickEmpty: "Lütfen önce iki bacak için de seçim yapın.",
-    aiError: "Akıllı öneri alınamadı, manuel seçim yapabilirsiniz."
+    aiError: "Akıllı öneri alınamadı, manuel seçim yapabilirsiniz.",
+    advFilter: "Gelişmiş Filtre", advFilterClose: "Kapat",
+    fMaxDur: "Maks. yolculuk süresi", fDepWindow: "Kalkış saati aralığı", fArrWindow: "Varış saati aralığı",
+    fMaxTransfers: "Maks. aktarma", fOvernight: "Gece yolculuğunu hariç tut", fOvernightHelp: "Ertesi güne sarkan seyahatler gizlenir",
+    fAny: "Hepsi", fDirect: "Direkt", fReset: "Filtreleri Sıfırla", fHrs: "saat",
+    bannerEmpty: "Bu kategoride filtreyi karşılayan sonuç yok.", bannerSomeFiltered: "sonuç filtrelendi",
+    noOvernightChip: "gece dışında"
   },
   en: { tagline: "Smart multi-modal travel search", from: "From", to: "To", date: "Departure",
     search: "Search", searching: "Searching...",
@@ -539,7 +593,13 @@ const T = {
     transferDescF2B: "airport to bus station",
     transferDescB2F: "bus station to airport",
     aiPickEmpty: "Please pick both legs first.",
-    aiError: "Could not generate picks. Please choose manually."
+    aiError: "Could not generate picks. Please choose manually.",
+    advFilter: "Advanced Filter", advFilterClose: "Close",
+    fMaxDur: "Max travel time", fDepWindow: "Departure time window", fArrWindow: "Arrival time window",
+    fMaxTransfers: "Max transfers", fOvernight: "Exclude overnight trips", fOvernightHelp: "Hides trips that arrive next day",
+    fAny: "Any", fDirect: "Direct", fReset: "Reset Filters", fHrs: "h",
+    bannerEmpty: "No results in this category match the filter.", bannerSomeFiltered: "results filtered",
+    noOvernightChip: "no overnight"
   }
 };
 
@@ -1243,6 +1303,259 @@ function CityInput({ label, value, onChange, onAirportSelect, selectedAirport, l
       }
     </div>);
 
+}
+
+// ── Advanced filter helpers ──────────────────────────────────────────────────
+const FILTER_DEFAULTS = {
+  maxDurH: 24,
+  depFromH: 0,
+  depToH: 24,
+  arrFromH: 0,
+  arrToH: 24,
+  maxTransfers: -1,
+  excludeOvernight: false
+};
+
+function isFilterActive(f) {
+  return f.maxDurH < 24 || f.depFromH > 0 || f.depToH < 24 ||
+    f.arrFromH > 0 || f.arrToH < 24 || f.maxTransfers !== -1 || f.excludeOvernight;
+}
+
+function activeFilterCount(f) {
+  let n = 0;
+  if (f.maxDurH < 24) n++;
+  if (f.depFromH > 0 || f.depToH < 24) n++;
+  if (f.arrFromH > 0 || f.arrToH < 24) n++;
+  if (f.maxTransfers !== -1) n++;
+  if (f.excludeOvernight) n++;
+  return n;
+}
+
+function parseDur(s) {
+  if (!s) return 0;
+  const str = String(s);
+  const h = str.match(/(\d+)\s*h/i);
+  const m = str.match(/(\d+)\s*m/i);
+  return (h ? +h[1] * 60 : 0) + (m ? +m[1] : 0);
+}
+
+function timeToHour(value) {
+  if (!value) return null;
+  if (typeof value === 'string' && value.includes('T')) {
+    const d = parseISO(value);
+    return d ? d.getHours() + d.getMinutes() / 60 : null;
+  }
+  const m = String(value).match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return (+m[1]) + (+m[2]) / 60;
+}
+
+function durationOfItem(item) {
+  if (!item) return 0;
+  if (typeof item.durationMin === 'number') return item.durationMin;
+  return parseDur(item.totalDuration || item.duration);
+}
+
+function itemNextDay(item) {
+  if (!item) return false;
+  if (item.nextDay) return true;
+  if (item.depDate && item.arrDate && item.arrDate > item.depDate) return true;
+  const dep = parseISO(item.depISO), arr = parseISO(item.arrISO);
+  return !!(dep && arr && arr.toDateString() !== dep.toDateString());
+}
+
+function passesTripFilter(item, f) {
+  if (!item) return false;
+  if (f.excludeOvernight && itemNextDay(item)) return false;
+  const dur = durationOfItem(item);
+  if (f.maxDurH < 24 && dur > f.maxDurH * 60) return false;
+  const depH = timeToHour(item.depISO || item.dep);
+  if (depH != null && (depH < f.depFromH || depH > f.depToH)) return false;
+  const arrH = timeToHour(item.arrISO || item.arr);
+  if (arrH != null && (arrH < f.arrFromH || arrH > f.arrToH)) return false;
+  return true;
+}
+
+function flightPasses(d, f) {
+  const stops = typeof d.stops === 'number' ? d.stops : Array.isArray(d.legs) ? Math.max(0, d.legs.length - 1) : 0;
+  if (f.maxTransfers !== -1 && stops > f.maxTransfers) return false;
+  if (Array.isArray(d.legs) && d.legs.length) {
+    const first = d.legs[0], last = d.legs[d.legs.length - 1];
+    return passesTripFilter({
+      dep: first.dep,
+      arr: last.arr,
+      depISO: d.depISO,
+      arrISO: d.arrISO,
+      duration: d.totalDuration || d.duration,
+      durationMin: d.durationMin,
+      nextDay: d.nextDay
+    }, f);
+  }
+  return passesTripFilter(d, f);
+}
+
+function groundPasses(d, f) {
+  if (f.maxTransfers !== -1 && (d.transfers || 0) > f.maxTransfers) return false;
+  return passesTripFilter(d, f);
+}
+
+function minHubTotal(busOptions, flightOptions, mode) {
+  let min = null;
+  for (const b of busOptions) {
+    for (const fl of flightOptions) {
+      const c = calcConnection(b, fl, mode);
+      if (c.minutes == null || c.minutes < PICK_MIN_CONNECTION) continue;
+      if (b.price == null || fl.price == null) continue;
+      const total = b.price + fl.price;
+      if (min == null || total < min) min = total;
+    }
+  }
+  return min;
+}
+
+function filterHubData(hubData, f) {
+  const busOptions = (hubData.busOptions || []).filter((b) => groundPasses(b, f));
+  const flightOptions = (hubData.flightOptions || []).filter((fl) => flightPasses(fl, f));
+  if (!busOptions.length || !flightOptions.length) return null;
+  const minTotal = minHubTotal(busOptions, flightOptions, hubData.mode);
+  return { ...hubData, busOptions, flightOptions, minTotal };
+}
+
+function countHubOptions(hubs) {
+  return (hubs || []).reduce((sum, h) => sum + (h.busOptions?.length || 0) + (h.flightOptions?.length || 0), 0);
+}
+
+function applyFilters(results, f) {
+  const empty = { filtered: null, removed: [0, 0, 0, 0, 0] };
+  if (!results) return empty;
+  if (!isFilterActive(f)) return { filtered: results, removed: [0, 0, 0, 0, 0] };
+
+  const bestFlights = (results.bestFlights || []).filter((d) => flightPasses(d, f));
+  const cheapFlights = (results.cheapFlights || []).filter((d) => flightPasses(d, f));
+  const flightPlusBus = (results.flightPlusBus || []).map((h) => filterHubData(h, f)).filter(Boolean);
+  const busPlusFlight = (results.busPlusFlight || []).map((h) => filterHubData(h, f)).filter(Boolean);
+  const busOrTrain = (results.busOrTrain || []).filter((d) => groundPasses(d, f));
+
+  return {
+    filtered: { ...results, bestFlights, cheapFlights, flightPlusBus, busPlusFlight, busOrTrain },
+    removed: [
+      (results.bestFlights || []).length - bestFlights.length,
+      (results.cheapFlights || []).length - cheapFlights.length,
+      countHubOptions(results.flightPlusBus) - countHubOptions(flightPlusBus),
+      countHubOptions(results.busPlusFlight) - countHubOptions(busPlusFlight),
+      (results.busOrTrain || []).length - busOrTrain.length
+    ]
+  };
+}
+
+function fmtFilterHour(h) {
+  const hh = Math.floor(h);
+  const mm = Math.round((h - hh) * 60);
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
+function DualSlider({ from, to, onChange, min = 0, max = 24, step = 0.5, fmt }) {
+  const span = max - min;
+  const fillL = ((from - min) / span) * 100;
+  const fillR = ((to - min) / span) * 100;
+  return (
+    <div>
+      <div className="fp-dual">
+        <div className="fp-dual-track" />
+        <div className="fp-dual-fill" style={{ left: `${fillL}%`, right: `${100 - fillR}%` }} />
+        <input type="range" min={min} max={max} step={step} value={from}
+          onChange={(e) => { const v = +e.target.value; onChange(Math.min(v, to - step), to); }} />
+        <input type="range" min={min} max={max} step={step} value={to}
+          onChange={(e) => { const v = +e.target.value; onChange(from, Math.max(v, from + step)); }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--lt)', fontWeight: 600, marginTop: 2 }}>
+        <span>{fmt(from)}</span><span>{fmt(to)}</span>
+      </div>
+    </div>
+  );
+}
+
+function FilterPanel({ filter, setFilter, lang }) {
+  const t = T[lang];
+  const set = (k, v) => setFilter({ ...filter, [k]: v });
+  return (
+    <div className="filter-panel">
+      <div className="fp-grid">
+        <div className="fp-group">
+          <div className="fp-label">
+            <span>⏱ {t.fMaxDur}</span>
+            <span className="fp-label-val">{filter.maxDurH >= 24 ? t.fAny : `≤ ${filter.maxDurH}${t.fHrs}`}</span>
+          </div>
+          <input className="fp-slider" type="range" min={1} max={24} step={1}
+            value={filter.maxDurH} onChange={(e) => set('maxDurH', +e.target.value)} />
+        </div>
+        <div className="fp-group">
+          <div className="fp-label">
+            <span>🛫 {t.fDepWindow}</span>
+            <span className="fp-label-val">{fmtFilterHour(filter.depFromH)} - {fmtFilterHour(filter.depToH)}</span>
+          </div>
+          <DualSlider from={filter.depFromH} to={filter.depToH}
+            onChange={(a, b) => setFilter({ ...filter, depFromH: a, depToH: b })}
+            fmt={fmtFilterHour} />
+        </div>
+        <div className="fp-group">
+          <div className="fp-label">
+            <span>🛬 {t.fArrWindow}</span>
+            <span className="fp-label-val">{fmtFilterHour(filter.arrFromH)} - {fmtFilterHour(filter.arrToH)}</span>
+          </div>
+          <DualSlider from={filter.arrFromH} to={filter.arrToH}
+            onChange={(a, b) => setFilter({ ...filter, arrFromH: a, arrToH: b })}
+            fmt={fmtFilterHour} />
+        </div>
+        <div className="fp-group">
+          <div className="fp-label"><span>🔁 {t.fMaxTransfers}</span></div>
+          <div className="fp-chips">
+            {[
+              { v: 0, l: t.fDirect },
+              { v: 1, l: '≤ 1' },
+              { v: 2, l: '≤ 2' },
+              { v: -1, l: t.fAny }
+            ].map((opt) => (
+              <button key={opt.v} className={`fp-chip${filter.maxTransfers === opt.v ? ' active' : ''}`}
+                onClick={() => set('maxTransfers', opt.v)}>{opt.l}</button>
+            ))}
+          </div>
+        </div>
+        <div className="fp-group" style={{ justifyContent: 'flex-end' }}>
+          <div className="fp-label"><span>🌙 {t.fOvernight}</span></div>
+          <div className={`fp-toggle${filter.excludeOvernight ? ' on' : ''}`}
+            onClick={() => set('excludeOvernight', !filter.excludeOvernight)}>
+            <div className="fp-toggle-track"><div className="fp-toggle-thumb" /></div>
+            <div className="fp-toggle-label">{filter.excludeOvernight ? (lang === 'tr' ? 'Açık' : 'On') : (lang === 'tr' ? 'Kapalı' : 'Off')}</div>
+          </div>
+          <div className="fp-help">{t.fOvernightHelp}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActiveFilterChips({ filter, setFilter, lang }) {
+  const t = T[lang];
+  const chips = [];
+  const set = (k, v) => setFilter({ ...filter, [k]: v });
+  if (filter.maxDurH < 24) chips.push({ key: 'dur', label: `≤ ${filter.maxDurH}${t.fHrs}`, clear: () => set('maxDurH', 24) });
+  if (filter.depFromH > 0 || filter.depToH < 24) chips.push({ key: 'dep', label: `🛫 ${fmtFilterHour(filter.depFromH)}-${fmtFilterHour(filter.depToH)}`, clear: () => setFilter({ ...filter, depFromH: 0, depToH: 24 }) });
+  if (filter.arrFromH > 0 || filter.arrToH < 24) chips.push({ key: 'arr', label: `🛬 ${fmtFilterHour(filter.arrFromH)}-${fmtFilterHour(filter.arrToH)}`, clear: () => setFilter({ ...filter, arrFromH: 0, arrToH: 24 }) });
+  if (filter.maxTransfers !== -1) chips.push({ key: 'tx', label: `🔁 ${filter.maxTransfers === 0 ? t.fDirect : '≤ ' + filter.maxTransfers}`, clear: () => set('maxTransfers', -1) });
+  if (filter.excludeOvernight) chips.push({ key: 'ov', label: `🌙 ${t.noOvernightChip}`, clear: () => set('excludeOvernight', false) });
+  if (!chips.length) return null;
+  return (
+    <div className="filter-chip-row">
+      {chips.map((c) => (
+        <span key={c.key} className="filter-chip">
+          {c.label}
+          <button className="filter-chip-x" onClick={c.clear} title={lang === 'tr' ? 'Kaldır' : 'Remove'}>✕</button>
+        </span>
+      ))}
+      <button className="filter-reset-btn" onClick={() => setFilter(FILTER_DEFAULTS)}>↺ {t.fReset}</button>
+    </div>
+  );
 }
 
 // ── HUB CARD HELPERS ─────────────────────────────────────────────────────────
@@ -1986,6 +2299,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [loadingCards, setLoadingCards] = useState({ flights: false, flightBus: false, busFlight: false });
   const [activeSec, setActiveSec] = useState(0);
+  const [filter, setFilter] = useState(FILTER_DEFAULTS);
+  const [filterOpen, setFilterOpen] = useState(false);
   const t = T[lang];
   const resultsRef = useRef(null);
 
@@ -2026,6 +2341,8 @@ function App() {
 
     setLoading(true);
     setLoadingCards({ flights: true, flightBus: true, busFlight: true });
+    setFilter(FILTER_DEFAULTS);
+    setFilterOpen(false);
     setResults({
       bestFlights: [],
       cheapFlights: [],
@@ -2097,12 +2414,19 @@ function App() {
     return prices.length ? Math.min(...prices) : null;
   };
 
+  const { filtered: filteredResults, removed } = applyFilters(results, filter);
+  const fActive = isFilterActive(filter);
+  const fCount = activeFilterCount(filter);
+
   const CATS = [
-  { icon: '✈️', label: t.bestFlight, sub: t.bestFlightSub, color: '#2563EB', data: results?.bestFlights, minPrice: minPriceOf(results?.bestFlights, 'price'), loading: loadingCards.flights },
-  { icon: '💶', label: t.cheapFlight, sub: t.cheapFlightSub, color: '#16A34A', data: results?.cheapFlights, minPrice: minPriceOf(results?.cheapFlights, 'price'), loading: loadingCards.flights },
-  { icon: '✈🚌', label: t.flightBus, sub: t.flightBusSub, color: '#7C3AED', data: results?.flightPlusBus, minPrice: minPriceOf(results?.flightPlusBus, 'minTotal'), loading: loadingCards.flightBus },
-  { icon: '🚌✈', label: t.busFlight, sub: t.busFlightSub, color: '#0891B2', data: results?.busPlusFlight, minPrice: minPriceOf(results?.busPlusFlight, 'minTotal'), loading: loadingCards.busFlight },
-  { icon: '🚌', label: t.busOnly, sub: t.busOnlySub, color: '#475569', data: results?.busOrTrain, minPrice: minPriceOf(results?.busOrTrain, 'price'), loading: false }];
+  { icon: '✈️', label: t.bestFlight, sub: t.bestFlightSub, color: '#2563EB', data: filteredResults?.bestFlights, minPrice: minPriceOf(filteredResults?.bestFlights, 'price'), loading: loadingCards.flights, removed: removed[0] },
+  { icon: '💶', label: t.cheapFlight, sub: t.cheapFlightSub, color: '#16A34A', data: filteredResults?.cheapFlights, minPrice: minPriceOf(filteredResults?.cheapFlights, 'price'), loading: loadingCards.flights, removed: removed[1] },
+  { icon: '✈🚌', label: t.flightBus, sub: t.flightBusSub, color: '#7C3AED', data: filteredResults?.flightPlusBus, minPrice: minPriceOf(filteredResults?.flightPlusBus, 'minTotal'), loading: loadingCards.flightBus, removed: removed[2] },
+  { icon: '🚌✈', label: t.busFlight, sub: t.busFlightSub, color: '#0891B2', data: filteredResults?.busPlusFlight, minPrice: minPriceOf(filteredResults?.busPlusFlight, 'minTotal'), loading: loadingCards.busFlight, removed: removed[3] },
+  { icon: '🚌', label: t.busOnly, sub: t.busOnlySub, color: '#475569', data: filteredResults?.busOrTrain, minPrice: minPriceOf(filteredResults?.busOrTrain, 'price'), loading: false, removed: removed[4] }];
+
+  const activeCat = CATS[activeSec];
+  const sectionEmpty = activeCat && !activeCat.loading && (!activeCat.data || activeCat.data.length === 0);
 
 
   return (
@@ -2158,6 +2482,17 @@ function App() {
               <b>{results.resolved ? `${results.resolved.toCity} (${results.resolved.to})` : to}</b>
               · {date}
             </div>
+            {/* FILTER BAR */}
+            <div className="filter-bar">
+              <button className={`filter-toggle${filterOpen ? ' open' : ''}`} onClick={() => setFilterOpen((p) => !p)}>
+                ⚙ {t.advFilter}
+                {fCount > 0 && <span className="filter-toggle-badge">{fCount}</span>}
+                <span style={{ fontSize: 11, opacity: .6 }}>{filterOpen ? '▴' : '▾'}</span>
+              </button>
+              <ActiveFilterChips filter={filter} setFilter={setFilter} lang={lang} />
+            </div>
+            {filterOpen && <FilterPanel filter={filter} setFilter={setFilter} lang={lang} />}
+
             {/* CATEGORY BAR */}
             <div className="cat-bar">
               {CATS.map((c, i) =>
@@ -2168,15 +2503,29 @@ function App() {
                     {c.loading ? <span className="cat-pill-spinner" /> : (c.minPrice != null ? fmt(c.minPrice) : '—')}
                   </span>
                   <span className="cat-pill-sub">{c.sub}</span>
+                  {fActive && c.removed > 0 && <span className="cat-pill-filtered">-{c.removed}</span>}
                   {activeSec === i && <div className="cat-active-bar" />}
                 </div>
             )}
             </div>
+            {fActive && sectionEmpty && (
+              <div className="filter-banner">
+                <span className="filter-banner-icon">🚫</span>
+                <span>{t.bannerEmpty}</span>
+                <button className="filter-banner-action" onClick={() => setFilter(FILTER_DEFAULTS)}>↺ {t.fReset}</button>
+              </div>
+            )}
+            {fActive && !sectionEmpty && activeCat.removed > 0 && (
+              <div className="filter-banner info">
+                <span className="filter-banner-icon">ℹ</span>
+                <span>{activeCat.removed} {t.bannerSomeFiltered}</span>
+              </div>
+            )}
             {/* ACTIVE SECTION */}
             <div className="sec-body">
-              {CATS[activeSec].loading && (!CATS[activeSec].data || CATS[activeSec].data.length === 0) ?
+              {activeCat.loading && (!activeCat.data || activeCat.data.length === 0) ?
                 <div className="sk" style={{ height: 200, borderRadius: 12 }} /> :
-                <SectionContent secIdx={activeSec} data={CATS[activeSec].data} currency={cur} lang={lang} date={date} />
+                <SectionContent secIdx={activeSec} data={activeCat.data} currency={cur} lang={lang} date={date} />
               }
             </div>
           </>
