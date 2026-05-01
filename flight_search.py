@@ -3,6 +3,7 @@ import pandas as pd
 import os
 
 from airport_reliability import record_empty, record_success
+import data_cache
 
 
 def flight_search(departure_id: str, arrival_id: str, outbound_date: str,
@@ -17,6 +18,14 @@ def flight_search(departure_id: str, arrival_id: str, outbound_date: str,
     forgives one. Exceptions don't count — those aren't the airport's
     fault.
     """
+    cached = data_cache.flight_get(departure_id, arrival_id, outbound_date)
+    if cached is not None:
+        # Cached HITs forgive a strike too — the airport returned data recently,
+        # so don't penalize it just because we skipped the live call.
+        if track_iata and not cached.empty:
+            record_success(track_iata)
+        return cached
+
     api_key = os.getenv("SERPAPI_KEY")
     if not api_key:
         raise ValueError("SERPAPI_KEY environment variable not set!")
@@ -105,7 +114,9 @@ def flight_search(departure_id: str, arrival_id: str, outbound_date: str,
             record_success(track_iata)
         print(f"✅ Flight search DONE: {len(df)} flights found "
               f"({len(df[df['flight_type']=='Best'])} best)")
-        return df.sort_values("price").reset_index(drop=True)
+        df = df.sort_values("price").reset_index(drop=True)
+        data_cache.flight_set(departure_id, arrival_id, outbound_date, df)
+        return df
 
     except Exception as e:
         print(f"❌ ERROR in flight_search {departure_id} → {arrival_id}: {e}")
