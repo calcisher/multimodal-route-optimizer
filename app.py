@@ -89,7 +89,7 @@ _PREFERRED_IATA = {
 ROOT = Path(__file__).parent
 UI_DIR = ROOT / "UI"
 
-app = Flask(__name__, static_folder=None)
+app = Flask(__name__, static_folder=str(UI_DIR), static_url_path='')
 
 
 # ---------- helpers ----------
