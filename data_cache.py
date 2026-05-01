@@ -29,6 +29,18 @@ BUS_TTL_HOURS = 48
 _BUS_DT_COLS = ("departure_dt", "arrival_dt")
 
 
+def _restore_nones(df: pd.DataFrame) -> pd.DataFrame:
+    """pd.read_json revives JSON null as NaN. Downstream code (and Flask's
+    JSON encoder) treats Python None and float('nan') very differently —
+    most notably, jsonify writes NaN as the literal `NaN`, which JS
+    JSON.parse rejects. Coerce NaN/NaT back to None so cache output is
+    indistinguishable from fresh data.
+    """
+    if df.empty:
+        return df
+    return df.astype(object).where(pd.notna(df), None)
+
+
 def _conn() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     c = sqlite3.connect(DB_PATH, timeout=30)
@@ -132,6 +144,7 @@ def flight_get(from_iata: str, to_iata: str, date: str) -> pd.DataFrame | None:
         if not _is_fresh(cached_at, FLIGHT_TTL_HOURS):
             return None
         df = pd.read_json(StringIO(payload), orient="records")
+        df = _restore_nones(df)
         print(f"💾 flight cache HIT  {fk}→{tk} {date_iso}")
         return df
     except Exception as e:
@@ -190,6 +203,7 @@ def bus_get(from_city: str, to_city: str, date: str) -> pd.DataFrame | None:
         if not _is_fresh(cached_at, BUS_TTL_HOURS):
             return None
         df = pd.read_json(StringIO(payload), orient="records")
+        df = _restore_nones(df)
         # JSON round-trip drops tz-aware Timestamp dtype — reconstruct.
         for col in _BUS_DT_COLS:
             if col in df.columns:
