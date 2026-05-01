@@ -32,6 +32,24 @@ function App() {
       .catch((err) => console.error('/api/airports failed:', err));
   }, []);
 
+  // Restore search from URL on first mount: ?from=Venice&to=Nürnberg&date=...
+  // Auto-runs the search so a refresh re-renders results instead of the home state.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromParam = params.get('from');
+    const toParam = params.get('to');
+    const dateParam = params.get('date');
+    if (!fromParam || !toParam || !dateParam) return;
+    const fromIataParam = params.get('fromIata') || null;
+    const toIataParam = params.get('toIata') || null;
+    setFrom(fromParam);
+    setTo(toParam);
+    setDate(dateParam);
+    setFromAp(fromIataParam);
+    setToAp(toIataParam);
+    doSearch({ from: fromParam, to: toParam, date: dateParam, fromAp: fromIataParam, toAp: toIataParam });
+  }, []);
+
   function swap() {setFrom(to);setTo(from);setFromAp(toAp);setToAp(fromAp);}
 
   function mergeAirports(data) {
@@ -59,9 +77,25 @@ function App() {
     return resp.json();
   }
 
-  async function doSearch() {
-    if (!from || !to) return;
-    const body = { from_city: from, to_city: to, date, from_iata: fromAp, to_iata: toAp };
+  async function doSearch(override) {
+    const fromVal = override?.from ?? from;
+    const toVal = override?.to ?? to;
+    const dateVal = override?.date ?? date;
+    const fromApVal = override?.fromAp !== undefined ? override.fromAp : fromAp;
+    const toApVal = override?.toAp !== undefined ? override.toAp : toAp;
+    if (!fromVal || !toVal) return;
+    const body = { from_city: fromVal, to_city: toVal, date: dateVal, from_iata: fromApVal, to_iata: toApVal };
+
+    const urlParams = new URLSearchParams();
+    urlParams.set('from', fromVal);
+    urlParams.set('to', toVal);
+    urlParams.set('date', dateVal);
+    if (fromApVal) urlParams.set('fromIata', fromApVal);
+    if (toApVal) urlParams.set('toIata', toApVal);
+    const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+    if (newUrl !== window.location.pathname + window.location.search) {
+      window.history.replaceState(null, '', newUrl);
+    }
 
     setLoading(true);
     setLoadingCards({ flights: true, flightBus: true, busFlight: true });
@@ -199,7 +233,7 @@ function App() {
           </div>
           {!results && !loading &&
           <div style={{ marginTop: 14, color: 'rgba(255,255,255,.6)', fontSize: 13, cursor: 'pointer', userSelect: 'none' }}
-          onClick={() => {setFrom('Venice');setTo('Nürnberg');setTimeout(doSearch, 80);}}>
+          onClick={() => { setFrom('Venice'); setTo('Nürnberg'); doSearch({ from: 'Venice', to: 'Nürnberg' }); }}>
               💡 {t.trySearch}
             </div>
           }
