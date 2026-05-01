@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
+from airport_reliability import is_suspended
 from flight_and_ground_search import (
     COUNTRY_EN,
     airports_df,
@@ -202,7 +203,8 @@ def _fetch_hub(
 ) -> dict | None:
     """Pull flights + buses for one hub. Returns hub dict or None if either side failed/empty."""
     try:
-        flights_df = flight_search(ap["iata"], arrival_id, outbound_date)
+        flights_df = flight_search(ap["iata"], arrival_id, outbound_date,
+                                   track_iata=ap["iata"])
     except Exception as e:
         print(f"   flight_search({ap['iata']} → {arrival_id}) raised: {e}")
         return None
@@ -293,6 +295,17 @@ def find_cheap_ground_plus_flight(
     nearby = nearby[nearby["city"].str.lower().str.strip() != dep_query_norm].reset_index(drop=True)
     if nearby.empty:
         print(f"⚠️  All nearby airports share the departure city ({dep_query!r}). No bus leg possible.")
+        return []
+
+    # Drop hubs that are currently in reliability suspension — they've burned
+    # SerpAPI credits with consecutive empty results and aren't worth retrying
+    # right now (see airport_reliability.py).
+    suspended = [c for c in nearby["iata"].tolist() if is_suspended(c)]
+    if suspended:
+        print(f"   ⏸  Skipping suspended airports: {suspended}")
+        nearby = nearby[~nearby["iata"].isin(suspended)].reset_index(drop=True)
+    if nearby.empty:
+        print("⚠️  All nearby airports are currently suspended. Try again later.")
         return []
 
     print(

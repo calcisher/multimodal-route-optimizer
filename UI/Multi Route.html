@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
-<title>Multi Rote — Çok Modlu Seyahat</title>
+<title>Multi Route — Çok Modlu Seyahat</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -42,6 +42,7 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .hdr{background:linear-gradient(135deg,#C94D10 0%,#F4611E 45%,#FF8A50 100%);padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(200,77,16,.35)}
 .logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;font-size:22px;letter-spacing:-.5px}
 .logo-icon{width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-icon svg{width:24px;height:24px;display:block}
 .hdr-right{display:flex;align-items:center;gap:12px}
 .lang-toggle{display:flex;background:rgba(255,255,255,.15);border-radius:20px;overflow:hidden}
 .lang-btn{border:none;background:transparent;color:rgba(255,255,255,.7);padding:6px 14px;font-family:var(--f);font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
@@ -50,7 +51,7 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .theme-btn:hover{background:rgba(255,255,255,.25)}
 
 /* HERO */
-.hero{background:linear-gradient(160deg,#C94D10 0%,#F4611E 50%,#FF9A6E 100%);padding:48px 40px 72px;position:relative;overflow:hidden}
+.hero{background:linear-gradient(160deg,#C94D10 0%,#F4611E 50%,#FF9A6E 100%);padding:48px 40px 72px;position:relative}
 .hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:var(--bg);border-radius:40px 40px 0 0;transition:background .3s}
 .hero-title{color:#fff;font-size:36px;font-weight:700;letter-spacing:-1px;margin-bottom:6px}
 .hero-sub{color:rgba(255,255,255,.75);font-size:15px;margin-bottom:32px}
@@ -70,12 +71,19 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .search-btn:hover{background:var(--or-d);transform:translateY(-1px)}
 
 /* AIRPORT DROPDOWN */
-.ap-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card-bg);border:1.5px solid var(--brd);border-radius:10px;box-shadow:var(--sh2);z-index:300;overflow:hidden}
-.ap-item{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.15s}
-.ap-item:hover{background:var(--or-s)}
-.ap-iata{font-size:11px;font-weight:700;background:var(--or-s);color:var(--or);padding:3px 7px;border-radius:6px;flex-shrink:0}
+.ap-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card-bg);border:1.5px solid var(--brd);border-radius:10px;box-shadow:var(--sh2);z-index:300;max-height:340px;overflow-y:auto}
+.ap-section-label{padding:8px 12px 4px;font-size:10px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.5px;background:var(--card-bg);position:sticky;top:0;z-index:1}
+.ap-item{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.15s;border-top:1px solid var(--brd-l,rgba(0,0,0,.04))}
+.ap-item:first-child{border-top:0}
+.ap-item:hover,.ap-item.active{background:var(--or-s)}
+.ap-iata{font-size:11px;font-weight:700;background:var(--or-s);color:var(--or);padding:3px 7px;border-radius:6px;flex-shrink:0;min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
+.ap-item.city .ap-iata{background:var(--or);color:#fff}
+.ap-item.child{padding-left:34px;background:rgba(0,0,0,.015)}
+.ap-item.child .ap-iata{background:var(--card-bg);color:var(--mid);border:1px solid var(--brd);min-width:34px;padding:2px 5px}
+.ap-item.child:hover,.ap-item.child.active{background:var(--or-s)}
 .ap-name{font-size:14px;font-weight:500;color:var(--text)}
 .ap-city{font-size:11px;color:var(--lt)}
+.ap-empty{padding:14px;color:var(--lt);font-size:13px;text-align:center}
 
 /* CATEGORY BAR */
 .results{max-width:1100px;margin:0 auto;padding:28px 40px 60px}
@@ -269,23 +277,8 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .jd-seg-carrier{font-size:11px;font-weight:700;color:var(--mid);white-space:nowrap;line-height:1;margin-top:2px;text-overflow:ellipsis;overflow:hidden;max-width:100%}
 .jd-dur{font-size:11px;font-weight:600;color:var(--lt);line-height:1}
 
-/* DETAIL GRID v2 */
+/* DETAIL GRID v2 — package banner + layover pill (shared with v3 rows) */
 .dg2-wrap{padding:14px 20px 6px;display:flex;flex-direction:column;gap:12px}
-.dg2-card{border:1.5px solid var(--brd);border-radius:12px;padding:18px 20px;transition:background .3s;border-left-width:4px}
-.dg2-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
-.dg2-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.7px}
-.dg2-tag-icon{font-size:13px}
-.dg2-tag-ref{font-weight:500;color:var(--lt);margin-left:6px;text-transform:none;letter-spacing:0;font-size:12px}
-.dg2-cta{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border:1.5px solid;border-radius:8px;background:var(--card-bg);font-family:var(--f);font-size:11px;font-weight:700;text-decoration:none;transition:.15s;white-space:nowrap;cursor:pointer}
-.dg2-cta:hover{transform:translateY(-1px);filter:brightness(1.05)}
-.dg2-carrier{font-size:17px;font-weight:700;color:var(--text);margin-bottom:2px}
-.dg2-route{font-size:13px;color:var(--mid);margin-bottom:18px}
-.dg2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.dg2-cell{display:flex;flex-direction:column;gap:6px;min-width:0}
-.dg2-cell-label{font-size:10px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.6px}
-.dg2-cell-time{font-size:22px;font-weight:700;color:var(--text);line-height:1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
-.dg2-cell-val{font-size:16px;font-weight:600;color:var(--text);line-height:1.1}
-.dg2-cell-price-val{font-size:22px;font-weight:700;line-height:1}
 .dg2-nextday{font-size:10px;font-weight:700;background:var(--or-ss);color:var(--or);padding:2px 6px;border-radius:4px}
 .dg2-layover{display:flex;justify-content:center;padding:2px 0}
 .dg2-layover-pill{display:inline-flex;align-items:center;gap:6px;background:var(--blue-s);color:var(--blue);font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;border:1.5px solid var(--brd)}
@@ -298,9 +291,39 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .dg2-pkg-right{text-align:right;flex-shrink:0}
 .dg2-pkg-price{font-size:22px;font-weight:800;line-height:1.1}
 .dg2-pkg-sub{font-size:11px;color:var(--lt);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
-@media (max-width: 640px){
-  .dg2-grid{grid-template-columns:repeat(2,1fr)}
-  .dg2-card{padding:16px}
+
+/* DETAIL GRID v3 — Option C: horizontal-timeline rows */
+.dg3-leg{display:grid;grid-template-columns:minmax(110px,auto) 1fr minmax(80px,auto);gap:18px;align-items:center;border:1.5px solid var(--brd);border-left-width:4px;border-radius:12px;padding:14px 18px;background:var(--card-bg);transition:.2s}
+.dg3-leg:hover{box-shadow:0 4px 14px -8px rgba(0,0,0,.18)}
+.dg3-leg-id{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dg3-leg-tag{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px}
+.dg3-leg-tag-icon{font-size:12px}
+.dg3-leg-carrier{font-size:14px;font-weight:700;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dg3-leg-ref{font-size:11px;color:var(--lt);font-weight:500}
+.dg3-leg-timeline{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;min-width:0}
+.dg3-leg-end{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dg3-leg-end.right{align-items:flex-end;text-align:right}
+.dg3-leg-time{font-size:20px;font-weight:700;color:var(--text);line-height:1;display:inline-flex;align-items:baseline;gap:5px}
+.dg3-leg-place{font-size:11px;color:var(--lt);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+.dg3-leg-iata{font-weight:800;color:var(--mid);margin-right:4px}
+.dg3-leg-track{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:64px}
+.dg3-track-dur{font-size:11px;font-weight:700;color:var(--mid);line-height:1;white-space:nowrap}
+.dg3-track-bar{width:100%;display:flex;align-items:center;gap:3px}
+.dg3-track-line{flex:1;border-top:2px dashed var(--brd);min-width:14px}
+.dg3-track-icon{font-size:13px;color:var(--mid)}
+.dg3-leg-price{font-size:19px;font-weight:700;line-height:1.1;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
+.dg3-leg-price-incl{font-size:10px;color:var(--lt);font-weight:600}
+.dg3-cta-row{display:flex;justify-content:flex-end;gap:8px;padding:0 2px}
+.dg3-sky-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;background:var(--or);color:#fff;border:none;border-radius:10px;font-family:var(--f);font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;transition:.15s;box-shadow:0 4px 12px -4px rgba(244,97,30,.45)}
+.dg3-sky-btn:hover{transform:translateY(-1px);filter:brightness(1.05);box-shadow:0 6px 18px -4px rgba(244,97,30,.55)}
+.dg3-sky-btn-arrow{font-size:14px;line-height:1}
+.dg3-buy-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;background:var(--card-bg);color:var(--text);border:1.5px solid var(--brd);border-radius:10px;font-family:var(--f);font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;transition:.15s}
+.dg3-buy-btn:hover{transform:translateY(-1px);border-color:var(--mid)}
+@media (max-width: 720px){
+  .dg3-leg{grid-template-columns:1fr;gap:12px}
+  .dg3-leg-id{flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px}
+  .dg3-leg-place{max-width:100%}
+  .dg3-leg-price{align-items:flex-start;text-align:left}
 }
 
 /* TOTAL ROW */
@@ -519,6 +542,7 @@ const T = {
     flightPackage: "Uçuş Paketi", flightPackageLegs: "leg", flightPackageTotal: "toplam",
     noResult: "Sonuç yok", mapTitle: "Rota Haritası",
     selectAirport: "Havalimanı seç:", trySearch: "Milano → Nürnberg dene",
+    allAirports: "Tüm havalimanları", airportsCount: "havalimanı", noAirportMatch: "Eşleşen şehir veya havalimanı yok", needAirport: "Listeden bir şehir veya havalimanı seç",
     tweaks: "Tweaks", currency: "Para Birimi", cardStyle: "Kart Stili", comfortable: "Rahat", compact: "Kompakt",
     hubViaTitle: "üzerinden", hubMinFromLabel: "En düşük",
     hubDistance: "uzaklık", hubBusOptions: "otobüs", hubFlightOptions: "uçuş",
@@ -566,6 +590,7 @@ const T = {
     flightPackage: "Flight Package", flightPackageLegs: "legs", flightPackageTotal: "total",
     noResult: "No results", mapTitle: "Route Map",
     selectAirport: "Select airport:", trySearch: "Try Milan → Nürnberg",
+    allAirports: "All airports", airportsCount: "airports", noAirportMatch: "No matching city or airport", needAirport: "Select a city or airport from the list",
     tweaks: "Tweaks", currency: "Currency", cardStyle: "Card Style", comfortable: "Comfortable", compact: "Compact",
     hubViaTitle: "via", hubMinFromLabel: "From",
     hubDistance: "away", hubBusOptions: "buses", hubFlightOptions: "flights",
@@ -601,19 +626,6 @@ const T = {
     bannerEmpty: "No results in this category match the filter.", bannerSomeFiltered: "results filtered",
     noOvernightChip: "no overnight"
   }
-};
-
-// ── Airport data ──────────────────────────────────────────────────────────────
-const MULTI_AP = {
-  "milan": [{ iata: "MXP", name: "Malpensa", city: "Milan, IT" }, { iata: "LIN", name: "Linate", city: "Milan, IT" }, { iata: "BGY", name: "Bergamo", city: "Milan, IT" }],
-  "milano": [{ iata: "MXP", name: "Malpensa", city: "Milano, IT" }, { iata: "LIN", name: "Linate", city: "Milano, IT" }, { iata: "BGY", name: "Bergamo Orio", city: "Milano, IT" }],
-  "london": [{ iata: "LHR", name: "Heathrow", city: "London, UK" }, { iata: "LGW", name: "Gatwick", city: "London, UK" }, { iata: "STN", name: "Stansted", city: "London, UK" }, { iata: "LCY", name: "City", city: "London, UK" }],
-  "paris": [{ iata: "CDG", name: "Charles de Gaulle", city: "Paris, FR" }, { iata: "ORY", name: "Orly", city: "Paris, FR" }],
-  "rome": [{ iata: "FCO", name: "Fiumicino", city: "Rome, IT" }, { iata: "CIA", name: "Ciampino", city: "Rome, IT" }],
-  "roma": [{ iata: "FCO", name: "Fiumicino", city: "Roma, IT" }, { iata: "CIA", name: "Ciampino", city: "Roma, IT" }],
-  "venice": [{ iata: "VCE", name: "Marco Polo", city: "Venice, IT" }, { iata: "TSF", name: "Treviso", city: "Venice area, IT" }],
-  "venezia": [{ iata: "VCE", name: "Marco Polo", city: "Venezia, IT" }, { iata: "TSF", name: "Treviso", city: "Venezia area, IT" }],
-  "stockholm": [{ iata: "ARN", name: "Arlanda", city: "Stockholm, SE" }, { iata: "NYO", name: "Skavsta", city: "Stockholm, SE" }]
 };
 
 // ── Mock Data ────────────────────────────────────────────────────────────────
@@ -910,23 +922,39 @@ function calcLayover(prev, next) {
 function DetailGrid({ segs, currency, lang, flightPackage }) {
   const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
   const t = T[lang] || T.tr;
-  const L = lang === 'tr' ?
-    { depart: 'Kalkış', arrive: 'Varış', duration: 'Süre', price: 'Fiyat' } :
-    { depart: 'Depart', arrive: 'Arrive', duration: 'Duration', price: 'Price' };
-  const buyCopy = (type) => type === 'flight' ?
-    (lang === 'tr' ? "Google Flights'ta Ara" : "Search on Google Flights") :
-    (lang === 'tr' ? "Omio'da Ara" : "Search on Omio");
+  const skyCopy = lang === 'tr' ? "Skyscanner'da Ara" : 'Search on Skyscanner';
+  const omioCopy = lang === 'tr' ? "Omio'da Ara" : 'Search on Omio';
   return (
     <div className="dg2-wrap">
       {segs.map((seg, i) => {
+        const isFlight = seg.type === 'flight';
+        const prev = i > 0 ? segs[i - 1] : null;
+        const next = i < segs.length - 1 ? segs[i + 1] : null;
+        const isFlightGroupStart = isFlight && (i === 0 || prev.type !== 'flight');
+        const isFlightGroupEnd = isFlight && (i === segs.length - 1 || next.type !== 'flight');
         const color = SEG_COLOR[seg.type];
-        const bgTint = MODE_TINT[seg.type];
-        const modeLabel = (seg.type === 'flight' ? t.flightLeg : seg.type === 'bus' ? t.busLeg : t.trainLeg).toUpperCase();
-        const icon = seg.type === 'flight' ? '✈' : seg.type === 'bus' ? '🚌' : '🚆';
-        const isFlightGroupStart = flightPackage && seg.type === 'flight' && (i === 0 || segs[i - 1].type !== 'flight');
+        const modeLabel = (isFlight ? t.flightLeg : seg.type === 'bus' ? t.busLeg : t.trainLeg).toUpperCase();
+        const icon = isFlight ? '✈' : seg.type === 'bus' ? '🚌' : '🚆';
+        const fromName = seg.fromName && seg.fromName !== seg.from ? seg.fromName : null;
+        const toName = seg.toName && seg.toName !== seg.to ? seg.toName : null;
+        const isFollowUpFlightInPkg = isFlight && flightPackage && flightPackage.legCount > 1 && !isFlightGroupStart;
+        const showLayover = i > 0;
         return (
           <React.Fragment key={i}>
-            {isFlightGroupStart &&
+            {showLayover && (() => {
+              const dur = calcLayover(prev, seg);
+              const iata = prev.to && prev.to.length === 3 && prev.to === prev.to.toUpperCase() ? prev.to : null;
+              const cityName = prev.toName || (iata && CITY_NAMES[iata]) || prev.to;
+              const where = iata && cityName && cityName !== iata ? `${cityName} (${iata})` : cityName || iata;
+              return (
+                <div className="dg2-layover">
+                  <span className="dg2-layover-pill">
+                    ⏱ {dur ? `${dur} ${t.layover}` : t.layover}{where ? ` · ${where}` : ''}
+                  </span>
+                </div>);
+            })()}
+
+            {isFlightGroupStart && flightPackage && flightPackage.legCount > 1 &&
               <div className="dg2-pkg" style={{ borderColor: SEG_COLOR.flight, background: MODE_TINT.flight }}>
                 <div className="dg2-pkg-left">
                   <div className="dg2-pkg-tag" style={{ color: SEG_COLOR.flight }}>
@@ -940,64 +968,72 @@ function DetailGrid({ segs, currency, lang, flightPackage }) {
                 </div>
               </div>
             }
-            {i > 0 && (() => {
-              const prev = segs[i - 1];
-              const dur = calcLayover(prev, seg);
-              const iata = prev.to && prev.to.length === 3 && prev.to === prev.to.toUpperCase() ? prev.to : null;
-              const cityName = prev.toName || (iata && CITY_NAMES[iata]) || prev.to;
-              const where = iata && cityName && cityName !== iata ? `${cityName} (${iata})` : cityName || iata;
-              return (
-                <div className="dg2-layover">
-                  <span className="dg2-layover-pill">
-                    ⏱ {dur ? `${dur} ${t.layover}` : t.layover}{where ? ` · ${where}` : ''}
-                  </span>
-                </div>);
 
-            })()}
-
-            <div className="dg2-card" style={{ borderLeftColor: color, background: bgTint }}>
-              <div className="dg2-card-head">
-                <div className="dg2-tag" style={{ color }}>
-                  <span className="dg2-tag-icon">{icon}</span>
+            <div className={`dg3-leg ${seg.type}`} style={{ borderLeftColor: color }}>
+              <div className="dg3-leg-id">
+                <div className="dg3-leg-tag" style={{ color }}>
+                  <span className="dg3-leg-tag-icon">{icon}</span>
                   <span>{modeLabel}</span>
-                  {seg.ref && <span className="dg2-tag-ref">{seg.ref}</span>}
                 </div>
-                <a href={seg.buyUrl} target="_blank" rel="noopener"
-                  className="dg2-cta"
-                  style={{ borderColor: color, color }}
-                  onClick={(e) => e.stopPropagation()}>
-                  {icon} {buyCopy(seg.type)} ↗
-                </a>
+                <div className="dg3-leg-carrier">{seg.carrier}</div>
+                {seg.ref && <div className="dg3-leg-ref">{seg.ref}</div>}
               </div>
 
-              <div className="dg2-carrier">{seg.carrier}</div>
-              <div className="dg2-route">{seg.fromName || seg.from} → {seg.toName || seg.to}</div>
-
-              <div className="dg2-grid">
-                <div className="dg2-cell">
-                  <div className="dg2-cell-label">{L.depart}</div>
-                  <div className="dg2-cell-time">{seg.dep}</div>
-                </div>
-                <div className="dg2-cell">
-                  <div className="dg2-cell-label">{L.arrive}</div>
-                  <div className="dg2-cell-time">
-                    {seg.arr}
-                    {seg.nextDay && <span className="dg2-nextday">+1</span>}
+              <div className="dg3-leg-timeline">
+                <div className="dg3-leg-end">
+                  <div className="dg3-leg-time">{seg.dep}</div>
+                  <div className="dg3-leg-place">
+                    <span className="dg3-leg-iata">{seg.from}</span>{fromName || ''}
                   </div>
                 </div>
-                <div className="dg2-cell">
-                  <div className="dg2-cell-label">{L.duration}</div>
-                  <div className="dg2-cell-val">{seg.duration}</div>
+                <div className="dg3-leg-track">
+                  <div className="dg3-track-dur">{seg.duration}</div>
+                  <div className="dg3-track-bar">
+                    <div className="dg3-track-line" />
+                    <span className="dg3-track-icon" style={{ color }}>{icon}</span>
+                    <div className="dg3-track-line" />
+                  </div>
                 </div>
-                <div className="dg2-cell">
-                  <div className="dg2-cell-label">{L.price}</div>
-                  {seg.price == null ?
-                    <div className="dg2-cell-val" style={{ color: 'var(--lt)' }}>—</div> :
-                    <div className="dg2-cell-price-val" style={{ color }}>{fmt(seg.price)}</div>
-                  }
+                <div className="dg3-leg-end right">
+                  <div className="dg3-leg-time">
+                    {seg.arr}{seg.nextDay && <span className="dg2-nextday">+1</span>}
+                  </div>
+                  <div className="dg3-leg-place">
+                    <span className="dg3-leg-iata">{seg.to}</span>{toName || ''}
+                  </div>
                 </div>
               </div>
+
+              <div className="dg3-leg-price" style={{ color: seg.price != null ? color : 'var(--lt)' }}>
+                {isFollowUpFlightInPkg ?
+                  <span className="dg3-leg-price-incl">{t.includedInFlight}</span> :
+                  seg.price == null ?
+                    <span>—</span> :
+                    <span>{fmt(seg.price)}</span>
+                }
+              </div>
             </div>
+
+            {isFlightGroupEnd && seg.buyUrl &&
+              <div className="dg3-cta-row">
+                <a href={seg.buyUrl} target="_blank" rel="noopener noreferrer"
+                  className="dg3-sky-btn"
+                  onClick={(e) => e.stopPropagation()}>
+                  ✈ {skyCopy} <span className="dg3-sky-btn-arrow">↗</span>
+                </a>
+              </div>
+            }
+
+            {!isFlight && seg.buyUrl &&
+              <div className="dg3-cta-row">
+                <a href={seg.buyUrl} target="_blank" rel="noopener noreferrer"
+                  className="dg3-buy-btn"
+                  style={{ borderColor: color, color }}
+                  onClick={(e) => e.stopPropagation()}>
+                  {icon} {omioCopy} <span className="dg3-sky-btn-arrow">↗</span>
+                </a>
+              </div>
+            }
           </React.Fragment>);
 
       })}
@@ -1277,38 +1313,162 @@ function GroundCard({ d, currency, lang }) {
 }
 
 // ── CityInput ─────────────────────────────────────────────────────────────────
-function CityInput({ label, value, onChange, onAirportSelect, selectedAirport, lang }) {
+// Normalize for fuzzy matching: lowercase + strip diacritics so "Nurnberg"
+// matches "Nürnberg" and "Munchen" matches "München".
+function _norm(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
+
+// Build dropdown suggestions from the airport list. Matches IATA exact (top),
+// then city startsWith, city contains, airport-name contains. Multi-airport
+// cities are grouped under a single "city" pseudo-entry that picks the
+// preferred airport server-side via resolve_iata's _PREFERRED_IATA map.
+function buildAirportSuggestions(airports, query, max = 8) {
+  if (!Array.isArray(airports) || airports.length === 0) return [];
+  const q = _norm(query);
+  if (!q) return [];
+
+  // Group by normalized city.
+  const cityMap = new Map();
+  for (const a of airports) {
+    if (!a.iata || !a.city) continue;
+    const key = _norm(a.city);
+    if (!cityMap.has(key)) cityMap.set(key, { city: a.city, country: a.country || '', airports: [] });
+    cityMap.get(key).airports.push(a);
+  }
+
+  // Score one entry per city. Multi-airport cities use a "city-group" entry
+  // that expands into a city pseudo + its airports as nested children.
+  // Single-airport cities use a flat airport entry.
+  const scored = [];
+  for (const [key, group] of cityMap) {
+    if (group.airports.length >= 2) {
+      let s = Infinity;
+      if (key === q) s = 0;
+      else if (key.startsWith(q)) s = 1;
+      else if (key.includes(q)) s = 3;
+      // An IATA match on any child should still surface the whole city group.
+      for (const a of group.airports) {
+        const ai = _norm(a.iata);
+        const an = _norm(a.name);
+        if (ai === q) s = Math.min(s, 0.5);
+        else if (ai.startsWith(q)) s = Math.min(s, 2);
+        else if (an.includes(q)) s = Math.min(s, 4.5);
+      }
+      if (s < Infinity) scored.push({
+        score: s, kind: 'group', city: group.city, country: group.country, airports: group.airports,
+      });
+    } else {
+      const a = group.airports[0];
+      const iata = _norm(a.iata);
+      const name = _norm(a.name);
+      let s = Infinity;
+      if (iata === q) s = 0;
+      else if (key === q) s = 1;
+      else if (key.startsWith(q)) s = 2;
+      else if (iata.startsWith(q)) s = 2.5;
+      else if (key.includes(q)) s = 4;
+      else if (name.includes(q)) s = 5;
+      if (s < Infinity) scored.push({ score: s, kind: 'single', a });
+    }
+  }
+
+  scored.sort((a, b) => a.score - b.score);
+
+  // Flatten into render entries. Each city-group emits a `city` entry followed
+  // by `airport` entries marked `child:true` so the row renders indented.
+  const out = [];
+  for (const s of scored) {
+    if (s.kind === 'group') {
+      out.push({ type: 'city', city: s.city, country: s.country, airports: s.airports });
+      for (const a of s.airports) out.push({ type: 'airport', a, child: true });
+    } else {
+      out.push({ type: 'airport', a: s.a });
+    }
+    if (out.length >= max) break;
+  }
+  return out.slice(0, max);
+}
+
+function CityInput({ label, value, onChange, onAirportSelect, selectedAirport, lang, airports }) {
   const [focused, setFocused] = useState(false);
-  const airports = MULTI_AP[value.toLowerCase().trim()] || null;
-  const showDrop = focused && airports && airports.length > 0;
+  const [activeIdx, setActiveIdx] = useState(0);
   const t = T[lang];
+  const suggestions = buildAirportSuggestions(airports, value, 8);
+  const showDrop = focused && value.trim().length > 0;
+
+  useEffect(() => { setActiveIdx(0); }, [value]);
+
+  const pickAirport = (ap) => {
+    onChange(ap.city);
+    onAirportSelect(ap.iata);
+    setFocused(false);
+  };
+  const pickCity = (s) => {
+    onChange(s.city);
+    onAirportSelect(null);
+    setFocused(false);
+  };
+  const pickSuggestion = (s) => s.type === 'city' ? pickCity(s) : pickAirport(s.a);
+
+  const onKeyDown = (e) => {
+    if (!showDrop || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx((i) => (i + 1) % suggestions.length); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx((i) => (i - 1 + suggestions.length) % suggestions.length); }
+    else if (e.key === 'Enter') { e.preventDefault(); pickSuggestion(suggestions[activeIdx]); }
+    else if (e.key === 'Escape') { setFocused(false); }
+  };
+
   return (
     <div className="sf-field">
       <div className="sf-label">{label}</div>
       <div className="sf-input-wrap">
         <input className="sf-input"
-        style={selectedAirport ? { paddingRight: 56 } : {}}
-        value={value}
-        onChange={(e) => {onChange(e.target.value);onAirportSelect(null);}}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setTimeout(() => setFocused(false), 180)}
-        placeholder={label === T[lang].from ? "e.g. Milan / Venice" : "e.g. Nürnberg"} />
-        
+          style={selectedAirport ? { paddingRight: 56 } : {}}
+          value={value}
+          onChange={(e) => { onChange(e.target.value); onAirportSelect(null); }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 180)}
+          onKeyDown={onKeyDown}
+          autoComplete="off"
+          placeholder={label === T[lang].from ? "Roma, Berlin, FCO..." : "Milano, München, MUC..."} />
         {selectedAirport && <span className="sf-ap-badge">{selectedAirport}</span>}
       </div>
       {showDrop &&
-      <div className="ap-dropdown">
-          <div style={{ padding: '8px 12px 3px', fontSize: 10, fontWeight: 700, color: 'var(--lt)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{t.selectAirport}</div>
-          {airports.map((ap) =>
-        <div key={ap.iata} className="ap-item" onMouseDown={() => {onAirportSelect(ap.iata);setFocused(false);}}>
-              <span className="ap-iata">{ap.iata}</span>
-              <div><div className="ap-name">{ap.name}</div><div className="ap-city">{ap.city}</div></div>
-            </div>
-        )}
+        <div className="ap-dropdown">
+          {suggestions.length === 0 ?
+            <div className="ap-empty">{t.noAirportMatch}</div> :
+            suggestions.map((s, i) => {
+              const active = i === activeIdx ? ' active' : '';
+              if (s.type === 'city') {
+                return (
+                  <div key={`city-${_norm(s.city)}`}
+                    className={`ap-item city${active}`}
+                    onMouseDown={() => pickSuggestion(s)}
+                    onMouseEnter={() => setActiveIdx(i)}>
+                    <span className="ap-iata">★</span>
+                    <div>
+                      <div className="ap-name">{s.city} — {t.allAirports}</div>
+                      <div className="ap-city">{s.airports.length} {t.airportsCount} · {s.country || ''}</div>
+                    </div>
+                  </div>);
+              }
+              return (
+                <div key={`ap-${s.a.iata}-${s.child ? 'c' : 'r'}`}
+                  className={`ap-item${s.child ? ' child' : ''}${active}`}
+                  onMouseDown={() => pickSuggestion(s)}
+                  onMouseEnter={() => setActiveIdx(i)}>
+                  <span className="ap-iata">{s.a.iata}</span>
+                  <div>
+                    <div className="ap-name">{s.a.name}</div>
+                    <div className="ap-city">{s.a.city}{s.a.country ? ` · ${s.a.country}` : ''}</div>
+                  </div>
+                </div>);
+            })
+          }
         </div>
       }
     </div>);
-
 }
 
 // ── Advanced filter helpers ──────────────────────────────────────────────────
@@ -2341,12 +2501,21 @@ function App() {
   const [activeSec, setActiveSec] = useState(0);
   const [filter, setFilter] = useState(FILTER_DEFAULTS);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [airports, setAirports] = useState([]);
   const t = T[lang];
   const resultsRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', tweaks.theme || 'light');
   }, [tweaks.theme]);
+
+  // Fetch the IT/DE airport list once for autocomplete suggestions.
+  useEffect(() => {
+    fetch('/api/airports')
+      .then((r) => r.json())
+      .then((data) => setAirports(Array.isArray(data?.airports) ? data.airports : []))
+      .catch((err) => console.error('/api/airports failed:', err));
+  }, []);
 
   function swap() {setFrom(to);setTo(from);setFromAp(toAp);setToAp(fromAp);}
 
@@ -2472,7 +2641,17 @@ function App() {
   return (
     <>
       <header className="hdr" style={{ fontFamily: "\"Space Grotesk\"" }}>
-        <div className="logo"><div className="logo-icon">🗺</div>Multi Rote</div>
+        <div className="logo">
+          <div className="logo-icon">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M7 23 Q 12 14 16 14 Q 20 14 25 9" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeDasharray="2.5 2.5" fill="none" />
+              <circle cx="7" cy="23" r="3" fill="#fff" />
+              <circle cx="16" cy="14" r="2.2" fill="#fff" fillOpacity="0.55" />
+              <circle cx="25" cy="9" r="3" fill="#fff" />
+            </svg>
+          </div>
+          Multi Route
+        </div>
         <div className="hdr-right">
           <button className="theme-btn" onClick={() => setShowTweaks((p) => !p)} aria-label={t.tweaks}>⚙</button>
           <button className="theme-btn" onClick={() => updateTweak('theme', tweaks.theme === 'dark' ? 'light' : 'dark')}>
@@ -2487,12 +2666,12 @@ function App() {
 
       <section className="hero">
         <div style={{ maxWidth: 900 }}>
-          <div className="hero-title">Multi Rote</div>
+          <div className="hero-title">Multi Route</div>
           <div className="hero-sub">{t.tagline}</div>
           <div className="search-box">
-            <CityInput label={t.from} value={from} onChange={setFrom} onAirportSelect={setFromAp} selectedAirport={fromAp} lang={lang} />
+            <CityInput label={t.from} value={from} onChange={setFrom} onAirportSelect={setFromAp} selectedAirport={fromAp} lang={lang} airports={airports} />
             <button className="swap-btn" onClick={swap}>⇄</button>
-            <CityInput label={t.to} value={to} onChange={setTo} onAirportSelect={setToAp} selectedAirport={toAp} lang={lang} />
+            <CityInput label={t.to} value={to} onChange={setTo} onAirportSelect={setToAp} selectedAirport={toAp} lang={lang} airports={airports} />
             <div className="sf-field sf-date">
               <div className="sf-label">{t.date}</div>
               <div className="sf-input-wrap">

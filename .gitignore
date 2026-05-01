@@ -20,3 +20,7 @@ ENV/
 .env
 *.md
 multi-way-road-tripping
+
+# per-machine SerpAPI reliability state (not source of truth)
+airport_reliability.json
+.DS_Store

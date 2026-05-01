@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
+from airport_reliability import is_suspended
 from bus_and_flight_search import (
     _bus_option,
     _flight_option,
@@ -74,7 +75,8 @@ def _fetch_hub(
 ) -> dict | None:
     """Pull flights (departure_id → hub) + buses (hub → target_city)."""
     try:
-        flights_df = flight_search(departure_id, ap["iata"], outbound_date)
+        flights_df = flight_search(departure_id, ap["iata"], outbound_date,
+                                   track_iata=ap["iata"])
     except Exception as e:
         print(f"   flight_search({departure_id} → {ap['iata']}) raised: {e}")
         return None
@@ -163,6 +165,15 @@ def find_cheap_flight_plus_ground_v2(
     nearby = nearby[nearby["city"].str.lower().str.strip() != target_query].reset_index(drop=True)
     if nearby.empty:
         print(f"⚠️  All nearby airports are in the destination city ({target_city!r}). No bus leg possible.")
+        return []
+
+    # Drop hubs currently suspended for unreliable SerpAPI results.
+    suspended = [c for c in nearby["iata"].tolist() if is_suspended(c)]
+    if suspended:
+        print(f"   ⏸  Skipping suspended airports: {suspended}")
+        nearby = nearby[~nearby["iata"].isin(suspended)].reset_index(drop=True)
+    if nearby.empty:
+        print("⚠️  All nearby airports are currently suspended. Try again later.")
         return []
 
     print(

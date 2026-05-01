@@ -2,10 +2,20 @@ from serpapi import Client as SerpApiClient  # clearer import
 import pandas as pd
 import os
 
-def flight_search(departure_id: str, arrival_id: str, outbound_date: str):
+from airport_reliability import record_empty, record_success
+
+
+def flight_search(departure_id: str, arrival_id: str, outbound_date: str,
+                  *, track_iata: str | None = None):
     """
     Search direct/specific flights from departure_id → arrival_id.
     Returns ONE DataFrame with both 'Best' and 'Other' flights.
+
+    `track_iata` is the candidate-hub airport whose reliability we want
+    to update (the "swappable" side of the search). When provided, an
+    empty result increments its strike count and a non-empty result
+    forgives one. Exceptions don't count — those aren't the airport's
+    fault.
     """
     api_key = os.getenv("SERPAPI_KEY")
     if not api_key:
@@ -87,8 +97,12 @@ def flight_search(departure_id: str, arrival_id: str, outbound_date: str):
 
         if df.empty:
             print(f"⚠️  No flights found from {departure_id} to {arrival_id}")
+            if track_iata:
+                record_empty(track_iata)
             return df
 
+        if track_iata:
+            record_success(track_iata)
         print(f"✅ Flight search DONE: {len(df)} flights found "
               f"({len(df[df['flight_type']=='Best'])} best)")
         return df.sort_values("price").reset_index(drop=True)
