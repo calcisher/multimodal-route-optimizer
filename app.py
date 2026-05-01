@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import json
-import hashlib
 import math
-import sqlite3
 import unicodedata
 from datetime import date as date_cls, datetime
 from pathlib import Path
@@ -12,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 from flask import Flask, jsonify, request, send_from_directory
 
+import data_cache
 from bus_and_flight_search import _to_naive, find_cheap_ground_plus_flight
 from flight_and_ground_search import airports_df, geocode_city, haversine_km
 from flight_plus_bus_search import find_cheap_flight_plus_ground_v2
@@ -90,81 +89,13 @@ _PREFERRED_IATA = {
 
 ROOT = Path(__file__).parent
 UI_DIR = ROOT / "UI"
-CACHE_DB = ROOT / "data" / "search_cache.db"
 
 app = Flask(__name__, static_folder=str(UI_DIR), static_url_path='')
 
-
-# ---------- cache ----------
-
-def _cache_payload(endpoint: str, payload: dict) -> tuple[str, str]:
-    """Return a stable cache key for the search fields that affect results."""
-    relevant = {
-        "endpoint": endpoint,
-        "from_city": (payload.get("from_city") or "").strip().lower(),
-        "to_city": (payload.get("to_city") or "").strip().lower(),
-        "from_iata": (payload.get("from_iata") or "").strip().upper(),
-        "to_iata": (payload.get("to_iata") or "").strip().upper(),
-        "date": (payload.get("date") or "").strip(),
-    }
-    raw = json.dumps(relevant, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest(), raw
-
-
-def _cache_conn() -> sqlite3.Connection:
-    CACHE_DB.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(CACHE_DB, timeout=30)
-    conn.execute("PRAGMA busy_timeout = 30000")
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS search_cache (
-            cache_key TEXT PRIMARY KEY,
-            endpoint TEXT NOT NULL,
-            request_json TEXT NOT NULL,
-            response_json TEXT NOT NULL,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    return conn
-
-
-def _cache_get(endpoint: str, payload: dict) -> dict | None:
-    key, _ = _cache_payload(endpoint, payload)
-    try:
-        with _cache_conn() as conn:
-            row = conn.execute(
-                "SELECT response_json FROM search_cache WHERE cache_key = ?",
-                (key,),
-            ).fetchone()
-        if not row:
-            return None
-        print(f"💾 cache HIT {endpoint}")
-        return json.loads(row[0])
-    except Exception as e:
-        print(f"⚠️  cache read failed for {endpoint}: {e}")
-        return None
-
-
-def _cache_set(endpoint: str, payload: dict, response_data: dict) -> None:
-    if response_data.get("error"):
-        return
-    key, req = _cache_payload(endpoint, payload)
-    resp = json.dumps(response_data, sort_keys=True, ensure_ascii=False, default=str)
-    try:
-        with _cache_conn() as conn:
-            conn.execute(
-                """
-                INSERT INTO search_cache (cache_key, endpoint, request_json, response_json)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(cache_key) DO UPDATE SET
-                    response_json = excluded.response_json,
-                    updated_at = CURRENT_TIMESTAMP
-                """,
-                (key, endpoint, req, resp),
-            )
-        print(f"💾 cache SAVE {endpoint}")
-    except Exception as e:
-        print(f"⚠️  cache write failed for {endpoint}: {e}")
+# Drop expired/past-date cache rows once at startup. The endpoint-level
+# cache here was replaced by data_cache (per-data-type, with TTLs at the
+# SerpAPI/FlixBus call sites) — prune() also deletes the legacy table.
+data_cache.prune()
 
 
 # ---------- helpers ----------
@@ -638,9 +569,6 @@ def _airports_payload(*iata_sets: set[str]) -> dict:
 @app.post("/api/flights")
 def api_flights():
     payload = request.get_json(silent=True) or {}
-    cached = _cache_get("/api/flights", payload)
-    if cached is not None:
-        return jsonify(cached)
     inputs, err = _resolve_inputs(payload)
     if err:
         return err
@@ -660,7 +588,7 @@ def api_flights():
     print(f"   → best={len(best_flights)}  cheap={len(cheap_flights)}")
 
     iatas = _iatas_in(best_flights) | _iatas_in(cheap_flights) | {from_iata, to_iata}
-    response_data = {
+    return jsonify({
         "bestFlights": best_flights,
         "cheapFlights": cheap_flights,
         "airports": _airports_payload(iatas),
@@ -669,17 +597,12 @@ def api_flights():
             "fromCity": from_city, "toCity": to_city,
         },
         "error": flight_err,
-    }
-    _cache_set("/api/flights", payload, response_data)
-    return jsonify(response_data)
+    })
 
 
 @app.post("/api/flight-plus-bus")
 def api_flight_plus_bus():
     payload = request.get_json(silent=True) or {}
-    cached = _cache_get("/api/flight-plus-bus", payload)
-    if cached is not None:
-        return jsonify(cached)
     inputs, err = _resolve_inputs(payload)
     if err:
         return err
@@ -707,21 +630,16 @@ def api_flight_plus_bus():
     print(f"   → flightPlusBus hubs={len(hubs)}")
 
     iatas = _iatas_in(hubs) | {from_iata, to_iata}
-    response_data = {
+    return jsonify({
         "flightPlusBus": hubs,
         "airports": _airports_payload(iatas),
         "error": combo_err,
-    }
-    _cache_set("/api/flight-plus-bus", payload, response_data)
-    return jsonify(response_data)
+    })
 
 
 @app.post("/api/bus-plus-flight")
 def api_bus_plus_flight():
     payload = request.get_json(silent=True) or {}
-    cached = _cache_get("/api/bus-plus-flight", payload)
-    if cached is not None:
-        return jsonify(cached)
     inputs, err = _resolve_inputs(payload)
     if err:
         return err
@@ -749,13 +667,11 @@ def api_bus_plus_flight():
     print(f"   → busPlusFlight hubs={len(hubs)}")
 
     iatas = _iatas_in(hubs) | {from_iata, to_iata}
-    response_data = {
+    return jsonify({
         "busPlusFlight": hubs,
         "airports": _airports_payload(iatas),
         "error": ground_err,
-    }
-    _cache_set("/api/bus-plus-flight", payload, response_data)
-    return jsonify(response_data)
+    })
 
 
 if __name__ == "__main__":

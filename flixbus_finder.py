@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
+import data_cache
+
 # ──────────────────────────────────────────────
 # Konfigürasyon
 # ──────────────────────────────────────────────
@@ -199,6 +201,10 @@ def get_trips(
     conn: None verilirse fonksiyon kendi baglantisini acar
     Returns: fiyata gore sirali pandas DataFrame, bulunamazsa bos DataFrame
     """
+    cached = data_cache.bus_get(origin, destination, date)
+    if cached is not None:
+        return cached
+
     if conn is None:
         conn = init_db()
 
@@ -239,6 +245,7 @@ def get_trips(
 
     df = pd.DataFrame(rows)
     df = df.sort_values("price_eur").reset_index(drop=True)
+    data_cache.bus_set(origin, destination, date, df)
     return df
 
 
