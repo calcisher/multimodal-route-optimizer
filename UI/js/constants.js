@@ -73,3 +73,14 @@ const LATLNG = {
 const LINE_COLOR = { flight: "#2563EB", bus: "#F4611E", train: "#16A34A" };
 
 const CITY_NAMES = { VCE: 'Venice', NUE: 'Nürnberg', FRA: 'Frankfurt', MUC: 'Munich', CDG: 'Paris', AMS: 'Amsterdam', ZRH: 'Zürich', VIE: 'Vienna', BCN: 'Barcelona', VRN: 'Verona', TSF: 'Treviso' };
+
+// ── Advanced filter defaults ─────────────────────────────────────────────────
+const FILTER_DEFAULTS = {
+  maxDurH: 24,
+  depFromH: 0,
+  depToH: 24,
+  arrFromH: 0,
+  arrToH: 24,
+  maxTransfers: -1,
+  excludeOvernight: false
+};
