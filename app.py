@@ -17,14 +17,61 @@ from flight_and_ground_search import airports_df, geocode_city, haversine_km
 from flight_plus_bus_search import find_cheap_flight_plus_ground_v2
 from flight_search import flight_search
 
-# Global IATA → coords lookup for map rendering. Loaded once on startup.
+# IT/DE airport list — drives the autocomplete and the nearby-airports search.
 with open(Path(__file__).parent / "filtered_airports_it_de.json") as _f:
     _ALL = json.load(_f)
-AIRPORT_COORDS: dict[str, dict] = {
-    row["iata"]: {"lat": row["lat"], "lon": row["lon"], "city": row.get("city", "")}
-    for row in _ALL.values()
-    if row.get("iata")
+
+# Global IATA → coords lookup. The flight responses we return reference any
+# IATA SerpAPI surfaces as a layover or via-hub (PMI, IST, STR, …) — those
+# aren't in the IT/DE list, but the UI map still needs lat/lon to plot them.
+# Falls back gracefully if the global file isn't checked out (it's a 9MB blob
+# kept out of git on some setups).
+_GLOBAL_FILE = Path(__file__).parent / "airports.json"
+_GLOBAL_ALL: dict = {}
+if _GLOBAL_FILE.exists():
+    try:
+        with open(_GLOBAL_FILE) as _gf:
+            _GLOBAL_ALL = json.load(_gf)
+    except (OSError, json.JSONDecodeError):
+        _GLOBAL_ALL = {}
+
+# A few city labels in the global JSON point at the legal/suburb city instead
+# of the metro the airport actually serves (e.g. IST → "Arnavutkoy"). Override
+# so the UI shows recognizable names. Only add entries the data gets wrong.
+_CITY_OVERRIDES = {
+    "IST": "Istanbul",
+    "SAW": "Istanbul",
+    "PMI": "Palma de Mallorca",
+    "CDG": "Paris",
+    "ORY": "Paris",
+    "LHR": "London",
+    "LGW": "London",
+    "STN": "London",
+    "JFK": "New York",
+    "LGA": "New York",
+    "EWR": "New York",
 }
+
+AIRPORT_COORDS: dict[str, dict] = {}
+# Filtered file wins on conflict (curated) — global fills the gaps.
+for row in _GLOBAL_ALL.values():
+    iata = row.get("iata")
+    if iata and "lat" in row and "lon" in row:
+        AIRPORT_COORDS[iata] = {
+            "lat": row["lat"],
+            "lon": row["lon"],
+            "city": _CITY_OVERRIDES.get(iata, row.get("city", "")),
+            "country": row.get("country", ""),
+        }
+for row in _ALL.values():
+    iata = row.get("iata")
+    if iata:
+        AIRPORT_COORDS[iata] = {
+            "lat": row["lat"],
+            "lon": row["lon"],
+            "city": _CITY_OVERRIDES.get(iata, row.get("city", "")),
+            "country": row.get("country", ""),
+        }
 
 _CITY_ALIASES = {
     "nurnberg": "nuremberg", "munchen": "munich", "koln": "cologne",
@@ -45,7 +92,7 @@ ROOT = Path(__file__).parent
 UI_DIR = ROOT / "UI"
 CACHE_DB = ROOT / "data" / "search_cache.db"
 
-app = Flask(__name__, static_folder=None)
+app = Flask(__name__, static_folder=str(UI_DIR), static_url_path='')
 
 
 # ---------- cache ----------
@@ -499,6 +546,23 @@ def index():
 @app.get("/api/health")
 def health():
     return {"ok": True}
+
+
+@app.get("/api/airports")
+def airports():
+    """List of airports for the frontend autocomplete (IT/DE only)."""
+    rows = [
+        {
+            "iata": r.get("iata"),
+            "icao": r.get("icao"),
+            "name": r.get("name"),
+            "city": r.get("city"),
+            "country": r.get("country"),
+        }
+        for r in _ALL.values()
+        if r.get("iata") and r.get("city")
+    ]
+    return {"airports": rows}
 
 
 def _resolve_inputs(payload: dict):
