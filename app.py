@@ -10,14 +10,14 @@ from pathlib import Path
 import pandas as pd
 from flask import Flask, jsonify, request, send_from_directory
 
-import data_cache
-from bus_and_flight_search import _to_naive, find_cheap_ground_plus_flight
-from flight_and_ground_search import airports_df, geocode_city, haversine_km
-from flight_plus_bus_search import find_cheap_flight_plus_ground_v2
-from flight_search import flight_search
+from backend import data_cache
+from backend.bus_and_flight_search import _to_naive, find_cheap_ground_plus_flight
+from backend.flight_and_ground_search import airports_df, geocode_city, haversine_km
+from backend.flight_plus_bus_search import find_cheap_flight_plus_ground_v2
+from backend.flight_search import flight_search
 
 # IT/DE airport list — drives the autocomplete and the nearby-airports search.
-with open(Path(__file__).parent / "filtered_airports_it_de.json") as _f:
+with open(Path(__file__).parent / "data" / "filtered_airports_it_de.json") as _f:
     _ALL = json.load(_f)
 
 # Global IATA → coords lookup. The flight responses we return reference any
@@ -25,7 +25,7 @@ with open(Path(__file__).parent / "filtered_airports_it_de.json") as _f:
 # aren't in the IT/DE list, but the UI map still needs lat/lon to plot them.
 # Falls back gracefully if the global file isn't checked out (it's a 9MB blob
 # kept out of git on some setups).
-_GLOBAL_FILE = Path(__file__).parent / "airports.json"
+_GLOBAL_FILE = Path(__file__).parent / "data" / "airports.json"
 _GLOBAL_ALL: dict = {}
 if _GLOBAL_FILE.exists():
     try:

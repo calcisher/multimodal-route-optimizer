@@ -19,7 +19,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-_FILE = Path(__file__).parent / "airport_reliability.json"
+_FILE = Path(__file__).parent.parent / "data" / "airport_reliability.json"
 _LOCK = threading.Lock()
 
 STRIKE_THRESHOLD = 3

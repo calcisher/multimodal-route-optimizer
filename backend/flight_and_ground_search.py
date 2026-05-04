@@ -2,6 +2,7 @@
 import math
 import json
 from functools import lru_cache
+from pathlib import Path
 from dataclasses import dataclass
 import pandas as pd
 from geopy.geocoders import Nominatim
@@ -17,7 +18,7 @@ GEOLOCATOR = Nominatim(user_agent="travel_planner_kerem")  # ONE instance
 COUNTRY_EN = {"DE": "Germany", "IT": "Italy"}  # extend as needed
 
 # ========================= DATA =========================
-with open("./filtered_airports_it_de.json") as f:  # put json next to script or use absolute path
+with open(Path(__file__).parent.parent / "data" / "filtered_airports_it_de.json") as f:
     airports_df = (
         pd.DataFrame.from_dict(json.load(f), orient="index")
         .query("country in ['DE', 'IT'] and iata != ''")
@@ -128,8 +129,8 @@ def explore_search(departure_id: str, outbound_date: str, target_city: str, max_
     return df
 
 # ========================= BUS / TRAIN =========================
-from checkmybus import CheckMyBusClient, CheckMyBusSearchParams
-from flixbus_finder import get_trips
+from .checkmybus import CheckMyBusClient, CheckMyBusSearchParams
+from .flixbus_finder import get_trips
 
 def bus_train_transfer(departure_location: str, arrival_location: str, departure_date: str):
     """Return DataFrame of buses/trains. departure_location must be clean 'City, Country'."""

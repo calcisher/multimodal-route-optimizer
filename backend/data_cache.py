@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pandas as pd
 
-DB_PATH = Path(__file__).parent / "data" / "search_cache.db"
+DB_PATH = Path(__file__).parent.parent / "data" / "search_cache.db"
 FLIGHT_TTL_HOURS = 6
 BUS_TTL_HOURS = 48
 _BUS_DT_COLS = ("departure_dt", "arrival_dt")

@@ -1,5 +1,5 @@
-from flight_and_ground_search import find_cheap_flight_plus_ground
-from flight_search import flight_search
+from .flight_and_ground_search import find_cheap_flight_plus_ground
+from .flight_search import flight_search
 if __name__ == "__main__":
     df = find_cheap_flight_plus_ground(
         departure_id="VCE",

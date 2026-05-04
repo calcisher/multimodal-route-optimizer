@@ -20,16 +20,16 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from airport_reliability import is_suspended
-from bus_and_flight_search import (
+from .airport_reliability import is_suspended
+from .bus_and_flight_search import (
     _bus_option,
     _flight_option,
     _to_naive,
     find_nearby_airports,
 )
-from flight_and_ground_search import COUNTRY_EN
-from flight_search import flight_search
-from flixbus_finder import get_trips
+from .flight_and_ground_search import COUNTRY_EN
+from .flight_search import flight_search
+from .flixbus_finder import get_trips
 
 
 def _min_valid_total_flight_first(

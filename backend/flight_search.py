@@ -2,8 +2,8 @@ from serpapi import Client as SerpApiClient  # clearer import
 import pandas as pd
 import os
 
-from airport_reliability import record_empty, record_success
-import data_cache
+from .airport_reliability import record_empty, record_success
+from . import data_cache
 
 
 def flight_search(departure_id: str, arrival_id: str, outbound_date: str,

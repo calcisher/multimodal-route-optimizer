@@ -6,13 +6,14 @@ import time
 import sqlite3
 from datetime import datetime
 from functools import lru_cache
+from pathlib import Path
 import pandas as pd
 import requests
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import serpapi
 from dotenv import load_dotenv
-from checkmybus import CheckMyBusClient, CheckMyBusSearchParams
+from .checkmybus import CheckMyBusClient, CheckMyBusSearchParams
 
 # ========================= CONFIG & DATA =========================
 load_dotenv()
@@ -27,7 +28,7 @@ FLIXBUS_HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-with open("airports.json") as f:
+with open(Path(__file__).parent.parent / "data" / "airports.json") as f:
     airports_df = (
         pd.DataFrame.from_dict(json.load(f), orient="index")
         .query("country in ['DE', 'IT'] and iata != ''")
@@ -114,7 +115,7 @@ def fetch_flixbus_city_id(query: str) -> str | None:
 
 def get_flixbus_id_from_db(city_name: str) -> str | None:
     """Önce veritabanına bakar, bulamazsa canlı API'ye sorar."""
-    db_path = "data/flixbus_europe.db"
+    db_path = Path(__file__).parent.parent / "data" / "flixbus_europe.db"
 
     if os.path.exists(db_path):
         try:

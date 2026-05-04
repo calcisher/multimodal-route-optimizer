@@ -4,22 +4,23 @@ import os
 import json
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pandas as pd
 
-import data_cache
+from . import data_cache
 
 # ──────────────────────────────────────────────
 # Konfigürasyon
 # ──────────────────────────────────────────────
-DB_PATH = "data/flixbus_europe.db"
+DB_PATH = Path(__file__).parent.parent / "data" / "flixbus_europe.db"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept-Language": "en-US,en;q=0.9",  # İngilizce sonuçları da yakalayabilmek için
 }
 
-os.makedirs("data", exist_ok=True)
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
 # ──────────────────────────────────────────────
