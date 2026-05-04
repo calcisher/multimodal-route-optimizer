@@ -15,6 +15,7 @@ from backend.bus_and_flight_search import _to_naive, find_cheap_ground_plus_flig
 from backend.flight_and_ground_search import airports_df, geocode_city, haversine_km
 from backend.flight_plus_bus_search import find_cheap_flight_plus_ground_v2
 from backend.flight_search import flight_search
+from backend.train_finder import get_trips as train_get_trips
 
 # IT/DE airport list — drives the autocomplete and the nearby-airports search.
 with open(Path(__file__).parent / "data" / "filtered_airports_it_de.json") as _f:
@@ -671,6 +672,86 @@ def api_bus_plus_flight():
         "busPlusFlight": hubs,
         "airports": _airports_payload(iatas),
         "error": ground_err,
+    })
+
+
+def _train_to_ui(row: pd.Series, outbound_date: str,
+                 departure_city: str, arrival_city: str) -> dict:
+    dep_iso = _iso_or_none(row.get("departure_dt"), outbound_date)
+    arr_iso = _iso_or_none(row.get("arrival_dt"), outbound_date)
+    dep_d   = _date_of(row.get("departure_dt"))
+    arr_d   = _date_of(row.get("arrival_dt"))
+    try:
+        outbound_d = datetime.strptime(outbound_date, "%Y-%m-%d").date()
+    except ValueError:
+        outbound_d = None
+    next_day = bool(outbound_d and arr_d and arr_d > outbound_d)
+
+    return {
+        "type":        "Train",
+        "company":     row.get("provider", "Train"),
+        "price":       _to_float(row.get("price_eur")),
+        "dep":         _time_of(row.get("departure_dt")),
+        "arr":         _time_of(row.get("arrival_dt")),
+        "depISO":      dep_iso,
+        "arrISO":      arr_iso,
+        "depDate":     dep_d.isoformat() if dep_d else None,
+        "arrDate":     arr_d.isoformat() if arr_d else None,
+        "nextDay":     next_day,
+        "from":        row.get("origin") or departure_city,
+        "to":          row.get("destination") or arrival_city,
+        "duration":    _fmt_minutes(row.get("duration_min")),
+        "durationMin": int(row["duration_min"]) if row.get("duration_min") is not None else None,
+        "stops":       int(row.get("stops") or 0),
+        "url":         row.get("url"),
+    }
+
+
+@app.post("/api/trains")
+def api_trains():
+    payload      = request.get_json(silent=True) or {}
+    from_city    = (payload.get("from_city") or "").strip()
+    to_city      = (payload.get("to_city") or "").strip()
+    date_str     = (payload.get("date") or "").strip()
+
+    # Also accept IATA codes and resolve city names from them
+    if not from_city and payload.get("from_iata"):
+        iata = payload["from_iata"].upper()
+        from_city = AIRPORT_COORDS.get(iata, {}).get("city", iata)
+    if not to_city and payload.get("to_iata"):
+        iata = payload["to_iata"].upper()
+        to_city = AIRPORT_COORDS.get(iata, {}).get("city", iata)
+
+    if not from_city or not to_city:
+        return jsonify({"error": "Both from_city and to_city are required."}), 400
+    if not date_str:
+        return jsonify({"error": "date is required (YYYY-MM-DD)."}), 400
+
+    print("\n" + "=" * 60)
+    print(f"🚆 /api/trains  {from_city!r} → {to_city!r}  date={date_str}")
+
+    try:
+        trains_df = train_get_trips(from_city, to_city, date_str)
+        train_err = None
+    except Exception as e:
+        app.logger.exception("train_get_trips failed")
+        trains_df = pd.DataFrame()
+        train_err = str(e)
+
+    trains = []
+    if trains_df is not None and not trains_df.empty:
+        trains = [
+            _train_to_ui(row, date_str, from_city, to_city)
+            for _, row in trains_df.iterrows()
+        ]
+
+    print(f"   → trains={len(trains)}")
+    return jsonify({
+        "trains":    trains,
+        "fromCity":  from_city,
+        "toCity":    to_city,
+        "date":      date_str,
+        "error":     train_err,
     })
 
 

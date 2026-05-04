@@ -26,7 +26,9 @@ import pandas as pd
 DB_PATH = Path(__file__).parent.parent / "data" / "search_cache.db"
 FLIGHT_TTL_HOURS = 6
 BUS_TTL_HOURS = 48
+TRAIN_TTL_HOURS = 6
 _BUS_DT_COLS = ("departure_dt", "arrival_dt")
+_TRAIN_DT_COLS = ("departure_dt", "arrival_dt")
 
 
 def _restore_nones(df: pd.DataFrame) -> pd.DataFrame:
@@ -65,6 +67,16 @@ def _init_schema(c: sqlite3.Connection) -> None:
     """)
     c.execute("""
         CREATE TABLE IF NOT EXISTS bus_cache (
+            from_city TEXT NOT NULL,
+            to_city   TEXT NOT NULL,
+            date      TEXT NOT NULL,
+            payload   TEXT NOT NULL,
+            cached_at TEXT NOT NULL,
+            PRIMARY KEY (from_city, to_city, date)
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS train_cache (
             from_city TEXT NOT NULL,
             to_city   TEXT NOT NULL,
             date      TEXT NOT NULL,
@@ -242,6 +254,68 @@ def bus_set(from_city: str, to_city: str, date: str, df: pd.DataFrame) -> None:
         print(f"⚠️  bus cache write failed: {e}")
 
 
+# ── train cache ──────────────────────────────────────────────────────────────
+
+def train_get(from_city: str, to_city: str, date: str) -> pd.DataFrame | None:
+    date_iso = _normalize_date(date)
+    if not date_iso or _is_past(date_iso):
+        return None
+    fk = _normalize_city(from_city)
+    tk = _normalize_city(to_city)
+    if not fk or not tk:
+        return None
+    try:
+        with _conn() as c:
+            _init_schema(c)
+            row = c.execute(
+                "SELECT payload, cached_at FROM train_cache "
+                "WHERE from_city=? AND to_city=? AND date=?",
+                (fk, tk, date_iso),
+            ).fetchone()
+        if not row:
+            return None
+        payload, cached_at = row
+        if not _is_fresh(cached_at, TRAIN_TTL_HOURS):
+            return None
+        df = pd.read_json(StringIO(payload), orient="records")
+        df = _restore_nones(df)
+        for col in _TRAIN_DT_COLS:
+            if col in df.columns:
+                df[col] = pd.to_datetime(df[col], errors="coerce")
+        print(f"💾 train cache HIT  {fk}→{tk} {date_iso}")
+        return df
+    except Exception as e:
+        print(f"⚠️  train cache read failed: {e}")
+        return None
+
+
+def train_set(from_city: str, to_city: str, date: str, df: pd.DataFrame) -> None:
+    if df is None or df.empty:
+        return
+    date_iso = _normalize_date(date)
+    if not date_iso or _is_past(date_iso):
+        return
+    fk = _normalize_city(from_city)
+    tk = _normalize_city(to_city)
+    if not fk or not tk:
+        return
+    try:
+        payload = df.to_json(orient="records", date_format="iso")
+        with _conn() as c:
+            _init_schema(c)
+            c.execute(
+                "INSERT INTO train_cache (from_city, to_city, date, payload, cached_at) "
+                "VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(from_city, to_city, date) DO UPDATE SET "
+                "  payload = excluded.payload, "
+                "  cached_at = excluded.cached_at",
+                (fk, tk, date_iso, payload, _now_iso()),
+            )
+        print(f"💾 train cache SAVE {fk}→{tk} {date_iso} ({len(df)} rows)")
+    except Exception as e:
+        print(f"⚠️  train cache write failed: {e}")
+
+
 # ── maintenance ──────────────────────────────────────────────────────────────
 
 def prune() -> dict:
@@ -252,8 +326,9 @@ def prune() -> dict:
     """
     today = date_cls.today().isoformat()
     flight_cutoff = (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=FLIGHT_TTL_HOURS)).isoformat()
-    bus_cutoff = (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=BUS_TTL_HOURS)).isoformat()
-    stats = {"flight_pruned": 0, "bus_pruned": 0, "legacy_dropped": False}
+    bus_cutoff    = (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=BUS_TTL_HOURS)).isoformat()
+    train_cutoff  = (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=TRAIN_TTL_HOURS)).isoformat()
+    stats = {"flight_pruned": 0, "bus_pruned": 0, "train_pruned": 0, "legacy_dropped": False}
     try:
         with _conn() as c:
             _init_schema(c)
@@ -267,6 +342,11 @@ def prune() -> dict:
                 (today, bus_cutoff),
             )
             stats["bus_pruned"] = r2.rowcount or 0
+            r3 = c.execute(
+                "DELETE FROM train_cache WHERE date < ? OR cached_at < ?",
+                (today, train_cutoff),
+            )
+            stats["train_pruned"] = r3.rowcount or 0
             existed = c.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name='search_cache'"
             ).fetchone()
@@ -276,6 +356,7 @@ def prune() -> dict:
         print(
             f"🧹 cache prune: flight={stats['flight_pruned']} "
             f"bus={stats['bus_pruned']} "
+            f"train={stats['train_pruned']} "
             f"legacy_dropped={stats['legacy_dropped']}"
         )
     except Exception as e:
