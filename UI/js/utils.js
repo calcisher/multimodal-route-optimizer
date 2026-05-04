@@ -441,7 +441,7 @@ function buildHubJourney(hubData, bus, flight, lang) {
     type: 'flight', duration: l.duration,
     carrier: l.airline || flight.airline, ref: l.flightNo
   }));
-  const groundSeg = { type: 'bus', duration: bus.duration, carrier: bus.company || 'FlixBus' };
+  const groundSeg = { type: bus.type?.toLowerCase() || 'bus', duration: bus.duration, carrier: bus.company || 'FlixBus' };
 
   let nodes, segs;
   if (mode === 'bus_plus_flight') {
@@ -490,12 +490,12 @@ function buildHubDetailSegs(hubData, bus, flight) {
     buyUrl: flight.link || `https://www.google.com/travel/flights?q=${flightFirstFrom}+to+${flightLastTo}`,
   }));
   const groundDetail = {
-    type: 'bus', from: bus.from, to: bus.to,
+    type: bus.type?.toLowerCase() || 'bus', from: bus.from, to: bus.to,
     fromName: bus.from, toName: bus.to,
     carrier: bus.company || 'FlixBus', ref: '',
     dep: bus.dep, arr: bus.arr, nextDay: bus.nextDay,
     duration: bus.duration, price: bus.price,
-    buyUrl: bus.url || 'https://www.flixbus.com',
+    buyUrl: bus.url || (bus.type === 'Train' ? 'https://www.omio.com' : 'https://www.flixbus.com'),
   };
   return mode === 'bus_plus_flight' ? [groundDetail, ...flightDetail] : [...flightDetail, groundDetail];
 }
@@ -511,8 +511,9 @@ function buildHubMapSegs(hubData, bus, flight) {
     carrier: l.airline || flight.airline, duration: l.duration,
   }));
   const hubIata = hubData.hub.iata;
+  const gType = bus.type?.toLowerCase() || 'bus';
   const groundSeg = mode === 'bus_plus_flight' ?
-    { from: hubData.depIata, to: hubIata, type: 'bus', carrier: bus.company || 'FlixBus', duration: bus.duration } :
-    { from: hubIata, to: hubData.arrIata, type: 'bus', carrier: bus.company || 'FlixBus', duration: bus.duration };
+    { from: hubData.depIata, to: hubIata, type: gType, carrier: bus.company || 'FlixBus', duration: bus.duration } :
+    { from: hubIata, to: hubData.arrIata, type: gType, carrier: bus.company || 'FlixBus', duration: bus.duration };
   return mode === 'bus_plus_flight' ? [groundSeg, ...flightSegs] : [...flightSegs, groundSeg];
 }

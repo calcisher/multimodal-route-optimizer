@@ -8,6 +8,7 @@ from datetime import date as date_cls, datetime
 from pathlib import Path
 
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, jsonify, request, send_from_directory
 
 from backend import data_cache
@@ -15,6 +16,7 @@ from backend.bus_and_flight_search import _to_naive, find_cheap_ground_plus_flig
 from backend.flight_and_ground_search import airports_df, geocode_city, haversine_km
 from backend.flight_plus_bus_search import find_cheap_flight_plus_ground_v2
 from backend.flight_search import flight_search
+from backend.flixbus_finder import get_trips as bus_direct_get_trips
 from backend.train_finder import get_trips as train_get_trips
 
 # IT/DE airport list — drives the autocomplete and the nearby-airports search.
@@ -643,6 +645,7 @@ def api_flight_plus_bus():
         hubs_raw, date_str, from_iata, to_iata, from_city, to_city,
         mode="flight_plus_bus",
     )
+    _enrich_hubs_with_trains(hubs, from_city, to_city, date_str, "flight_plus_bus")
     print(f"   → flightPlusBus hubs={len(hubs)}")
 
     iatas = _iatas_in(hubs) | {from_iata, to_iata}
@@ -680,6 +683,7 @@ def api_bus_plus_flight():
         hubs_raw, date_str, from_iata, to_iata, from_city, to_city,
         mode="bus_plus_flight",
     )
+    _enrich_hubs_with_trains(hubs, from_city, to_city, date_str, "bus_plus_flight")
     print(f"   → busPlusFlight hubs={len(hubs)}")
 
     iatas = _iatas_in(hubs) | {from_iata, to_iata}
@@ -690,8 +694,9 @@ def api_bus_plus_flight():
     })
 
 
-def _train_to_ui(row: pd.Series, outbound_date: str,
-                 departure_city: str, arrival_city: str) -> dict:
+def _ground_direct_to_ui(row: pd.Series, outbound_date: str,
+                          departure_city: str, arrival_city: str,
+                          transport_type: str, company: str) -> dict:
     dep_iso = _iso_or_none(row.get("departure_dt"), outbound_date)
     arr_iso = _iso_or_none(row.get("arrival_dt"), outbound_date)
     dep_d   = _date_of(row.get("departure_dt"))
@@ -701,10 +706,9 @@ def _train_to_ui(row: pd.Series, outbound_date: str,
     except ValueError:
         outbound_d = None
     next_day = bool(outbound_d and arr_d and arr_d > outbound_d)
-
     return {
-        "type":        "Train",
-        "company":     row.get("provider", "Train"),
+        "type":        transport_type,
+        "company":     company,
         "price":       _to_float(row.get("price_eur")),
         "dep":         _time_of(row.get("departure_dt")),
         "arr":         _time_of(row.get("arrival_dt")),
@@ -722,6 +726,51 @@ def _train_to_ui(row: pd.Series, outbound_date: str,
     }
 
 
+def _train_to_ui(row: pd.Series, outbound_date: str,
+                 departure_city: str, arrival_city: str) -> dict:
+    return _ground_direct_to_ui(
+        row, outbound_date, departure_city, arrival_city,
+        "Train", row.get("provider") or "Train",
+    )
+
+
+def _bus_direct_to_ui(row: pd.Series, outbound_date: str,
+                      departure_city: str, arrival_city: str) -> dict:
+    return _ground_direct_to_ui(
+        row, outbound_date, departure_city, arrival_city,
+        "Bus", "FlixBus",
+    )
+
+
+def _enrich_hubs_with_trains(hubs: list[dict], from_city: str, to_city: str,
+                              date_str: str, mode: str) -> None:
+    """Search trains in parallel for each hub's ground leg and merge into busOptions."""
+    def _fetch(hub_dict, idx):
+        hub_city = hub_dict.get("hub", {}).get("city", "")
+        if not hub_city:
+            return idx, []
+        origin = from_city if mode == "bus_plus_flight" else hub_city
+        dest   = hub_city  if mode == "bus_plus_flight" else to_city
+        try:
+            df = train_get_trips(origin, dest, date_str)
+            if df is not None and not df.empty:
+                opts = [_train_to_ui(r, date_str, origin, dest) for _, r in df.iterrows()]
+                for j, o in enumerate(opts):
+                    o["id"] = f"trn-{idx}-{j}"
+                return idx, opts
+        except Exception:
+            pass
+        return idx, []
+
+    if not hubs:
+        return
+    with ThreadPoolExecutor(max_workers=max(1, len(hubs))) as ex:
+        for fut in [ex.submit(_fetch, h, i) for i, h in enumerate(hubs)]:
+            idx, opts = fut.result()
+            if opts:
+                hubs[idx]["busOptions"].extend(opts)
+
+
 @app.post("/api/trains")
 def api_trains():
     payload      = request.get_json(silent=True) or {}
@@ -729,7 +778,6 @@ def api_trains():
     to_city      = (payload.get("to_city") or "").strip()
     date_str     = (payload.get("date") or "").strip()
 
-    # Also accept IATA codes and resolve city names from them
     if not from_city and payload.get("from_iata"):
         iata = payload["from_iata"].upper()
         from_city = AIRPORT_COORDS.get(iata, {}).get("city", iata)
@@ -743,26 +791,37 @@ def api_trains():
         return jsonify({"error": "date is required (YYYY-MM-DD)."}), 400
 
     print("\n" + "=" * 60)
-    print(f"🚆 /api/trains  {from_city!r} → {to_city!r}  date={date_str}")
+    print(f"🚌🚆 /api/trains  {from_city!r} → {to_city!r}  date={date_str}")
 
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        train_future = ex.submit(train_get_trips, from_city, to_city, date_str)
+        bus_future   = ex.submit(bus_direct_get_trips, from_city, to_city, date_str)
+
+    train_err = None
     try:
-        trains_df = train_get_trips(from_city, to_city, date_str)
-        train_err = None
+        trains_df = train_future.result()
     except Exception as e:
         app.logger.exception("train_get_trips failed")
         trains_df = pd.DataFrame()
         train_err = str(e)
+    try:
+        buses_df = bus_future.result()
+    except Exception as e:
+        app.logger.exception("bus_direct_get_trips failed")
+        buses_df = pd.DataFrame()
 
-    trains = []
+    results: list[dict] = []
     if trains_df is not None and not trains_df.empty:
-        trains = [
-            _train_to_ui(row, date_str, from_city, to_city)
-            for _, row in trains_df.iterrows()
-        ]
+        results += [_train_to_ui(r, date_str, from_city, to_city) for _, r in trains_df.iterrows()]
+    if buses_df is not None and not buses_df.empty:
+        results += [_bus_direct_to_ui(r, date_str, from_city, to_city) for _, r in buses_df.iterrows()]
+    results.sort(key=lambda x: x.get("price") or float("inf"))
 
-    print(f"   → trains={len(trains)}")
+    n_trains = sum(1 for r in results if r["type"] == "Train")
+    n_buses  = sum(1 for r in results if r["type"] == "Bus")
+    print(f"   → trains={n_trains}  buses={n_buses}")
     return jsonify({
-        "trains":     trains,
+        "trains":     results,
         "fromCity":   from_city,
         "toCity":     to_city,
         "date":       date_str,

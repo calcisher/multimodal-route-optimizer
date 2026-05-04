@@ -128,9 +128,11 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date 
 
   const mapRoute = (selBus && selFlight) ? { segments: buildHubMapSegs(hubData, selBus, selFlight) } : null;
 
+  const hasTrains = busOptions.some((b) => b.type === 'Train');
+  const groundColIcon = hasTrains ? '🚌🚆' : '🚌';
   const busColTitle = (
     <div className="hub-col-title">
-      <span className="hub-col-icon">🚌</span>{t.chooseBusLabel}
+      <span className="hub-col-icon">{groundColIcon}</span>{hasTrains ? t.chooseGroundLabel : t.chooseBusLabel}
     </div>);
   const flightColTitle = (
     <div className="hub-col-title">
@@ -318,7 +320,8 @@ Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason":
     stops:       selFlight?.stops,
     durationMin: selFlight?.durationMin,
   });
-  const omioUrl = 'https://www.omio.com/';
+  const isTrainGround = selBus?.type === 'Train';
+  const groundUrl = selBus?.url || (isTrainGround ? 'https://www.omio.com/' : 'https://www.omio.com/');
 
   return (
     <div className={`hub-card${noPairing ? ' no-pairing' : ''}${expanded ? ' expanded' : ' collapsed'}`}>
@@ -334,7 +337,14 @@ Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason":
           <div className="hub-head-title">{hub.city} {t.hubViaTitle}</div>
           <div className="hub-head-sub">
             {hub.distanceKm != null ? `${Math.round(hub.distanceKm)} km ${t.hubDistance}` : ''}
-            {' · '}{busOptions.length} {t.hubBusOptions} · {flightOptions.length} {t.hubFlightOptions}
+            {' · '}{(() => {
+              const tc = busOptions.filter((b) => b.type === 'Train').length;
+              const bc = busOptions.length - tc;
+              const parts = [];
+              if (bc > 0) parts.push(`${bc} ${t.hubBusOptions}`);
+              if (tc > 0) parts.push(`${tc} ${t.hubTrainOptions}`);
+              return parts.join(', ');
+            })()} · {flightOptions.length} {t.hubFlightOptions}
           </div>
         </div>
         <div className="hub-head-min">
@@ -398,9 +408,10 @@ Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason":
                   {selFlight ? `${flightCarrier} · ${fmt(selFlight.price)}` : '—'}
                 </div>
               </div>);
+            const isBusGround = !selBus || selBus.type !== 'Train';
             const busCard = (
               <div className="hubs-leg">
-                <div className="hubs-leg-label">🚌 {t.busLegLabel}</div>
+                <div className="hubs-leg-label">{isBusGround ? '🚌' : '🚆'} {isBusGround ? t.busLegLabel : t.trainLegLabel}</div>
                 <div className="hubs-leg-times">
                   {selBus ? `${selBus.dep} → ${selBus.arr}${selBus.nextDay ? ' (+1)' : ''}` : '— → —'}
                 </div>
@@ -452,8 +463,8 @@ Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason":
             <a className="hub-buy-btn flight" href={skyscannerUrl} target="_blank" rel="noopener noreferrer">
               ✈ {t.bookFlightBtn} ↗
             </a>
-            <a className="hub-buy-btn bus" href={omioUrl} target="_blank" rel="noopener noreferrer">
-              🚌 {t.bookBusBtn} ↗
+            <a className="hub-buy-btn bus" href={groundUrl} target="_blank" rel="noopener noreferrer">
+              {isTrainGround ? '🚆' : '🚌'} {isTrainGround ? t.bookTrainBtn : t.bookBusBtn} ↗
             </a>
           </div>
         </div>
