@@ -208,21 +208,30 @@ function GroundCard({ d, currency, lang }) {
   const t = T[lang];
   const isBus = d.type === 'Bus';
   const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
-  const route = { segments: [{ from: 'VCE', to: 'NUE', type: d.type.toLowerCase(), carrier: d.company, duration: d.duration }] };
-  const journey = { nodes: [{ iata: 'VCE', dep: d.dep }, { iata: 'NUE', arr: d.arr }], segs: [{ type: d.type.toLowerCase(), duration: d.duration, carrier: d.company }] };
-  const detailSegs = [{ type: d.type.toLowerCase(), from: 'Venice', to: 'Nürnberg', fromName: 'Venice', toName: 'Nürnberg',
-    carrier: d.company, ref: '', dep: d.dep, arr: d.arr, duration: d.duration, price: d.price, buyUrl: 'https://www.omio.com' }];
+
+  // Support real API data (d.from/d.to/d.stops/d.url) and legacy MOCK shape (d.via/d.transfers)
+  const fromKey   = d.from || 'origin';
+  const toKey     = d.to   || 'destination';
+  const fromName  = CITY_NAMES[fromKey] || fromKey;
+  const toName    = CITY_NAMES[toKey]   || toKey;
+  const transfers = d.stops ?? d.transfers ?? 0;
+  const buyUrl    = d.url || (isBus ? 'https://global.flixbus.com' : 'https://www.lefrecce.it');
+
+  const route      = { segments: [{ from: fromKey, to: toKey, type: d.type.toLowerCase(), carrier: d.company, duration: d.duration }] };
+  const journey    = { nodes: [{ iata: fromKey, dep: d.dep }, { iata: toKey, arr: d.arr, arrNextDay: !!d.nextDay }], segs: [{ type: d.type.toLowerCase(), duration: d.duration, carrier: d.company }] };
+  const detailSegs = [{ type: d.type.toLowerCase(), from: fromKey, to: toKey, fromName, toName, carrier: d.company, ref: '', dep: d.dep, arr: d.arr, nextDay: !!d.nextDay, duration: d.duration, price: d.price, buyUrl }];
+
   const header =
   <>
-      <div className="ground-mode" style={{ background: isBus ? 'var(--or-s)' : 'var(--green-s)', color: isBus ? 'var(--or)' : 'var(--green)' }}>{isBus ? '🚌' : '🚆'}</div>
-      <div className="ground-info" style={{ flex: 1 }}>
-        <div className="ground-company">{d.company}</div>
-        <div className="ground-via">via {d.via} · {d.transfers} {t.transfer}</div>
-        <div className="ground-times">{d.dep}<span>→</span>{d.arr}</div>
-      </div>
-      <div className="ground-dur">{d.duration}</div>
-      <div className="ground-price">{fmt(d.price)}</div>
-    </>;
+    <div className="ground-mode" style={{ background: isBus ? 'var(--or-s)' : 'var(--green-s)', color: isBus ? 'var(--or)' : 'var(--green)' }}>{isBus ? '🚌' : '🚆'}</div>
+    <div className="ground-info" style={{ flex: 1 }}>
+      <div className="ground-company">{d.company}</div>
+      <div className="ground-via">{fromName} → {toName}{transfers > 0 ? ` · ${transfers} ${t.transfer}` : ''}</div>
+      <div className="ground-times">{d.dep}<span>→</span>{d.arr}{d.nextDay ? ' (+1)' : ''}</div>
+    </div>
+    <div className="ground-dur">{d.duration}</div>
+    <div className="ground-price">{fmt(d.price)}</div>
+  </>;
 
   return <CardDetailShell header={header} mapRoute={route} lang={lang} journey={journey} detailSegs={detailSegs} currency={currency} />;
 }

@@ -12,7 +12,7 @@ function App() {
   const [date, setDate] = useState('2026-05-05');
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [loadingCards, setLoadingCards] = useState({ flights: false, flightBus: false, busFlight: false });
+  const [loadingCards, setLoadingCards] = useState({ flights: false, flightBus: false, busFlight: false, busOrTrain: false });
   const [activeSec, setActiveSec] = useState(0);
   const [filter, setFilter] = useState(FILTER_DEFAULTS);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -98,7 +98,7 @@ function App() {
     }
 
     setLoading(true);
-    setLoadingCards({ flights: true, flightBus: true, busFlight: true });
+    setLoadingCards({ flights: true, flightBus: true, busFlight: true, busOrTrain: true });
     setFilter(FILTER_DEFAULTS);
     setFilterOpen(false);
     setResults({
@@ -106,7 +106,7 @@ function App() {
       cheapFlights: [],
       flightPlusBus: [],
       busPlusFlight: [],
-      busOrTrain: MOCK.busOrTrain,
+      busOrTrain: [],
     });
     setActiveSec(0);
 
@@ -155,7 +155,19 @@ function App() {
       .catch((err) => console.error('/api/bus-plus-flight failed:', err))
       .finally(() => setLoadingCards((prev) => ({ ...prev, busFlight: false })));
 
-    await Promise.all([flightsTask, flightBusTask, busFlightTask]);
+    const groundTask = fetchPart('/api/trains', body)
+      .then((data) => {
+        if (data.fromCoords && data.fromCity) LATLNG[data.fromCity] = [data.fromCoords.lat, data.fromCoords.lon];
+        if (data.toCoords   && data.toCity)   LATLNG[data.toCity]   = [data.toCoords.lat,   data.toCoords.lon];
+        setResults((prev) => ({
+          ...(prev || {}),
+          busOrTrain: data.trains ?? [],
+        }));
+      })
+      .catch((err) => console.error('/api/trains failed:', err))
+      .finally(() => setLoadingCards((prev) => ({ ...prev, busOrTrain: false })));
+
+    await Promise.all([flightsTask, flightBusTask, busFlightTask, groundTask]);
     setLoading(false);
   }
 
@@ -181,7 +193,7 @@ function App() {
   { icon: '💶', label: t.cheapFlight, sub: t.cheapFlightSub, color: '#16A34A', data: filteredResults?.cheapFlights, minPrice: minPriceOf(filteredResults?.cheapFlights, 'price'), loading: loadingCards.flights, removed: removed[1] },
   { icon: '✈🚌', label: t.flightBus, sub: t.flightBusSub, color: '#7C3AED', data: filteredResults?.flightPlusBus, minPrice: minPriceOf(filteredResults?.flightPlusBus, 'minTotal'), loading: loadingCards.flightBus, removed: removed[2] },
   { icon: '🚌✈', label: t.busFlight, sub: t.busFlightSub, color: '#0891B2', data: filteredResults?.busPlusFlight, minPrice: minPriceOf(filteredResults?.busPlusFlight, 'minTotal'), loading: loadingCards.busFlight, removed: removed[3] },
-  { icon: '🚌', label: t.busOnly, sub: t.busOnlySub, color: '#475569', data: filteredResults?.busOrTrain, minPrice: minPriceOf(filteredResults?.busOrTrain, 'price'), loading: false, removed: removed[4] }];
+  { icon: '🚌🚆', label: t.busOnly, sub: t.busOnlySub, color: '#475569', data: filteredResults?.busOrTrain, minPrice: minPriceOf(filteredResults?.busOrTrain, 'price'), loading: loadingCards.busOrTrain, removed: removed[4] }];
 
   const activeCat = CATS[activeSec];
   const sectionEmpty = activeCat && !activeCat.loading && (!activeCat.data || activeCat.data.length === 0);

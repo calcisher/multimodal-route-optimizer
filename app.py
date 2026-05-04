@@ -101,6 +101,21 @@ data_cache.prune()
 
 # ---------- helpers ----------
 
+def _city_coords(city: str) -> dict | None:
+    """Return {lat, lon} for a city name by matching airports_df."""
+    if not city:
+        return None
+    cn = unicodedata.normalize("NFKD", city).encode("ascii", "ignore").decode().lower().strip()
+    try:
+        matches = airports_df[airports_df["city"].str.lower().str.strip() == cn]
+        if not matches.empty:
+            row = matches.iloc[0]
+            return {"lat": float(row["lat"]), "lon": float(row["lon"])}
+    except Exception:
+        pass
+    return None
+
+
 def _clean(v):
     """Convert NaN / NaT to None so JSON is clean."""
     if v is None:
@@ -747,11 +762,13 @@ def api_trains():
 
     print(f"   → trains={len(trains)}")
     return jsonify({
-        "trains":    trains,
-        "fromCity":  from_city,
-        "toCity":    to_city,
-        "date":      date_str,
-        "error":     train_err,
+        "trains":     trains,
+        "fromCity":   from_city,
+        "toCity":     to_city,
+        "date":       date_str,
+        "fromCoords": _city_coords(from_city),
+        "toCoords":   _city_coords(to_city),
+        "error":      train_err,
     })
 
 
