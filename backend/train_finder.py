@@ -28,6 +28,8 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote as _urlencode
 
+import time
+
 import pandas as pd
 import requests
 
@@ -46,6 +48,22 @@ _DE_STATION_DB.parent.mkdir(parents=True, exist_ok=True)
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
+def _http_get(url: str, params: dict, timeout: int = 15, retries: int = 3) -> requests.Response:
+    """GET with simple retry on timeout / 5xx; raises on final failure."""
+    last_exc: Exception | None = None
+    for attempt in range(retries):
+        try:
+            r = requests.get(url, params=params, timeout=timeout)
+            if r.status_code < 500:
+                return r
+            last_exc = requests.HTTPError(f"{r.status_code} {r.reason}", response=r)
+        except (requests.Timeout, requests.ConnectionError) as exc:
+            last_exc = exc
+        if attempt < retries - 1:
+            time.sleep(1.5 * (attempt + 1))
+    raise last_exc  # type: ignore[misc]
+
 
 def _norm(s: str) -> str:
     return (
@@ -160,10 +178,9 @@ def _resolve_station_de(city: str) -> tuple[str, str] | None:
         return row  # (id, name)
 
     try:
-        r = requests.get(
+        r = _http_get(
             f"{_DB_REST}/locations",
             params={"query": city, "results": 5, "stops": "true"},
-            timeout=10,
         )
         r.raise_for_status()
         stops = [s for s in r.json() if s.get("type") in ("stop", "station")]
@@ -200,7 +217,7 @@ def _get_trips_de(origin: str, destination: str, date: str) -> pd.DataFrame:
         return pd.DataFrame()
 
     try:
-        r = requests.get(
+        r = _http_get(
             f"{_DB_REST}/journeys",
             params={
                 "from":            from_id,
