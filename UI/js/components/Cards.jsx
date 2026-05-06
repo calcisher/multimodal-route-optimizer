@@ -217,7 +217,11 @@ function GroundCard({ d, currency, lang }) {
   const transfers = d.stops ?? d.transfers ?? 0;
   const buyUrl    = d.url || (isBus ? 'https://global.flixbus.com' : 'https://www.lefrecce.it');
 
-  const route      = { segments: [{ from: fromKey, to: toKey, type: d.type.toLowerCase(), carrier: d.company, duration: d.duration }] };
+  const wps = d.waypoints;
+  const mapSegments = (wps && wps.length >= 2)
+    ? wps.slice(0, -1).map((wp, i) => ({ from: wp.name, to: wps[i + 1].name, type: d.type.toLowerCase(), carrier: d.company }))
+    : [{ from: fromKey, to: toKey, type: d.type.toLowerCase(), carrier: d.company, duration: d.duration }];
+  const route = { segments: mapSegments };
   const journey    = { nodes: [{ iata: fromKey, dep: d.dep }, { iata: toKey, arr: d.arr, arrNextDay: !!d.nextDay }], segs: [{ type: d.type.toLowerCase(), duration: d.duration, carrier: d.company }] };
   const detailSegs = [{ type: d.type.toLowerCase(), from: fromKey, to: toKey, fromName, toName, carrier: d.company, ref: '', dep: d.dep, arr: d.arr, nextDay: !!d.nextDay, duration: d.duration, price: d.price, buyUrl }];
 

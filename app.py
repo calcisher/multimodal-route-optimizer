@@ -721,8 +721,9 @@ def _ground_direct_to_ui(row: pd.Series, outbound_date: str,
         "to":          row.get("destination") or arrival_city,
         "duration":    _fmt_minutes(row.get("duration_min")),
         "durationMin": int(row["duration_min"]) if row.get("duration_min") is not None else None,
-        "stops":       int(row.get("stops") or 0),
-        "url":         row.get("url"),
+        "stops":     int(row.get("stops") or 0),
+        "url":       row.get("url"),
+        "waypoints": row.get("waypoints") if isinstance(row.get("waypoints"), list) else [],
     }
 
 
@@ -815,7 +816,7 @@ def api_trains():
         results += [_train_to_ui(r, date_str, from_city, to_city) for _, r in trains_df.iterrows()]
     if buses_df is not None and not buses_df.empty:
         results += [_bus_direct_to_ui(r, date_str, from_city, to_city) for _, r in buses_df.iterrows()]
-    results.sort(key=lambda x: x.get("price") or float("inf"))
+    results.sort(key=lambda x: (0 if x.get("type") == "Train" else 1, x.get("price") or float("inf")))
 
     n_trains = sum(1 for r in results if r["type"] == "Train")
     n_buses  = sum(1 for r in results if r["type"] == "Bus")

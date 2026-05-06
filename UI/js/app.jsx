@@ -159,6 +159,13 @@ function App() {
       .then((data) => {
         if (data.fromCoords && data.fromCity) LATLNG[data.fromCity] = [data.fromCoords.lat, data.fromCoords.lon];
         if (data.toCoords   && data.toCity)   LATLNG[data.toCity]   = [data.toCoords.lat,   data.toCoords.lon];
+        for (const r of (data.trains ?? [])) {
+          if (r.from && data.fromCoords) LATLNG[r.from] = [data.fromCoords.lat, data.fromCoords.lon];
+          if (r.to   && data.toCoords)   LATLNG[r.to]   = [data.toCoords.lat,   data.toCoords.lon];
+          for (const wp of (r.waypoints ?? [])) {
+            if (wp.name && wp.lat != null && wp.lon != null) LATLNG[wp.name] = [wp.lat, wp.lon];
+          }
+        }
         setResults((prev) => ({
           ...(prev || {}),
           busOrTrain: data.trains ?? [],

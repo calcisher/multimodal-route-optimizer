@@ -5,6 +5,7 @@ import json
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import quote as _url_quote
 
 import pandas as pd
 
@@ -150,7 +151,28 @@ def search_tickets(from_id: str, to_id: str, date: str) -> list[dict]:
             arr = detail.get("arrival", {}).get("date")
             dur = detail.get("duration", {})
             seats = detail.get("available", {}).get("seats")
-            buy_url = f"https://shop.global.flixbus.com/search?departureCity={from_id}&arrivalCity={to_id}&rideDate={date}&adult=1"
+            uid = detail.get("uid", "")
+
+            # Deep-link: rideId ile açılınca FlixBus doğrudan o seferin
+            # detay panelini gösteriyor (bahn.de/Skyscanner ile aynı mantık).
+            # uid yoksa genel arama sayfasına düş.
+            if uid:
+                buy_url = (
+                    f"https://shop.global.flixbus.com/search"
+                    f"?departureCity={from_id}"
+                    f"&arrivalCity={to_id}"
+                    f"&rideDate={date}"
+                    f"&adult=1"
+                    f"&rideId={_url_quote(uid, safe='')}"
+                )
+            else:
+                buy_url = (
+                    f"https://shop.global.flixbus.com/search"
+                    f"?departureCity={from_id}"
+                    f"&arrivalCity={to_id}"
+                    f"&rideDate={date}"
+                    f"&adult=1"
+                )
 
             results.append({
                 "tarih": date,

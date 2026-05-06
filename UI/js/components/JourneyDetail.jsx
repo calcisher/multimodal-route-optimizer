@@ -64,7 +64,6 @@ function DetailGrid({ segs, currency, lang, flightPackage }) {
   const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
   const t = T[lang] || T.tr;
   const skyCopy = lang === 'tr' ? "Skyscanner'da Ara" : 'Search on Skyscanner';
-  const omioCopy = lang === 'tr' ? "Omio'da Ara" : 'Search on Omio';
   return (
     <div className="dg2-wrap">
       {segs.map((seg, i) => {
@@ -171,7 +170,7 @@ function DetailGrid({ segs, currency, lang, flightPackage }) {
                   className="dg3-buy-btn"
                   style={{ borderColor: color, color }}
                   onClick={(e) => e.stopPropagation()}>
-                  {icon} {omioCopy} <span className="dg3-sky-btn-arrow">↗</span>
+                  {icon} {seg.type === 'bus' ? (lang === 'tr' ? "FlixBus'ta Ara" : 'Search on FlixBus') : (lang === 'tr' ? "DB'de Ara" : 'Search on DB')} <span className="dg3-sky-btn-arrow">↗</span>
                 </a>
               </div>
             }

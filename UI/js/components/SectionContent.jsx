@@ -15,5 +15,8 @@ function SectionContent({ secIdx, data, currency, lang, date }) {
       <HubMasterCard key={`${h.hub?.iata || i}-${i}`} hubData={h} currency={currency} lang={lang} defaultExpanded={i === 0} date={date} />
     )}</div>;
   }
-  if (secIdx === 4) return <div className="cards-list">{data.map((d, i) => <GroundCard key={i} d={d} currency={currency} lang={lang} />)}</div>;
+  if (secIdx === 4) {
+    const sorted = [...data].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+    return <div className="cards-list">{sorted.map((d, i) => <GroundCard key={i} d={d} currency={currency} lang={lang} />)}</div>;
+  }
 }
