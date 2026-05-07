@@ -1,3 +1,13 @@
+// ── Price formatter ──────────────────────────────────────────────────────────
+// 0.1 + 0.2 → 0.30000000000000004 etc. Round to cents before formatting and
+// drop trailing ".00" so integer prices stay clean (€113, not €113.00).
+function formatPrice(n, currency) {
+  if (n == null || !Number.isFinite(n)) return '—';
+  const v = Math.round(n * 100) / 100;
+  const s = Number.isInteger(v) ? String(v) : v.toFixed(2);
+  return currency === 'USD' ? `$${s}` : `€${s}`;
+}
+
 // ── Geo helpers ───────────────────────────────────────────────────────────────
 function arcLatLng(a, b, steps = 48) {
   const midLat = (a[0] + b[0]) / 2, midLng = (a[1] + b[1]) / 2;
@@ -31,16 +41,15 @@ function _norm(s) {
   return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 }
 
-// Build dropdown suggestions from the airport list. Matches IATA exact (top),
-// then city startsWith, city contains, airport-name contains. Multi-airport
-// cities are grouped under a single "city" pseudo-entry that picks the
-// preferred airport server-side via resolve_iata's _PREFERRED_IATA map.
-function buildAirportSuggestions(airports, query, max = 8) {
+// Build city-name suggestions from the airport list. One entry per city. Score
+// tiers: city-name exact/startsWith/contains, plus IATA / airport-name matches
+// so typing "FCO" still finds Rome. Backend resolve_iata picks the actual IATA
+// (multi-airport cities go through _PREFERRED_IATA).
+function buildCitySuggestions(airports, query, max = 8) {
   if (!Array.isArray(airports) || airports.length === 0) return [];
   const q = _norm(query);
   if (!q) return [];
 
-  // Group by normalized city.
   const cityMap = new Map();
   for (const a of airports) {
     if (!a.iata || !a.city) continue;
@@ -49,57 +58,24 @@ function buildAirportSuggestions(airports, query, max = 8) {
     cityMap.get(key).airports.push(a);
   }
 
-  // Score one entry per city. Multi-airport cities use a "city-group" entry
-  // that expands into a city pseudo + its airports as nested children.
-  // Single-airport cities use a flat airport entry.
   const scored = [];
   for (const [key, group] of cityMap) {
-    if (group.airports.length >= 2) {
-      let s = Infinity;
-      if (key === q) s = 0;
-      else if (key.startsWith(q)) s = 1;
-      else if (key.includes(q)) s = 3;
-      // An IATA match on any child should still surface the whole city group.
-      for (const a of group.airports) {
-        const ai = _norm(a.iata);
-        const an = _norm(a.name);
-        if (ai === q) s = Math.min(s, 0.5);
-        else if (ai.startsWith(q)) s = Math.min(s, 2);
-        else if (an.includes(q)) s = Math.min(s, 4.5);
-      }
-      if (s < Infinity) scored.push({
-        score: s, kind: 'group', city: group.city, country: group.country, airports: group.airports,
-      });
-    } else {
-      const a = group.airports[0];
-      const iata = _norm(a.iata);
-      const name = _norm(a.name);
-      let s = Infinity;
-      if (iata === q) s = 0;
-      else if (key === q) s = 1;
-      else if (key.startsWith(q)) s = 2;
-      else if (iata.startsWith(q)) s = 2.5;
-      else if (key.includes(q)) s = 4;
-      else if (name.includes(q)) s = 5;
-      if (s < Infinity) scored.push({ score: s, kind: 'single', a });
+    let s = Infinity;
+    if (key === q) s = 0;
+    else if (key.startsWith(q)) s = 1;
+    else if (key.includes(q)) s = 3;
+    for (const a of group.airports) {
+      const ai = _norm(a.iata);
+      const an = _norm(a.name);
+      if (ai === q) s = Math.min(s, 0.5);
+      else if (ai.startsWith(q)) s = Math.min(s, 2);
+      else if (an.includes(q)) s = Math.min(s, 4.5);
     }
+    if (s < Infinity) scored.push({ score: s, city: group.city, country: group.country });
   }
 
   scored.sort((a, b) => a.score - b.score);
-
-  // Flatten into render entries. Each city-group emits a `city` entry followed
-  // by `airport` entries marked `child:true` so the row renders indented.
-  const out = [];
-  for (const s of scored) {
-    if (s.kind === 'group') {
-      out.push({ type: 'city', city: s.city, country: s.country, airports: s.airports });
-      for (const a of s.airports) out.push({ type: 'airport', a, child: true });
-    } else {
-      out.push({ type: 'airport', a: s.a });
-    }
-    if (out.length >= max) break;
-  }
-  return out.slice(0, max);
+  return scored.slice(0, max);
 }
 
 // ── Filter utils ──────────────────────────────────────────────────────────────
@@ -343,6 +319,29 @@ function pickCheapest(buses, flights, mode) {
     if (!best || total < best.total) best = { busId: b.id, flightId: f.id, total, conn: c };
   }
   return best;
+}
+
+// Default picker for hub cards: anchor on the cheapest single flight, then
+// pair it with the bus whose connection time is the *shortest* still meeting
+// the 2h floor (PICK_MIN_CONNECTION). Falls back to the next-cheapest flight
+// if the cheapest can't be paired with any valid bus. This avoids the "10h
+// idle layover because we picked the cheapest bus" surprise pickCheapest had.
+function pickTightConnection(buses, flights, mode) {
+  if (!flights.length || !buses.length) return null;
+  const sortedF = [...flights].filter((f) => f.price != null).sort((a, b) => a.price - b.price);
+  for (const f of sortedF) {
+    let best = null;
+    for (const b of buses) {
+      if (b.price == null) continue;
+      const c = calcConnection(b, f, mode);
+      if (c.minutes == null || c.minutes < PICK_MIN_CONNECTION) continue;
+      if (!best || c.minutes < best.conn.minutes) {
+        best = { busId: b.id, flightId: f.id, conn: c };
+      }
+    }
+    if (best) return best;
+  }
+  return null;
 }
 
 function pickFastest(buses, flights, mode) {

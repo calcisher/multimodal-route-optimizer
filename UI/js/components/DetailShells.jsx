@@ -1,11 +1,24 @@
 // ── Detail shells: collapsible bottom sheets for flight + combo cards ───────
 // ── Card Detail Shell ─────────────────────────────────────────────────────────
-function CardDetailShell({ header, mapRoute, lang, journey, detailSegs, total, currency, flightPackage }) {
+function CardDetailShell({ header, mapRoute, lang, journey, detailSegs, total, currency, flightPackage, cardId, flash, shareTitle, shareText }) {
   const [open, setOpen] = useState(false);
   const [showMap, setShowMap] = useState(false);
-  const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
+  const fmt = (n) => formatPrice(n, currency);
+  const cardRef = useRef(null);
+  useEffect(() => {
+    if (flash && cardRef.current) {
+      setOpen(true);
+      const el = cardRef.current;
+      el.classList.remove('row-flash');
+      void el.offsetWidth;
+      el.classList.add('row-flash');
+      const top = el.getBoundingClientRect().top + window.scrollY - 90;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  }, [flash]);
+  const shareUrl = cardId ? buildShareUrl({ trip: cardId }) : window.location.href;
   return (
-    <div className="card" style={{ cursor: 'pointer' }} onClick={() => {setOpen((p) => !p);setShowMap(false);}}>
+    <div ref={cardRef} className="card" data-card-id={cardId} style={{ cursor: 'pointer' }} onClick={() => {setOpen((p) => !p);setShowMap(false);}}>
       <div className="card-main" style={{ display: 'flex', alignItems: 'center' }}>
         {header}
         <span className={`card-chevron${open ? ' open' : ''}`}>▾</span>
@@ -20,9 +33,15 @@ function CardDetailShell({ header, mapRoute, lang, journey, detailSegs, total, c
               <span className="dp-total-price">{fmt(total)}</span>
             </div>
         }
-          <div className="dp-actions">
+          <div className="dp-actions" style={{ gap: 8 }}>
             <button className={`dp-map-btn${showMap ? ' active' : ''}`} onClick={() => setShowMap((p) => !p)}>
               🗺 {showMap ? lang === 'tr' ? 'Haritayı Gizle' : 'Hide Map' : lang === 'tr' ? 'Haritada Gör' : 'Show on Map'}
+            </button>
+            <button className="dp-map-btn" onClick={(e) => { e.stopPropagation(); shareTrip({ url: shareUrl, title: shareTitle, text: shareText, lang }); }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>{' '}{lang === 'tr' ? 'Paylaş' : 'Share'}
             </button>
           </div>
           {showMap && <InlineMap route={mapRoute} onClose={() => setShowMap(false)} lang={lang} />}
@@ -32,11 +51,24 @@ function CardDetailShell({ header, mapRoute, lang, journey, detailSegs, total, c
 
 }
 
-function FlightOperationalDetailShell({ header, mapRoute, lang, detailSegs, totalPrice, totalDuration, stops, currency, buyUrl }) {
+function FlightOperationalDetailShell({ header, mapRoute, lang, detailSegs, totalPrice, totalDuration, stops, currency, buyUrl, cardId, flash, shareTitle, shareText }) {
   const [open, setOpen] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const cardRef = useRef(null);
+  useEffect(() => {
+    if (flash && cardRef.current) {
+      setOpen(true);
+      const el = cardRef.current;
+      el.classList.remove('row-flash');
+      void el.offsetWidth;
+      el.classList.add('row-flash');
+      const top = el.getBoundingClientRect().top + window.scrollY - 90;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  }, [flash]);
+  const shareUrl = cardId ? buildShareUrl({ trip: cardId }) : window.location.href;
   const t = T[lang || 'tr'];
-  const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
+  const fmt = (n) => formatPrice(n, currency);
   const segs = Array.isArray(detailSegs) ? detailSegs : [];
   const first = segs[0] || {};
   const last = segs[segs.length - 1] || {};
@@ -49,7 +81,7 @@ function FlightOperationalDetailShell({ header, mapRoute, lang, detailSegs, tota
   const stopCopy = stops === 0 ? t.nonstop : `${stops} ${t.transfer}`;
 
   return (
-    <div className="card" style={{ cursor: 'pointer' }} onClick={() => {setOpen((p) => !p);setShowMap(false);}}>
+    <div ref={cardRef} className="card" data-card-id={cardId} style={{ cursor: 'pointer' }} onClick={() => {setOpen((p) => !p);setShowMap(false);}}>
       <div className="card-main" style={{ display: 'flex', alignItems: 'center' }}>
         {header}
         <span className={`card-chevron${open ? ' open' : ''}`}>▾</span>
@@ -151,6 +183,7 @@ function FlightOperationalDetailShell({ header, mapRoute, lang, detailSegs, tota
                 <button className={`flight-op-secondary${showMap ? ' active' : ''}`} onClick={() => setShowMap((p) => !p)}>
                   🗺 {showMap ? t.mapHideBtn : t.mapShowBtn}
                 </button>
+                <ShareButton url={shareUrl} title={shareTitle} text={shareText} lang={lang} />
               </div>
             </aside>
           </div>

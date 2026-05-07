@@ -1,12 +1,14 @@
-"""Flask backend that wires the existing React UI to flight_search and find_cheap_flight_plus_ground."""
+"""Flask backend that wires the existing React UI to flight_search and the hub-grouped flight+bus / bus+flight pipelines."""
 from __future__ import annotations
 
 import json
 import math
+import os
 import unicodedata
 from datetime import date as date_cls, datetime
 from pathlib import Path
 
+import httpx
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, jsonify, request, send_from_directory
@@ -54,6 +56,26 @@ _CITY_OVERRIDES = {
     "EWR": "New York",
 }
 
+# Italian/German native names that we display in English. The curated IT/DE
+# JSON is mostly English already; this catches the few stragglers (LIRA says
+# "Roma" while LIRF says "Rome" — without normalization the autocomplete
+# splits Rome into two city groups and only one airport gets searched).
+_DISPLAY_CITY = {
+    "Roma": "Rome",
+    "Firenze": "Florence",
+    "Genova": "Genoa",
+    "Napoli": "Naples",
+    "Torino": "Turin",
+    "Venezia": "Venice",
+    "Frankfurt-am-Main": "Frankfurt",
+}
+
+
+def _normalize_city(city: str | None) -> str | None:
+    if not city:
+        return city
+    return _DISPLAY_CITY.get(city, city)
+
 AIRPORT_COORDS: dict[str, dict] = {}
 # Filtered file wins on conflict (curated) — global fills the gaps.
 for row in _GLOBAL_ALL.values():
@@ -62,7 +84,7 @@ for row in _GLOBAL_ALL.values():
         AIRPORT_COORDS[iata] = {
             "lat": row["lat"],
             "lon": row["lon"],
-            "city": _CITY_OVERRIDES.get(iata, row.get("city", "")),
+            "city": _CITY_OVERRIDES.get(iata, _normalize_city(row.get("city", ""))),
             "country": row.get("country", ""),
         }
 for row in _ALL.values():
@@ -71,7 +93,7 @@ for row in _ALL.values():
         AIRPORT_COORDS[iata] = {
             "lat": row["lat"],
             "lon": row["lon"],
-            "city": _CITY_OVERRIDES.get(iata, row.get("city", "")),
+            "city": _CITY_OVERRIDES.get(iata, _normalize_city(row.get("city", ""))),
             "country": row.get("country", ""),
         }
 
@@ -93,12 +115,14 @@ _PREFERRED_IATA = {
 ROOT = Path(__file__).parent
 UI_DIR = ROOT / "UI"
 
-app = Flask(__name__, static_folder=str(UI_DIR), static_url_path='')
+app = Flask(__name__, static_folder=None)
 
-# Drop expired/past-date cache rows once at startup. The endpoint-level
-# cache here was replaced by data_cache (per-data-type, with TTLs at the
-# SerpAPI/FlixBus call sites) — prune() also deletes the legacy table.
+# Drop expired/past-date cache rows at startup, then keep pruning every
+# 2h so long-running servers don't accumulate stale rows. Cache is
+# per-data-type (flight 6h, bus 48h) at the SerpAPI/FlixBus call sites in
+# flight_search.py and flixbus_finder.py.
 data_cache.prune()
+data_cache.start_periodic_prune(interval_minutes=120)
 
 
 # ---------- helpers ----------
@@ -234,6 +258,48 @@ def resolve_iata(q: str) -> str | None:
         return None
 
 
+def resolve_iatas(q: str) -> list[str]:
+    """Expand a city name to ALL airports of that city.
+
+    A 3-letter IATA → single-element list. A city name → every airport
+    whose city (after English normalization + alias expansion) matches.
+    Falls back to resolve_iata's single-result behavior when the city
+    isn't in the DB. Returns [] for unresolvable input.
+
+    Used by /api/flights so "Frankfurt → Milan" passes "MXP,LIN" to
+    SerpAPI and gets results from both Milan airports in one call.
+    """
+    if not q:
+        return []
+    q = q.strip()
+    if len(q) == 3 and q.isalpha():
+        up = q.upper()
+        if (airports_df["iata"] == up).any():
+            return [up]
+
+    base = _norm(q)
+    candidates = {base}
+    if base in _CITY_ALIASES:
+        candidates.add(_CITY_ALIASES[base])
+    for k, v in _CITY_ALIASES.items():
+        if v == base:
+            candidates.add(k)
+    # Also fold display-overrides so "Roma" and "Rome" both expand to Rome's airports.
+    for native, en in _DISPLAY_CITY.items():
+        if _norm(en) in candidates:
+            candidates.add(_norm(native))
+        if _norm(native) in candidates:
+            candidates.add(_norm(en))
+
+    city_norm = airports_df["city"].map(_norm)
+    matches = airports_df[city_norm.isin(candidates)]
+    if not matches.empty:
+        return [str(c) for c in matches["iata"].tolist() if c]
+
+    single = resolve_iata(q)
+    return [single] if single else []
+
+
 def _to_float(v):
     v = _clean(v)
     if v is None:
@@ -296,8 +362,18 @@ def _flight_row_to_ui(row: pd.Series) -> dict:
     }
 
 
+CHEAP_FLIGHTS_LIMIT = 14
+
+
 def transform_flights(df: pd.DataFrame) -> tuple[list[dict], list[dict]]:
-    """Split one flight_search DataFrame into (bestFlights, cheapFlights)."""
+    """Split one flight_search DataFrame into (bestFlights, cheapFlights).
+
+    Best is uncapped — SerpAPI's "Best" tab is already a curated short
+    list (typically 2-5 results). Cheap is sorted by price and capped
+    at CHEAP_FLIGHTS_LIMIT so multi-airport searches surface a few
+    flights from each airport instead of getting the cheapest 8 all
+    landing at the same IATA.
+    """
     if df is None or df.empty:
         return [], []
 
@@ -307,7 +383,7 @@ def transform_flights(df: pd.DataFrame) -> tuple[list[dict], list[dict]]:
     best = [_flight_row_to_ui(r) for _, r in best_df.sort_values("price").iterrows()]
     cheap = [
         _flight_row_to_ui(r)
-        for _, r in other_df.sort_values("price").head(8).iterrows()
+        for _, r in other_df.sort_values("price").head(CHEAP_FLIGHTS_LIMIT).iterrows()
     ]
     return best, cheap
 
@@ -437,263 +513,6 @@ def _flight_to_ui(f: dict, outbound_date: str, hub_iata: str,
     return payload
 
 
-def transform_hubs(
-    hubs: list[dict],
-    outbound_date: str,
-    dep_iata: str,
-    arr_iata: str,
-    departure_city: str,
-    arrival_city: str,
-    mode: str,
-) -> list[dict]:
-    """Shape the hub-grouped backend output for the HubMasterCard frontend.
-
-    `mode`: 'bus_plus_flight' (section 2) or 'flight_plus_bus' (section 3).
-    """
-    out = []
-    for h in hubs:
-        hub = h.get("hub") or {}
-        hub_iata = hub.get("iata") or ""
-        hub_city = hub.get("city") or ""
-        bus_options = [
-            _bus_to_ui(b, outbound_date, mode, departure_city, arrival_city, hub_city)
-            for b in h.get("bus_options") or []
-        ]
-        flight_options = [
-            _flight_to_ui(f, outbound_date, hub_iata, hub_city,
-                          dep_iata, arr_iata, arrival_city, mode)
-            for f in h.get("flight_options") or []
-        ]
-        out.append({
-            "mode": mode,
-            "hub": {
-                "iata": hub_iata,
-                "city": hub_city,
-                "country": hub.get("country") or "",
-                "countryEn": hub.get("country_en") or "",
-                "distanceKm": _to_float(hub.get("distance_km")),
-                "lat": _to_float(hub.get("lat")),
-                "lon": _to_float(hub.get("lon")),
-                "busArrivalName": hub.get("bus_arrival_name") or "",
-            },
-            "busOptions": bus_options,
-            "flightOptions": flight_options,
-            "minTotal": _to_float(h.get("min_total_price")),
-            "depIata": dep_iata,
-            "arrIata": arr_iata,
-        })
-    return out
-
-
-# ---------- routes ----------
-
-@app.get("/")
-def index():
-    return send_from_directory(UI_DIR, "Multi Route.html")
-
-
-@app.get("/api/health")
-def health():
-    return {"ok": True}
-
-
-@app.get("/api/airports")
-def airports():
-    """List of airports for the frontend autocomplete (IT/DE only)."""
-    rows = [
-        {
-            "iata": r.get("iata"),
-            "icao": r.get("icao"),
-            "name": r.get("name"),
-            "city": r.get("city"),
-            "country": r.get("country"),
-        }
-        for r in _ALL.values()
-        if r.get("iata") and r.get("city")
-    ]
-    return {"airports": rows}
-
-
-def _resolve_inputs(payload: dict):
-    """Returns ((from_iata, to_iata, from_city, to_city, date_str), None)
-    on success, or (None, (response, status)) on failure."""
-    from_raw = (payload.get("from_iata") or payload.get("from_city") or "").strip()
-    to_raw = (payload.get("to_iata") or payload.get("to_city") or "").strip()
-    from_city_raw = (payload.get("from_city") or "").strip()
-    to_city_raw = (payload.get("to_city") or "").strip()
-    date_str = (payload.get("date") or "").strip()
-
-    if not date_str:
-        return None, (jsonify({"error": "date is required (YYYY-MM-DD)."}), 400)
-    if not from_raw or not to_raw:
-        return None, (jsonify({"error": "Both From and To are required."}), 400)
-
-    from_iata = resolve_iata(from_raw)
-    to_iata = resolve_iata(to_raw)
-    if not from_iata or not to_iata:
-        return None, (jsonify({
-            "error": f"Could not resolve airports: "
-                     f"from={from_raw!r}→{from_iata}, to={to_raw!r}→{to_iata}. "
-                     f"Try an IATA code (e.g. VCE, NUE).",
-        }), 400)
-
-    from_city = from_city_raw or from_raw or from_iata
-    to_city = to_city_raw or to_raw or to_iata
-    return (from_iata, to_iata, from_city, to_city, date_str), None
-
-
-def _iatas_in(items: list[dict]) -> set[str]:
-    """Walks both flat flight rows (sec 1) and hub-grouped rows (secs 2/3)."""
-    out: set[str] = set()
-    for d in items:
-        for k in ("depIata", "arrIata", "via"):
-            v = d.get(k)
-            if v:
-                out.add(v)
-        for leg in d.get("legs") or []:
-            if leg.get("from"):
-                out.add(leg["from"])
-            if leg.get("to"):
-                out.add(leg["to"])
-        lay = d.get("layover") or {}
-        if lay.get("airport"):
-            out.add(lay["airport"])
-        hub = d.get("hub") or {}
-        if hub.get("iata"):
-            out.add(hub["iata"])
-        for f in d.get("flightOptions") or []:
-            for k in ("fromIata", "toIata"):
-                v = f.get(k)
-                if v:
-                    out.add(v)
-            for leg in f.get("legs") or []:
-                if leg.get("from"):
-                    out.add(leg["from"])
-                if leg.get("to"):
-                    out.add(leg["to"])
-            for lay in f.get("layovers") or []:
-                if lay.get("airport"):
-                    out.add(lay["airport"])
-    return out
-
-
-def _airports_payload(*iata_sets: set[str]) -> dict:
-    seen: set[str] = set()
-    for s in iata_sets:
-        seen.update(s)
-    return {code: AIRPORT_COORDS[code] for code in seen if code in AIRPORT_COORDS}
-
-
-@app.post("/api/flights")
-def api_flights():
-    payload = request.get_json(silent=True) or {}
-    inputs, err = _resolve_inputs(payload)
-    if err:
-        return err
-    from_iata, to_iata, from_city, to_city, date_str = inputs
-
-    print("\n" + "=" * 60)
-    print(f"✈️  /api/flights  {from_iata} → {to_iata}  date={date_str}")
-
-    try:
-        flights_df = flight_search(from_iata, to_iata, date_str)
-        flight_err = None
-    except Exception as e:
-        app.logger.exception("flight_search failed")
-        flights_df = pd.DataFrame()
-        flight_err = str(e)
-    best_flights, cheap_flights = transform_flights(flights_df)
-    print(f"   → best={len(best_flights)}  cheap={len(cheap_flights)}")
-
-    iatas = _iatas_in(best_flights) | _iatas_in(cheap_flights) | {from_iata, to_iata}
-    return jsonify({
-        "bestFlights": best_flights,
-        "cheapFlights": cheap_flights,
-        "airports": _airports_payload(iatas),
-        "resolved": {
-            "from": from_iata, "to": to_iata,
-            "fromCity": from_city, "toCity": to_city,
-        },
-        "error": flight_err,
-    })
-
-
-@app.post("/api/flight-plus-bus")
-def api_flight_plus_bus():
-    payload = request.get_json(silent=True) or {}
-    inputs, err = _resolve_inputs(payload)
-    if err:
-        return err
-    from_iata, to_iata, from_city, to_city, date_str = inputs
-
-    print("\n" + "=" * 60)
-    print(f"🚌 /api/flight-plus-bus  {from_iata} → {to_city}  date={date_str}")
-
-    try:
-        hubs_raw = find_cheap_flight_plus_ground_v2(
-            departure_id=from_iata,
-            target_city=to_city,
-            outbound_date=date_str,
-            ground_date=date_str,
-        )
-        combo_err = None
-    except Exception as e:
-        app.logger.exception("find_cheap_flight_plus_ground_v2 failed")
-        hubs_raw = []
-        combo_err = str(e)
-    hubs = transform_hubs(
-        hubs_raw, date_str, from_iata, to_iata, from_city, to_city,
-        mode="flight_plus_bus",
-    )
-    _enrich_hubs_with_trains(hubs, from_city, to_city, date_str, "flight_plus_bus")
-    print(f"   → flightPlusBus hubs={len(hubs)}")
-
-    iatas = _iatas_in(hubs) | {from_iata, to_iata}
-    return jsonify({
-        "flightPlusBus": hubs,
-        "airports": _airports_payload(iatas),
-        "error": combo_err,
-    })
-
-
-@app.post("/api/bus-plus-flight")
-def api_bus_plus_flight():
-    payload = request.get_json(silent=True) or {}
-    inputs, err = _resolve_inputs(payload)
-    if err:
-        return err
-    from_iata, to_iata, from_city, to_city, date_str = inputs
-
-    print("\n" + "=" * 60)
-    print(f"🚌✈ /api/bus-plus-flight  {from_city} → {to_iata}  date={date_str}")
-
-    try:
-        hubs_raw = find_cheap_ground_plus_flight(
-            departure_city=from_city,
-            arrival_id=to_iata,
-            outbound_date=date_str,
-            ground_date=date_str,
-        )
-        ground_err = None
-    except Exception as e:
-        app.logger.exception("find_cheap_ground_plus_flight failed")
-        hubs_raw = []
-        ground_err = str(e)
-    hubs = transform_hubs(
-        hubs_raw, date_str, from_iata, to_iata, from_city, to_city,
-        mode="bus_plus_flight",
-    )
-    _enrich_hubs_with_trains(hubs, from_city, to_city, date_str, "bus_plus_flight")
-    print(f"   → busPlusFlight hubs={len(hubs)}")
-
-    iatas = _iatas_in(hubs) | {from_iata, to_iata}
-    return jsonify({
-        "busPlusFlight": hubs,
-        "airports": _airports_payload(iatas),
-        "error": ground_err,
-    })
-
-
 def _ground_direct_to_ui(row: pd.Series, outbound_date: str,
                           departure_city: str, arrival_city: str,
                           transport_type: str, company: str) -> dict:
@@ -772,6 +591,312 @@ def _enrich_hubs_with_trains(hubs: list[dict], from_city: str, to_city: str,
                 hubs[idx]["busOptions"].extend(opts)
 
 
+def transform_hubs(
+    hubs: list[dict],
+    outbound_date: str,
+    dep_iata: str,
+    arr_iata: str,
+    departure_city: str,
+    arrival_city: str,
+    mode: str,
+) -> list[dict]:
+    """Shape the hub-grouped backend output for the HubMasterCard frontend.
+
+    `mode`: 'bus_plus_flight' (section 2) or 'flight_plus_bus' (section 3).
+    """
+    out = []
+    for h in hubs:
+        hub = h.get("hub") or {}
+        hub_iata = hub.get("iata") or ""
+        hub_city = hub.get("city") or ""
+        bus_options = [
+            _bus_to_ui(b, outbound_date, mode, departure_city, arrival_city, hub_city)
+            for b in h.get("bus_options") or []
+        ]
+        flight_options = [
+            _flight_to_ui(f, outbound_date, hub_iata, hub_city,
+                          dep_iata, arr_iata, arrival_city, mode)
+            for f in h.get("flight_options") or []
+        ]
+        out.append({
+            "mode": mode,
+            "hub": {
+                "iata": hub_iata,
+                "city": hub_city,
+                "country": hub.get("country") or "",
+                "countryEn": hub.get("country_en") or "",
+                "distanceKm": _to_float(hub.get("distance_km")),
+                "lat": _to_float(hub.get("lat")),
+                "lon": _to_float(hub.get("lon")),
+                "busArrivalName": hub.get("bus_arrival_name") or "",
+            },
+            "busOptions": bus_options,
+            "flightOptions": flight_options,
+            "minTotal": _to_float(h.get("min_total_price")),
+            "depIata": dep_iata,
+            "arrIata": arr_iata,
+            "flightsCachedAt": h.get("flights_cached_at"),
+            "busCachedAt": h.get("bus_cached_at"),
+        })
+    return out
+
+
+# ---------- routes ----------
+
+@app.get("/")
+def index():
+    return send_from_directory(UI_DIR, "Multi Route.html")
+
+
+@app.get("/css/<path:filename>")
+def static_css(filename):
+    return send_from_directory(UI_DIR / "css", filename)
+
+
+@app.get("/js/<path:filename>")
+def static_js(filename):
+    return send_from_directory(UI_DIR / "js", filename)
+
+
+@app.get("/api/health")
+def health():
+    return {"ok": True}
+
+
+@app.get("/api/airports")
+def airports():
+    """List of airports for the frontend autocomplete (IT/DE only)."""
+    rows = [
+        {
+            "iata": r.get("iata"),
+            "icao": r.get("icao"),
+            "name": r.get("name"),
+            "city": _normalize_city(r.get("city")),
+            "country": r.get("country"),
+        }
+        for r in _ALL.values()
+        if r.get("iata") and r.get("city")
+    ]
+    return {"airports": rows}
+
+
+def _resolve_inputs(payload: dict):
+    """Returns ((from_iata, to_iata, from_city, to_city, date_str,
+                 from_iatas, to_iatas), None) on success,
+    or (None, (response, status)) on failure.
+
+    `from_iata`/`to_iata` are the primary single-airport resolutions used by
+    the hub pipelines. `from_iatas`/`to_iatas` are full lists for direct
+    flight search — when the user gives a city name without locking a
+    specific airport, we want SerpAPI to search across all airports of
+    that city (e.g. Milan → MXP,LIN).
+    """
+    from_iata_raw = (payload.get("from_iata") or "").strip()
+    to_iata_raw = (payload.get("to_iata") or "").strip()
+    from_city_raw = (payload.get("from_city") or "").strip()
+    to_city_raw = (payload.get("to_city") or "").strip()
+    date_str = (payload.get("date") or "").strip()
+
+    from_raw = from_iata_raw or from_city_raw
+    to_raw = to_iata_raw or to_city_raw
+
+    if not date_str:
+        return None, (jsonify({"error": "date is required (YYYY-MM-DD)."}), 400)
+    if not from_raw or not to_raw:
+        return None, (jsonify({"error": "Both From and To are required."}), 400)
+
+    from_iata = resolve_iata(from_raw)
+    to_iata = resolve_iata(to_raw)
+    if not from_iata or not to_iata:
+        return None, (jsonify({
+            "error": f"Could not resolve airports: "
+                     f"from={from_raw!r}→{from_iata}, to={to_raw!r}→{to_iata}. "
+                     f"Try an IATA code (e.g. VCE, NUE).",
+        }), 400)
+
+    # Expand city → multi-airport list ONLY when the user didn't lock a
+    # specific airport. Locked IATA wins — single-airport search.
+    from_iatas = [from_iata] if from_iata_raw else (resolve_iatas(from_city_raw) or [from_iata])
+    to_iatas = [to_iata] if to_iata_raw else (resolve_iatas(to_city_raw) or [to_iata])
+
+    from_city = from_city_raw or from_raw or from_iata
+    to_city = to_city_raw or to_raw or to_iata
+    return (from_iata, to_iata, from_city, to_city, date_str,
+            from_iatas, to_iatas), None
+
+
+def _iatas_in(items: list[dict]) -> set[str]:
+    """Walks both flat flight rows (sec 1) and hub-grouped rows (secs 2/3)."""
+    out: set[str] = set()
+    for d in items:
+        for k in ("depIata", "arrIata", "via"):
+            v = d.get(k)
+            if v:
+                out.add(v)
+        for leg in d.get("legs") or []:
+            if leg.get("from"):
+                out.add(leg["from"])
+            if leg.get("to"):
+                out.add(leg["to"])
+        lay = d.get("layover") or {}
+        if lay.get("airport"):
+            out.add(lay["airport"])
+        hub = d.get("hub") or {}
+        if hub.get("iata"):
+            out.add(hub["iata"])
+        for f in d.get("flightOptions") or []:
+            for k in ("fromIata", "toIata"):
+                v = f.get(k)
+                if v:
+                    out.add(v)
+            for leg in f.get("legs") or []:
+                if leg.get("from"):
+                    out.add(leg["from"])
+                if leg.get("to"):
+                    out.add(leg["to"])
+            for lay in f.get("layovers") or []:
+                if lay.get("airport"):
+                    out.add(lay["airport"])
+    return out
+
+
+def _airports_payload(*iata_sets: set[str]) -> dict:
+    seen: set[str] = set()
+    for s in iata_sets:
+        seen.update(s)
+    return {code: AIRPORT_COORDS[code] for code in seen if code in AIRPORT_COORDS}
+
+
+@app.post("/api/flights")
+def api_flights():
+    payload = request.get_json(silent=True) or {}
+    inputs, err = _resolve_inputs(payload)
+    if err:
+        return err
+    from_iata, to_iata, from_city, to_city, date_str, from_iatas, to_iatas = inputs
+
+    # SerpAPI accepts comma-separated IATAs in departure_id/arrival_id,
+    # which Google Flights treats as "search across all of these airports".
+    from_id = ",".join(from_iatas) if from_iatas else from_iata
+    to_id = ",".join(to_iatas) if to_iatas else to_iata
+
+    print("\n" + "=" * 60)
+    print(f"✈️  /api/flights  {from_id} → {to_id}  date={date_str}")
+
+    try:
+        flights_df = flight_search(from_id, to_id, date_str)
+        flight_err = None
+    except Exception as e:
+        app.logger.exception("flight_search failed")
+        flights_df = pd.DataFrame()
+        flight_err = str(e)
+    flights_cached_at = flights_df.attrs.get("cached_at") if not flights_df.empty else None
+    best_flights, cheap_flights = transform_flights(flights_df)
+    print(f"   → best={len(best_flights)}  cheap={len(cheap_flights)}")
+
+    iatas = _iatas_in(best_flights) | _iatas_in(cheap_flights) | {from_iata, to_iata}
+    iatas |= set(from_iatas) | set(to_iatas)
+    return jsonify({
+        "bestFlights": best_flights,
+        "cheapFlights": cheap_flights,
+        "airports": _airports_payload(iatas),
+        "resolved": {
+            "from": from_iata, "to": to_iata,
+            "fromCity": from_city, "toCity": to_city,
+            "fromIatas": from_iatas, "toIatas": to_iatas,
+        },
+        "cachedAt": flights_cached_at,
+        "error": flight_err,
+    })
+
+
+@app.post("/api/flight-plus-bus")
+def api_flight_plus_bus():
+    payload = request.get_json(silent=True) or {}
+    inputs, err = _resolve_inputs(payload)
+    if err:
+        return err
+    from_iata, to_iata, from_city, to_city, date_str, from_iatas, _to_iatas = inputs
+
+    # Multi-airport origin: comma-join all IATAs of the origin city so SerpAPI
+    # searches across both (e.g. MXP+LIN). sorted() keeps the cache key stable
+    # regardless of resolve order. Single-airport origins keep the same IATA.
+    from_id = ",".join(sorted(from_iatas)) if from_iatas else from_iata
+
+    print("\n" + "=" * 60)
+    print(f"🚌 /api/flight-plus-bus  {from_id} → {to_city}  date={date_str}")
+
+    try:
+        hubs_raw = find_cheap_flight_plus_ground_v2(
+            departure_id=from_id,
+            target_city=to_city,
+            outbound_date=date_str,
+            ground_date=date_str,
+        )
+        combo_err = None
+    except Exception as e:
+        app.logger.exception("find_cheap_flight_plus_ground_v2 failed")
+        hubs_raw = []
+        combo_err = str(e)
+    hubs = transform_hubs(
+        hubs_raw, date_str, from_iata, to_iata, from_city, to_city,
+        mode="flight_plus_bus",
+    )
+    _enrich_hubs_with_trains(hubs, from_city, to_city, date_str, "flight_plus_bus")
+    print(f"   → flightPlusBus hubs={len(hubs)}")
+
+    iatas = _iatas_in(hubs) | {from_iata, to_iata}
+    return jsonify({
+        "flightPlusBus": hubs,
+        "airports": _airports_payload(iatas),
+        "error": combo_err,
+    })
+
+
+@app.post("/api/bus-plus-flight")
+def api_bus_plus_flight():
+    payload = request.get_json(silent=True) or {}
+    inputs, err = _resolve_inputs(payload)
+    if err:
+        return err
+    from_iata, to_iata, from_city, to_city, date_str, _from_iatas, to_iatas = inputs
+
+    # Multi-airport destination: comma-join the destination IATAs so each hub
+    # candidate's flight_search hits both arrival airports of the destination
+    # city in a single SerpAPI call (e.g. MXP+LIN). Single-airport destinations
+    # are unaffected.
+    to_id = ",".join(sorted(to_iatas)) if to_iatas else to_iata
+
+    print("\n" + "=" * 60)
+    print(f"🚌✈ /api/bus-plus-flight  {from_city} → {to_id}  date={date_str}")
+
+    try:
+        hubs_raw = find_cheap_ground_plus_flight(
+            departure_city=from_city,
+            arrival_id=to_id,
+            outbound_date=date_str,
+            ground_date=date_str,
+        )
+        ground_err = None
+    except Exception as e:
+        app.logger.exception("find_cheap_ground_plus_flight failed")
+        hubs_raw = []
+        ground_err = str(e)
+    hubs = transform_hubs(
+        hubs_raw, date_str, from_iata, to_iata, from_city, to_city,
+        mode="bus_plus_flight",
+    )
+    _enrich_hubs_with_trains(hubs, from_city, to_city, date_str, "bus_plus_flight")
+    print(f"   → busPlusFlight hubs={len(hubs)}")
+
+    iatas = _iatas_in(hubs) | {from_iata, to_iata}
+    return jsonify({
+        "busPlusFlight": hubs,
+        "airports": _airports_payload(iatas),
+        "error": ground_err,
+    })
+
+
 @app.post("/api/trains")
 def api_trains():
     payload      = request.get_json(silent=True) or {}
@@ -830,6 +955,114 @@ def api_trains():
         "toCoords":   _city_coords(to_city),
         "error":      train_err,
     })
+
+
+_AI_SUGGEST_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "picks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "kind": {"type": "string", "enum": ["cheap", "fast", "best"]},
+                    "id": {"type": "string"},
+                    "reason": {"type": "string"},
+                },
+                "required": ["kind", "id", "reason"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["summary", "picks"],
+    "additionalProperties": False,
+}
+
+
+@app.post("/api/ai-suggest")
+def ai_suggest():
+    payload = request.json or {}
+    catalog = payload.get("catalog", [])
+    lang = payload.get("lang", "en")
+
+    if not catalog:
+        return jsonify({"error": "catalog is empty"}), 400
+
+    xai_key = os.getenv("XAI_API_KEY")
+    if not xai_key:
+        return jsonify({"error": "XAI_API_KEY not configured"}), 500
+
+    if lang == "tr":
+        system_msg = (
+            "Sen bir seyahat asistanısın. Kullanıcıya sunulan tüm seyahat seçeneklerini "
+            "analiz et ve en mantıklı 3 tanesini seç. Fiyat, toplam yolculuk süresi ve "
+            "aktarma/bekleme süresi arasındaki dengeyi göz önünde bulundur. "
+            "Özellikle fiyatta küçük bir fark varken layover süresi çok daha kısa olan "
+            "seçenekleri yakala. Yanıtını Türkçe yaz."
+        )
+    else:
+        system_msg = (
+            "You are a travel assistant. Analyze all travel options and pick the 3 most "
+            "worthwhile ones. Consider the trade-off between price, total trip duration, and "
+            "connection/layover time. Especially catch options where a small price premium "
+            "buys a significantly shorter layover. Reply in English."
+        )
+
+    lines = []
+    for item in catalog:
+        cat = item.get("cat", "")
+        iid = item.get("id", "")
+        if cat in ("Best Flight", "Cheapest Flight"):
+            lines.append(
+                f'[{iid}] {cat}: {item.get("airline")} {item.get("dep")}→{item.get("arr")} '
+                f'{item.get("dur")} {item.get("stops", 0)} stops €{item.get("price")}'
+            )
+        elif cat in ("Flight+Bus", "Bus+Flight"):
+            lines.append(
+                f'[{iid}] {cat} via {item.get("hub")}: '
+                f'flight {item.get("flightAirline")} {item.get("flightDep")}→{item.get("flightArr")} €{item.get("flightPrice")} | '
+                f'bus {item.get("busDep")}→{item.get("busArr")} €{item.get("busPrice")} | '
+                f'layover {item.get("layoverH")}h | total trip {item.get("totalTripH")}h | total €{item.get("totalPrice")}'
+            )
+        elif cat == "Bus/Train":
+            lines.append(
+                f'[{iid}] Bus/Train: {item.get("company")} {item.get("dep")}→{item.get("arr")} '
+                f'{item.get("dur")} €{item.get("price")}'
+            )
+
+    user_msg = "Travel options:\n" + "\n".join(lines) + (
+        "\n\nPick exactly 3 using 'cheap', 'fast', 'best' kinds. "
+        "Use the exact bracketed ID for each pick. "
+        "Keep reasons under 12 words."
+    )
+
+    try:
+        resp = httpx.post(
+            "https://api.x.ai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {xai_key}", "Content-Type": "application/json"},
+            json={
+                "model": "grok-4-1-fast-non-reasoning-latest",
+                "messages": [
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg},
+                ],
+                "response_format": {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "travel_picks",
+                        "strict": True,
+                        "schema": _AI_SUGGEST_SCHEMA,
+                    },
+                },
+            },
+            timeout=60.0,
+        )
+        resp.raise_for_status()
+        content = resp.json()["choices"][0]["message"]["content"]
+        return jsonify(json.loads(content))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

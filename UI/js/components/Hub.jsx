@@ -12,9 +12,12 @@ const PICK_MIN_CONNECTION = 120;
 // ── HUB ROW (one bus or flight option in the matrix) ─────────────────────────
 // `waitInfo`: when this row is the second leg AND a first-leg pick exists, render
 // a colored "Xs Ydk bekleme" line below the carrier meta to expose the layover.
-function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang, disabled, waitInfo }) {
+// `airportTag`: { color, iata } — when the hub's flight options span multiple
+// origin/destination airports (e.g. flight+bus with MXP+LIN origin), this row
+// gets a colored IATA pill so the user can tell which airport this option uses.
+function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang, disabled, waitInfo, airportTag }) {
   const t = T[lang];
-  const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
+  const fmt = (n) => formatPrice(n, currency);
   const time = opt.dep && opt.arr ? `${opt.dep}→${opt.arr}` : (opt.dep || '—');
   const meta = kind === 'bus' ?
     `${opt.duration || ''} · ${opt.company || 'FlixBus'}` :
@@ -30,6 +33,9 @@ function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang, d
           <span className="hub-row-time">{time}</span>
           {opt.nextDay && <span className="hub-row-tag next">+1</span>}
           {kind === 'flight' && opt.flightType === 'Best' && <span className="hub-row-tag best">{t.bestFlight.split(' ')[0]}</span>}
+          {airportTag && (
+            <span className="hub-row-tag" style={{ background: airportTag.color, color: '#fff' }}>{airportTag.iata}</span>
+          )}
         </div>
         <div className="hub-row-line2">
           <span>{meta}</span>
@@ -50,9 +56,9 @@ function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang, d
 // Sort options chronologically by departure (missing depISO sinks to bottom).
 
 // ── HUB MASTER CARD ──────────────────────────────────────────────────────────
-function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date }) {
+function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date, preSelectBusId = null, preSelectFlightId = null, autoExpand = false }) {
   const t = T[lang];
-  const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
+  const fmt = (n) => formatPrice(n, currency);
   const mode = hubData.mode;
   const { busOptions, flightOptions, hub } = hubData;
 
@@ -60,9 +66,34 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date 
   const cheapestPick = pickCheapest(busOptions, flightOptions, mode);
   const fastestPick = pickFastest(busOptions, flightOptions, mode);
 
-  const initial = cheapestPick || (busOptions[0] && flightOptions[0]
-    ? { busId: busOptions[0].id, flightId: flightOptions[0].id }
-    : { busId: null, flightId: null });
+  // Pill color rules for flight option rows: when multiple distinct origin
+  // (flight+bus) or destination (bus+flight) IATAs exist, palette colors call
+  // out the difference; with a single airport, pills still appear so the user
+  // sees which airport they're flying — just in the section's default color.
+  // `flightOptionAirportKey` picks fromIata for flight+bus, toIata for bus+flight.
+  const flightOptionAirportKey = mode === 'flight_plus_bus' ? 'fromIata' : 'toIata';
+  const flightAirportColorMap = (() => {
+    const distinct = [...new Set(flightOptions.map((f) => f[flightOptionAirportKey]).filter(Boolean))];
+    if (distinct.length < 2) return null;
+    const map = {};
+    distinct.forEach((iata, i) => { map[iata] = ARR_AIRPORT_PALETTE[i % ARR_AIRPORT_PALETTE.length]; });
+    return map;
+  })();
+
+  // Default selection: cheapest flight + bus with the *tightest* valid (≥2h)
+  // connection. Falls back to plain cheapest combo when no flight in the list
+  // has any valid bus pairing. (Cheapest/Fastest badges below stay independent.)
+  const tightPick = pickTightConnection(busOptions, flightOptions, mode);
+  const initial = (() => {
+    if (preSelectBusId && preSelectFlightId) {
+      const busExists = busOptions.some((b) => b.id === preSelectBusId);
+      const flightExists = flightOptions.some((f) => f.id === preSelectFlightId);
+      if (busExists && flightExists) return { busId: preSelectBusId, flightId: preSelectFlightId };
+    }
+    return tightPick || cheapestPick || (busOptions[0] && flightOptions[0]
+      ? { busId: busOptions[0].id, flightId: flightOptions[0].id }
+      : { busId: null, flightId: null });
+  })();
   const [sel, setSel] = useState(initial);
   const [showMap, setShowMap] = useState(false);
   // 0=collapsed (5 options), 1=mid (+6 more), 2=all
@@ -71,14 +102,26 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date 
   // Card itself starts collapsed — user expands it from the header click.
   // The top card in a section gets defaultExpanded=true so users don't open an
   // entirely shut accordion on first paint.
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [expanded, setExpanded] = useState(defaultExpanded || autoExpand);
   // Smart picks (AI top-3 button) — null = not requested, [] = no result
   const [smart, setSmart] = useState(null);
   const [smartLoading, setSmartLoading] = useState(false);
 
   // Reset selection when a new search lands (hubData identity changes).
   useEffect(() => {
-    const fresh = pickCheapest(busOptions, flightOptions, mode);
+    if (preSelectBusId && preSelectFlightId) {
+      const busExists = busOptions.some((b) => b.id === preSelectBusId);
+      const flightExists = flightOptions.some((f) => f.id === preSelectFlightId);
+      if (busExists && flightExists) {
+        setSel({ busId: preSelectBusId, flightId: preSelectFlightId });
+        setBusStage(0); setFlightStage(0);
+        setExpanded(true);
+        setSmart(null);
+        return;
+      }
+    }
+    const fresh = pickTightConnection(busOptions, flightOptions, mode)
+      || pickCheapest(busOptions, flightOptions, mode);
     if (fresh) {
       setSel({ busId: fresh.busId, flightId: fresh.flightId });
     } else if (busOptions[0] && flightOptions[0]) {
@@ -88,7 +131,7 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date 
     setFlightStage(0);
     setExpanded(defaultExpanded);
     setSmart(null);
-  }, [hubData]);
+  }, [hubData, preSelectBusId, preSelectFlightId]);
 
   const selBus = busOptions.find((b) => b.id === sel.busId) || null;
   const selFlight = flightOptions.find((f) => f.id === sel.flightId) || null;
@@ -204,15 +247,24 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date 
   const flightCol = (
     <div className="hub-col">
       {flightColTitle}
-      {visibleFlights.map((f) => (
-        <HubOptionRow key={f.id} kind="flight" opt={f}
-          selected={f.id === sel.flightId}
-          disabled={isFlightDisabled(f)}
-          onSelect={() => onPickFlight(f.id)}
-          badges={badgesFor('flight', f.id)}
-          waitInfo={waitInfoFor('flight', f)}
-          currency={currency} lang={lang} />
-      ))}
+      {visibleFlights.map((f) => {
+        const tagIata = f[flightOptionAirportKey];
+        // Always show the IATA pill; color it from the palette only when the
+        // hub has multi-airport flight options. Single-airport hubs use the
+        // section's blue (matches the dest-side pill on flight cards).
+        const tagColor = flightAirportColorMap && tagIata ? flightAirportColorMap[tagIata] : '#2563EB';
+        const airportTag = tagIata ? { color: tagColor, iata: tagIata } : null;
+        return (
+          <HubOptionRow key={f.id} kind="flight" opt={f}
+            selected={f.id === sel.flightId}
+            disabled={isFlightDisabled(f)}
+            onSelect={() => onPickFlight(f.id)}
+            badges={badgesFor('flight', f.id)}
+            waitInfo={waitInfoFor('flight', f)}
+            airportTag={airportTag}
+            currency={currency} lang={lang} />
+        );
+      })}
       {sortedFlights.length > COLLAPSE_BASE && (
         <button
           className={`hub-col-toggle${flightStage >= 2 ? ' expanded' : ''}`}

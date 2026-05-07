@@ -12,15 +12,21 @@ wheels/
 venv/
 ENV/
 
-# PyCharm ve IDE Settings 
+# PyCharm ve IDE Settings
 .idea/
 .vscode/
+*.claude
 
 # api keys etc.
 .env
 *.md
 multi-way-road-tripping
 
+# repomix outputs (Claude / NotebookLM integration)
+repomix-output.txt
+.repomixignore
+
 # per-machine SerpAPI reliability state (not source of truth)
 data/airport_reliability.json
+airport_reliability.json
 .DS_Store

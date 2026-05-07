@@ -61,7 +61,7 @@ const MODE_TINT = { flight: 'var(--blue-s)', bus: 'var(--or-s)', train: 'var(--g
 
 
 function DetailGrid({ segs, currency, lang, flightPackage }) {
-  const fmt = (n) => currency === 'USD' ? `$${n}` : `€${n}`;
+  const fmt = (n) => formatPrice(n, currency);
   const t = T[lang] || T.tr;
   const skyCopy = lang === 'tr' ? "Skyscanner'da Ara" : 'Search on Skyscanner';
   return (

@@ -1,7 +1,7 @@
 // ── Result cards: Flight, Transfer, Combo (flight+ground), and Ground ────────
 // ── Flight card (direct) ──────────────────────────────────────────────────────
-function FlightCard({ d, currency, lang, date }) {
-  const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
+function FlightCard({ d, currency, lang, date, cardId, flash, arrColor, depColor }) {
+  const fmt = (n) => formatPrice(n, currency);
   const t = T[lang || 'tr'];
   const route = { segments: [{ from: d.depIata, to: d.arrIata, type: 'flight', carrier: d.airline, duration: d.duration }] };
   const buyUrl = buildSkyscannerUrl({
@@ -16,25 +16,33 @@ function FlightCard({ d, currency, lang, date }) {
   <>
       <div className="card-airline">{d.airline}<span>{d.flightNo}</span></div>
       <div className="card-times" style={{ flex: 1 }}>
-        <div className="card-dep">{d.dep}</div>
+        <div className="card-dep">
+          {d.dep}
+          {d.depIata && <div className="arr-airport-tag" style={{ background: depColor || 'var(--or)' }}>{d.depIata}</div>}
+        </div>
         <div className="card-via" style={{ flex: 1 }}>
-          <div className="via-row"><div className="via-dot" style={{ background: 'var(--or)' }} /><div className="via-line" /><span style={{ fontSize: 13 }}>✈</span><div className="via-line" /><div className="via-dot" style={{ background: 'var(--blue)' }} /></div>
+          <div className="via-row"><div className="via-dot" style={{ background: depColor || 'var(--or)' }} /><div className="via-line" /><span style={{ fontSize: 13 }}>✈</span><div className="via-line" /><div className="via-dot" style={{ background: arrColor || 'var(--blue)' }} /></div>
           <div className="card-via-text">{d.via ? `via ${d.viaName || ''} (${d.via})` : t.nonstop}</div>
         </div>
-        <div className="card-arr">{d.arr}</div>
+        <div className="card-arr">
+          {d.arr}
+          {d.arrIata && <div className="arr-airport-tag" style={{ background: arrColor || 'var(--blue)' }}>{d.arrIata}</div>}
+        </div>
       </div>
       <div className="card-dur">{d.duration}<small>{d.via ? `via ${d.via}` : d.stops === 0 ? t.nonstop : '1 ' + t.transfer}</small></div>
       <div className="card-price">{fmt(d.price)}<small>/ kişi</small></div>
     </>;
 
   return <FlightOperationalDetailShell header={header} mapRoute={route} lang={lang || 'tr'} detailSegs={detailSegs}
-    totalPrice={d.price} totalDuration={d.duration} stops={d.stops || 0} currency={currency} buyUrl={buyUrl} />;
+    totalPrice={d.price} totalDuration={d.duration} stops={d.stops || 0} currency={currency} buyUrl={buyUrl}
+    cardId={cardId} flash={flash}
+    shareTitle={`${d.airline} ${d.dep}→${d.arr}`} shareText={`${d.airline} ${d.dep}→${d.arr} · ${currency === 'USD' ? '$' : '€'}${d.price}`} />;
 }
 
 // ── Transfer flight card ──────────────────────────────────────────────────────
-function TransferCard({ d, currency, lang, date }) {
+function TransferCard({ d, currency, lang, date, cardId, flash, arrColor, depColor }) {
   const t = T[lang];
-  const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
+  const fmt = (n) => formatPrice(n, currency);
   const route = { segments: d.legs.map((l) => ({ from: l.from, to: l.to, type: 'flight', carrier: d.airline, duration: l.duration })) };
   const buyUrl = buildSkyscannerUrl({
     fromIata: d.depIata, toIata: d.arrIata, date, depTime: d.legs[0]?.dep || d.dep, stops: d.stops,
@@ -44,11 +52,13 @@ function TransferCard({ d, currency, lang, date }) {
     carrier: d.airline, ref: l.flightNo, dep: l.dep, arr: l.arr, duration: l.duration,
     price: i === 0 ? d.price : null, buyUrl,
   }));
+  const depBadgeStyle = { background: depColor || 'var(--or)', color: '#fff', padding: '2px 7px', borderRadius: 99, fontWeight: 700, fontSize: 10, letterSpacing: '.3px', display: 'inline-block', marginTop: 2 };
+  const arrBadgeStyle = { background: arrColor || 'var(--blue)', color: '#fff', padding: '2px 7px', borderRadius: 99, fontWeight: 700, fontSize: 10, letterSpacing: '.3px', display: 'inline-block', marginTop: 2 };
   const header =
   <>
       <div className="card-airline">{d.airline}<span style={{ fontSize: 10, lineHeight: 1.4, color: 'var(--lt)' }}>{d.legs[0].flightNo}<br />{d.legs[1].flightNo}</span></div>
       <div className="transfer-legs" style={{ flex: 1 }}>
-        <div className="tleg"><div className="tleg-time">{d.legs[0].dep}</div><div className="tleg-iata">{d.legs[0].from}</div></div>
+        <div className="tleg"><div className="tleg-time">{d.legs[0].dep}</div><div className="tleg-iata" style={depBadgeStyle}>{d.legs[0].from}</div></div>
         <div className="tleg-sep" style={{ flex: 1 }}><div className="tleg-flight-bar"><div className="tleg-seg-line" /><span className="tleg-plane">✈</span><div className="tleg-seg-line" /></div><div className="tleg-meta">{d.legs[0].duration}</div></div>
         <div className="tleg" style={{ flexShrink: 0 }}>
           <div className="tleg-time" style={{ fontSize: 14 }}>{d.legs[0].arr}</div><div className="tleg-iata">{d.legs[0].to}</div>
@@ -56,7 +66,10 @@ function TransferCard({ d, currency, lang, date }) {
           <div className="tleg-iata" style={{ marginTop: 2 }}>{d.legs[1].dep}</div>
         </div>
         <div className="tleg-sep" style={{ flex: 1 }}><div className="tleg-flight-bar"><div className="tleg-seg-line" /><span className="tleg-plane">✈</span><div className="tleg-seg-line" /></div><div className="tleg-meta">{d.legs[1].duration}</div></div>
-        <div className="tleg"><div className="tleg-time">{d.legs[1].arr}</div><div className="tleg-iata">{d.legs[1].to}</div></div>
+        <div className="tleg">
+          <div className="tleg-time">{d.legs[1].arr}</div>
+          <div className="tleg-iata" style={arrBadgeStyle}>{d.legs[1].to}</div>
+        </div>
       </div>
       <div className="card-dur">{d.totalDuration}<small>{d.stops} {t.transfer}</small></div>
       <div className="card-price">{fmt(d.price)}<small>/ kişi</small></div>
@@ -64,13 +77,15 @@ function TransferCard({ d, currency, lang, date }) {
 
   return <FlightOperationalDetailShell header={header} mapRoute={route} lang={lang} detailSegs={detailSegs}
     totalPrice={d.price} totalDuration={d.totalDuration || d.duration} stops={d.stops || Math.max(0, d.legs.length - 1)}
-    currency={currency} buyUrl={buyUrl} />;
+    currency={currency} buyUrl={buyUrl}
+    cardId={cardId} flash={flash}
+    shareTitle={`${d.airline} ${d.legs[0].dep}→${d.legs[d.legs.length-1].arr}`} shareText={`${d.airline} via ${d.legs[0].to} · ${currency === 'USD' ? '$' : '€'}${d.price}`} />;
 }
 
 // ── Combo card ────────────────────────────────────────────────────────────────
 function ComboCard({ d, currency, mode, lang }) {
   const t = T[lang];
-  const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
+  const fmt = (n) => formatPrice(n, currency);
   const isBus = d.ground.type === 'Bus';
   const gColor = isBus ? 'var(--or)' : 'var(--green)';
   const gBg = isBus ? 'var(--or-s)' : 'var(--green-s)';
@@ -204,10 +219,10 @@ function ComboCard({ d, currency, mode, lang }) {
 }
 
 // ── Ground card ───────────────────────────────────────────────────────────────
-function GroundCard({ d, currency, lang }) {
+function GroundCard({ d, currency, lang, cardId, flash }) {
   const t = T[lang];
   const isBus = d.type === 'Bus';
-  const fmt = (n) => currency === "USD" ? `$${n}` : `€${n}`;
+  const fmt = (n) => formatPrice(n, currency);
 
   // Support real API data (d.from/d.to/d.stops/d.url) and legacy MOCK shape (d.via/d.transfers)
   const fromKey   = d.from || 'origin';
@@ -227,15 +242,17 @@ function GroundCard({ d, currency, lang }) {
 
   const header =
   <>
-    <div className="ground-mode" style={{ background: isBus ? 'var(--or-s)' : 'var(--green-s)', color: isBus ? 'var(--or)' : 'var(--green)' }}>{isBus ? '🚌' : '🚆'}</div>
-    <div className="ground-info" style={{ flex: 1 }}>
-      <div className="ground-company">{d.company}</div>
-      <div className="ground-via">{fromName} → {toName}{transfers > 0 ? ` · ${transfers} ${t.transfer}` : ''}</div>
-      <div className="ground-times">{d.dep}<span>→</span>{d.arr}{d.nextDay ? ' (+1)' : ''}</div>
-    </div>
-    <div className="ground-dur">{d.duration}</div>
-    <div className="ground-price">{fmt(d.price)}</div>
-  </>;
+      <div className="ground-mode" style={{ background: isBus ? 'var(--or-s)' : 'var(--green-s)', color: isBus ? 'var(--or)' : 'var(--green)' }}>{isBus ? '🚌' : '🚆'}</div>
+      <div className="ground-info" style={{ flex: 1 }}>
+        <div className="ground-company">{d.company}</div>
+        <div className="ground-via">{fromName} → {toName}{transfers > 0 ? ` · ${transfers} ${t.transfer}` : ''}</div>
+        <div className="ground-times">{d.dep}<span>→</span>{d.arr}{d.nextDay ? ' (+1)' : ''}</div>
+      </div>
+      <div className="ground-dur">{d.duration}</div>
+      <div className="ground-price">{fmt(d.price)}</div>
+    </>;
 
-  return <CardDetailShell header={header} mapRoute={route} lang={lang} journey={journey} detailSegs={detailSegs} currency={currency} />;
+  return <CardDetailShell header={header} mapRoute={route} lang={lang} journey={journey} detailSegs={detailSegs} currency={currency}
+    cardId={cardId} flash={flash}
+    shareTitle={`${d.company} ${d.dep}→${d.arr}`} shareText={`${d.company} · ${d.duration} · ${currency === 'USD' ? '$' : '€'}${d.price}`} />;
 }

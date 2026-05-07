@@ -20,11 +20,13 @@ def flight_search(departure_id: str, arrival_id: str, outbound_date: str,
     """
     cached = data_cache.flight_get(departure_id, arrival_id, outbound_date)
     if cached is not None:
+        df, cached_at = cached
+        df.attrs["cached_at"] = cached_at
         # Cached HITs forgive a strike too — the airport returned data recently,
         # so don't penalize it just because we skipped the live call.
-        if track_iata and not cached.empty:
+        if track_iata and not df.empty:
             record_success(track_iata)
-        return cached
+        return df
 
     api_key = os.getenv("SERPAPI_KEY")
     if not api_key:
@@ -116,6 +118,7 @@ def flight_search(departure_id: str, arrival_id: str, outbound_date: str,
               f"({len(df[df['flight_type']=='Best'])} best)")
         df = df.sort_values("price").reset_index(drop=True)
         data_cache.flight_set(departure_id, arrival_id, outbound_date, df)
+        df.attrs["cached_at"] = None  # fresh fetch
         return df
 
     except Exception as e:

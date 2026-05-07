@@ -210,6 +210,7 @@ def _fetch_hub(
         return None
     if flights_df is None or flights_df.empty or "flight_type" not in flights_df.columns:
         return None
+    flights_cached_at = flights_df.attrs.get("cached_at")
 
     best_subset = flights_df[flights_df["flight_type"] == "Best"].head(flight_cap_best)
     other_subset = flights_df[flights_df["flight_type"] == "Other"].head(flight_cap_other)
@@ -225,6 +226,7 @@ def _fetch_hub(
         return None
     if ground_df is None or ground_df.empty:
         return None
+    bus_cached_at = ground_df.attrs.get("cached_at")
 
     ground_df = ground_df.copy()
     ground_df["_arr_naive"] = ground_df["arrival_dt"].map(_to_naive)
@@ -234,8 +236,12 @@ def _fetch_hub(
     if ground_df.empty:
         return None
 
+    # arrival_id may be comma-joined ("MXP,LIN") when the destination city
+    # has multiple airports. flight_search rows carry the real arrival IATA
+    # in `arrival_iata`, so the fallback only matters when SerpAPI omits it.
+    arrival_iata_fallback = arrival_id.split(",")[0].strip()
     flight_options = [
-        _flight_option(i, r, ap["iata"], arrival_id)
+        _flight_option(i, r, ap["iata"], arrival_iata_fallback)
         for i, (_, r) in enumerate(flights_df.iterrows())
     ]
     bus_options = [
@@ -259,6 +265,8 @@ def _fetch_hub(
         "bus_options": bus_options,
         "flight_options": flight_options,
         "min_total_price": min_total,
+        "flights_cached_at": flights_cached_at,
+        "bus_cached_at": bus_cached_at,
     }
 
 

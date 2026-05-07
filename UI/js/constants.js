@@ -72,6 +72,11 @@ const LATLNG = {
 };
 const LINE_COLOR = { flight: "#2563EB", bus: "#F4611E", train: "#16A34A" };
 
+// Stable palette for the per-airport color cue used when an "open" city has
+// multiple airports (MXP+LIN). Same colors used on flight cards (dep & arr
+// badges) and inside hub-card flight option rows.
+const ARR_AIRPORT_PALETTE = ['#2563EB', '#16A34A', '#7C3AED', '#0891B2', '#F4611E'];
+
 const CITY_NAMES = { VCE: 'Venice', NUE: 'Nürnberg', FRA: 'Frankfurt', MUC: 'Munich', CDG: 'Paris', AMS: 'Amsterdam', ZRH: 'Zürich', VIE: 'Vienna', BCN: 'Barcelona', VRN: 'Verona', TSF: 'Treviso' };
 
 // ── Advanced filter defaults ─────────────────────────────────────────────────

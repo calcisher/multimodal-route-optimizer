@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.14.3",
+    "docx2pdf>=0.1.8",
     "flask>=3.0",
     "geopy>=2.4.1",
     "google-search-results>=2.4.2",
@@ -14,8 +15,10 @@ dependencies = [
     "pandas>=3.0.2",
     "playwright>=1.59.0",
     "pydantic>=2.13.0",
+    "python-docx>=1.2.0",
     "python-dotenv>=1.2.2",
     "questionary>=2.1.1",
     "serpapi>=1.0.2",
     "thefuzz>=0.22.1",
+    "weasyprint>=68.1",
 ]

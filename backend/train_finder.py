@@ -396,7 +396,9 @@ def get_trips(origin: str, destination: str, date: str) -> pd.DataFrame:
     with flixbus_finder.get_trips() for use in the hub pipeline."""
     cached = data_cache.train_get(origin, destination, date)
     if cached is not None:
-        return cached
+        df, cached_at = cached
+        df.attrs["cached_at"] = cached_at
+        return df
 
     country = _detect_country(origin, destination)
     print(f"🚆 Train search: {origin!r} → {destination!r}  [{country}]  date={date}")

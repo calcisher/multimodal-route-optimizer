@@ -1,10 +1,21 @@
 """Flight → ground (bus) pipeline, hub-grouped.
 
 Mirror of bus_and_flight_search.py reversed: take the user's departure
-airport and target arrival city, find airports near the target city
-within max_distance_km, and for each pull SerpAPI's top 3 "best" + top 3
-"other" flights from departure_id to that hub airport plus all FlixBus
-options from that hub city to the target city.
+airport(s) and target arrival city, pick candidate hub airports near the
+target city, and for each pull SerpAPI's top 3 "best" + top 3 "other"
+flights from departure_id to that hub airport plus all FlixBus options
+from that hub city to the target city.
+
+Hub selection uses Google Travel Explore (1 SerpAPI call) to rank
+candidate hubs by *cheapest flight price* within max_distance_km of the
+target city — so we drill into the hubs the user actually wants, not
+just the geographically closest ones. Falls back to the geo-nearest
+selection if Explore returns nothing usable.
+
+`departure_id` accepts a single IATA ("MXP") or a comma-joined set
+("MXP,LIN"); SerpAPI treats the latter as "any of these airports", which
+catches cheap flights from secondary airports of the same metro without
+spending extra credits.
 
 Returns one dict per hub with `bus_options[]` and `flight_options[]`
 attached raw so the frontend can let users pair flights with buses.
@@ -15,10 +26,12 @@ to the caller.
 """
 from __future__ import annotations
 
+import os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pandas as pd
+from serpapi import Client as SerpApiClient
 
 from .airport_reliability import is_suspended
 from .bus_and_flight_search import (
@@ -27,9 +40,115 @@ from .bus_and_flight_search import (
     _to_naive,
     find_nearby_airports,
 )
-from .flight_and_ground_search import COUNTRY_EN
+from .flight_and_ground_search import COUNTRY_EN, airports_df, geocode_city, haversine_km
 from .flight_search import flight_search
 from .flixbus_finder import get_trips
+
+
+def _explore_select_hubs(
+    departure_id: str,
+    target_city: str,
+    outbound_date: str,
+    max_distance_km: int,
+    limit: int,
+) -> pd.DataFrame:
+    """Travel-Explore-ranked candidate hubs near the target city.
+
+    One SerpAPI call from departure_id (single IATA or "MXP,LIN") returns
+    up to ~50 destinations with a `flight_price`. Keep the ones within
+    max_distance_km of the target city, drop the target itself, sort by
+    price, and return the cheapest `limit`.
+
+    Schema-compatible with `find_nearby_airports` plus an `explore_price`
+    column for diagnostics. Empty DataFrame on any failure — the caller
+    falls back to geographic nearest.
+    """
+    api_key = os.getenv("SERPAPI_KEY")
+    if not api_key:
+        return pd.DataFrame()
+
+    try:
+        target_lat, target_lon = geocode_city(target_city)
+    except Exception as e:
+        print(f"   explore: geocode failed for {target_city!r}: {e}")
+        return pd.DataFrame()
+
+    print(f"🧭 Explore search STARTING: {departure_id} → near {target_city} on {outbound_date}")
+    try:
+        client = SerpApiClient(api_key=api_key)
+        results = client.search({
+            "engine": "google_travel_explore",
+            "departure_id": departure_id.upper(),
+            "currency": "EUR",
+            "type": "2",
+            "outbound_date": outbound_date,
+            "no_cache": False,
+        })
+    except Exception as e:
+        print(f"   explore({departure_id}) raised: {e}")
+        return pd.DataFrame()
+
+    target_norm = target_city.split(",")[0].strip().lower()
+
+    # Use our own airports_df as the source of truth for hub city/country —
+    # SerpAPI's `dest.name` varies between calls ("Frankfurt" one moment,
+    # "Frankfurt am Main" the next), and that variance flows all the way
+    # into the bus-cache key. Resolving by IATA against airports_df keeps
+    # the hub's canonical name stable across Explore retries.
+    iata_to_meta = {
+        r["iata"]: {"city": r["city"], "country": r["country"], "lat": r["lat"], "lon": r["lon"]}
+        for _, r in airports_df.iterrows()
+    }
+
+    rows = []
+    for dest in results.get("destinations", []) or []:
+        if "flight_price" not in dest:
+            continue
+        airport = dest.get("destination_airport") or {}
+        iata = airport.get("code")
+        if not iata:
+            continue
+        meta = iata_to_meta.get(iata)
+        if meta is None:
+            # Hub isn't in our IT/DE airport list — Explore returned a
+            # destination outside the curated set. Skip rather than
+            # propagate an unknown city string into the bus cache.
+            continue
+        city = meta["city"]
+        country = meta["country"]
+        if city.split(",")[0].strip().lower() == target_norm:
+            continue
+        d_km = haversine_km(meta["lat"], meta["lon"], target_lat, target_lon)
+        if d_km > max_distance_km:
+            continue
+        country_en = COUNTRY_EN.get(country, country)
+        rows.append({
+            "iata": iata,
+            "city": city,
+            "country": country,
+            "lat": float(meta["lat"]),
+            "lon": float(meta["lon"]),
+            "distance_km": round(d_km, 1),
+            "bus_arrival_name": f"{city}, {country_en}" if country_en else city,
+            "explore_price": float(dest["flight_price"]),
+        })
+
+    if not rows:
+        print("   explore: 0 destinations within range — falling back to geo-nearest.")
+        return pd.DataFrame()
+
+    df = (
+        pd.DataFrame(rows)
+        .sort_values("explore_price")
+        .drop_duplicates(subset="iata", keep="first")
+        .head(limit)
+        .reset_index(drop=True)
+    )
+    print(
+        f"   explore: {len(df)} hub(s) selected by price "
+        f"({', '.join(f'{r.iata}=€{r.explore_price:.0f}' for r in df.itertuples())})"
+    )
+    return df
 
 
 def _min_valid_total_flight_first(
@@ -82,6 +201,7 @@ def _fetch_hub(
         return None
     if flights_df is None or flights_df.empty or "flight_type" not in flights_df.columns:
         return None
+    flights_cached_at = flights_df.attrs.get("cached_at")
 
     best_subset = flights_df[flights_df["flight_type"] == "Best"].head(flight_cap_best)
     other_subset = flights_df[flights_df["flight_type"] == "Other"].head(flight_cap_other)
@@ -99,6 +219,7 @@ def _fetch_hub(
         return None
     if ground_df is None or ground_df.empty:
         return None
+    bus_cached_at = ground_df.attrs.get("cached_at")
 
     ground_df = ground_df.copy()
     ground_df["_dep_naive"] = ground_df["departure_dt"].map(_to_naive)
@@ -108,8 +229,12 @@ def _fetch_hub(
     if ground_df.empty:
         return None
 
+    # departure_id may be comma-joined ("MXP,LIN") when the origin city has
+    # multiple airports. flight_search rows carry the real departure IATA;
+    # the fallback only kicks in when SerpAPI omits it.
+    departure_iata_fallback = departure_id.split(",")[0].strip()
     flight_options = [
-        _flight_option(i, r, departure_id, ap["iata"])
+        _flight_option(i, r, departure_iata_fallback, ap["iata"])
         for i, (_, r) in enumerate(flights_df.iterrows())
     ]
     bus_options = [
@@ -133,6 +258,8 @@ def _fetch_hub(
         "bus_options": bus_options,
         "flight_options": flight_options,
         "min_total_price": min_total,
+        "flights_cached_at": flights_cached_at,
+        "bus_cached_at": bus_cached_at,
     }
 
 
@@ -154,7 +281,14 @@ def find_cheap_flight_plus_ground_v2(
     if ground_date is None:
         ground_date = outbound_date
 
-    nearby = find_nearby_airports(target_city, max_distance_km, limit)
+    # Try Explore-ranked hubs first (cheapest by flight price within range).
+    # Falls back to geo-nearest if Explore returns nothing usable so the
+    # pipeline still works when Explore is rate-limited / API-down.
+    nearby = _explore_select_hubs(
+        departure_id, target_city, outbound_date, max_distance_km, limit,
+    )
+    if nearby.empty:
+        nearby = find_nearby_airports(target_city, max_distance_km, limit)
     if nearby.empty:
         print(f"⚠️  No airports within {max_distance_km}km of {target_city!r}.")
         return []

@@ -152,7 +152,6 @@ def search_tickets(from_id: str, to_id: str, date: str) -> list[dict]:
             dur = detail.get("duration", {})
             seats = detail.get("available", {}).get("seats")
             uid = detail.get("uid", "")
-
             # Deep-link: rideId ile açılınca FlixBus doğrudan o seferin
             # detay panelini gösteriyor (bahn.de/Skyscanner ile aynı mantık).
             # uid yoksa genel arama sayfasına düş.
@@ -212,6 +211,21 @@ def search_range(from_id: str, to_id: str, start: str, end: str) -> list[dict]:
 # ──────────────────────────────────────────────
 # 6. Tek Metod ile Bilet Arama
 # ──────────────────────────────────────────────
+def _strip_tz(ts):
+    """tz-aware Timestamp → naive at the same wall-clock. Symmetric with
+    df.to_json(date_format='iso')'s naive-append-Z behavior, so cache
+    round-trip preserves displayed local times. Strip via tz_localize(None)
+    instead of tz_convert(UTC) — FlixBus reports CEST, SerpAPI flight
+    times are tz-naive local; converting to UTC would put the two
+    timelines hours apart and break the 2h transfer rule.
+    """
+    if pd.isna(ts):
+        return ts
+    if isinstance(ts, pd.Timestamp) and ts.tzinfo is not None:
+        return ts.tz_localize(None)
+    return ts
+
+
 def get_trips(
     origin: str,
     destination: str,
@@ -222,18 +236,22 @@ def get_trips(
     origin/destination: sehir adi (ornek: "Berlin", "Venice")
     date: "DD.MM.YYYY" veya "YYYY-MM-DD" formatinda
     conn: None verilirse fonksiyon kendi baglantisini acar
-    Returns: fiyata gore sirali pandas DataFrame, bulunamazsa bos DataFrame
-    """
-    cached = data_cache.bus_get(origin, destination, date)
-    if cached is not None:
-        return cached
+    Returns: fiyata gore sirali pandas DataFrame, bulunamazsa bos DataFrame.
 
+    Cache is keyed off the resolved FlixBus city UUIDs, NOT on the
+    free-text origin/destination — same metro often has multiple stops
+    ("Frankfurt" vs "Frankfurt Airport") and different upstream paths
+    pass different name variants for the same hub. Resolve first, key
+    second.
+    """
     if conn is None:
         conn = init_db()
 
     # Tarih formatini normalize et
     if len(date) == 10 and date[4] == "-":
-        date = datetime.strptime(date, "%Y-%m-%d").strftime("%d.%m.%Y")
+        date_dotted = datetime.strptime(date, "%Y-%m-%d").strftime("%d.%m.%Y")
+    else:
+        date_dotted = date
 
     from_city = find_city(conn, origin)
     to_city = find_city(conn, destination)
@@ -244,7 +262,13 @@ def get_trips(
     from_id, from_name = from_city
     to_id, to_name = to_city
 
-    tickets = search_tickets(from_id, to_id, date)
+    cached = data_cache.bus_get(from_id, to_id, date)
+    if cached is not None:
+        df, cached_at = cached
+        df.attrs["cached_at"] = cached_at
+        return df
+
+    tickets = search_tickets(from_id, to_id, date_dotted)
     if not tickets:
         return pd.DataFrame()
 
@@ -257,9 +281,9 @@ def get_trips(
         rows.append({
             "origin": from_name,
             "destination": to_name,
-            "date": date,
-            "departure_dt": pd.to_datetime(t["kalkış"], errors="coerce"),
-            "arrival_dt": pd.to_datetime(t["varış"], errors="coerce"),
+            "date": date_dotted,
+            "departure_dt": _strip_tz(pd.to_datetime(t["kalkış"], errors="coerce")),
+            "arrival_dt": _strip_tz(pd.to_datetime(t["varış"], errors="coerce")),
             "duration_min": hours * 60 + minutes,
             "price_eur": float(t["fiyat"]) if t["fiyat"] is not None else None,
             "seats_available": t["koltuk"],
@@ -268,7 +292,8 @@ def get_trips(
 
     df = pd.DataFrame(rows)
     df = df.sort_values("price_eur").reset_index(drop=True)
-    data_cache.bus_set(origin, destination, date, df)
+    data_cache.bus_set(from_id, to_id, date, df)
+    df.attrs["cached_at"] = None  # fresh fetch
     return df
 
 
