@@ -224,12 +224,14 @@ function parseISO(s) {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function fmtConnMinutes(mins) {
+function fmtConnMinutes(mins, lang) {
   if (mins == null) return '—';
   const sign = mins < 0 ? '-' : '';
   const abs = Math.abs(mins);
   const h = Math.floor(abs / 60), m = abs % 60;
-  return sign + (h > 0 ? `${h}s ${String(m).padStart(2, '0')}dk` : `${m}dk`);
+  const hLbl = lang === 'en' ? 'h' : 's';
+  const mLbl = lang === 'en' ? 'm' : 'dk';
+  return sign + (h > 0 ? `${h}${hLbl} ${String(m).padStart(2, '0')}${mLbl}` : `${m}${mLbl}`);
 }
 
 // Map a calcConnection level → palette + i18n labels for the new summary panel

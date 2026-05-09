@@ -18,7 +18,16 @@ function parseHubFlashId(flashId, prefix) {
 
 function SectionContent({ secIdx, data, currency, lang, date, flashId, arrColorMap, depColorMap }) {
   const t = T[lang];
-  if (!data || data.length === 0) return <div className="no-result"><div className="no-icon">🔍</div>{t.noResult}</div>;
+  if (!data || data.length === 0) {
+    if (secIdx === 3) return (
+      <div className="no-result no-result-rich">
+        <div className="no-icon">🗺</div>
+        <div className="no-result-title">{t.noResultBusFlightTitle}</div>
+        <div className="no-result-hint">{t.noResultBusFlightHint}</div>
+      </div>
+    );
+    return <div className="no-result"><div className="no-icon">🔍</div>{t.noResult}</div>;
+  }
 
   if (secIdx === 0 || secIdx === 1) {
     const prefix = secIdx === 0 ? 'bf' : 'cf';

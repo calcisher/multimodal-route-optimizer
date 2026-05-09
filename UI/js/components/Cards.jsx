@@ -12,9 +12,16 @@ function FlightCard({ d, currency, lang, date, cardId, flash, arrColor, depColor
     carrier: d.airline, ref: d.flightNo, dep: d.dep, arr: d.arr, duration: d.duration, price: d.price,
     buyUrl,
   }];
+  const airlineIata = (d.flightNo || '').split(' ')[0];
   const header =
   <>
-      <div className="card-airline">{d.airline}<span>{d.flightNo}</span></div>
+      <div className="card-airline">
+        {airlineIata && <img className="airline-logo"
+          src={`https://daisycon.io/images/airline/?width=80&height=40&iata=${airlineIata}`}
+          alt="" aria-hidden="true"
+          onError={(e) => { e.target.style.display = 'none'; }} />}
+        {d.airline}<span>{d.flightNo}</span>
+      </div>
       <div className="card-times" style={{ flex: 1 }}>
         <div className="card-dep">
           {d.dep}
@@ -30,7 +37,7 @@ function FlightCard({ d, currency, lang, date, cardId, flash, arrColor, depColor
         </div>
       </div>
       <div className="card-dur">{d.duration}<small>{d.via ? `via ${d.via}` : d.stops === 0 ? t.nonstop : '1 ' + t.transfer}</small></div>
-      <div className="card-price">{fmt(d.price)}<small>/ kişi</small></div>
+      <div className="card-price">{fmt(d.price)}<small>{t.perPerson}</small></div>
     </>;
 
   return <FlightOperationalDetailShell header={header} mapRoute={route} lang={lang || 'tr'} detailSegs={detailSegs}
@@ -52,27 +59,35 @@ function TransferCard({ d, currency, lang, date, cardId, flash, arrColor, depCol
     carrier: d.airline, ref: l.flightNo, dep: l.dep, arr: l.arr, duration: l.duration,
     price: i === 0 ? d.price : null, buyUrl,
   }));
-  const depBadgeStyle = { background: depColor || 'var(--or)', color: '#fff', padding: '2px 7px', borderRadius: 99, fontWeight: 700, fontSize: 10, letterSpacing: '.3px', display: 'inline-block', marginTop: 2 };
-  const arrBadgeStyle = { background: arrColor || 'var(--blue)', color: '#fff', padding: '2px 7px', borderRadius: 99, fontWeight: 700, fontSize: 10, letterSpacing: '.3px', display: 'inline-block', marginTop: 2 };
+  const airlineIata = (d.legs[0].flightNo || '').split(' ')[0];
   const header =
   <>
-      <div className="card-airline">{d.airline}<span style={{ fontSize: 10, lineHeight: 1.4, color: 'var(--lt)' }}>{d.legs[0].flightNo}<br />{d.legs[1].flightNo}</span></div>
+      <div className="card-airline">
+        {airlineIata && <img className="airline-logo"
+          src={`https://daisycon.io/images/airline/?width=80&height=40&iata=${airlineIata}`}
+          alt="" aria-hidden="true"
+          onError={(e) => { e.target.style.display = 'none'; }} />}
+        {d.airline}<span style={{ fontSize: 10, lineHeight: 1.4, color: 'var(--lt)' }}>{d.legs[0].flightNo}<br />{d.legs[1].flightNo}</span>
+      </div>
       <div className="transfer-legs" style={{ flex: 1 }}>
-        <div className="tleg"><div className="tleg-time">{d.legs[0].dep}</div><div className="tleg-iata" style={depBadgeStyle}>{d.legs[0].from}</div></div>
+        <div className="card-dep">
+          {d.legs[0].dep}
+          <div className="arr-airport-tag" style={{ background: depColor || 'var(--or)' }}>{d.legs[0].from}</div>
+        </div>
         <div className="tleg-sep" style={{ flex: 1 }}><div className="tleg-flight-bar"><div className="tleg-seg-line" /><span className="tleg-plane">✈</span><div className="tleg-seg-line" /></div><div className="tleg-meta">{d.legs[0].duration}</div></div>
-        <div className="tleg" style={{ flexShrink: 0 }}>
+        <div className="tleg tleg-mid" style={{ flexShrink: 0 }}>
           <div className="tleg-time" style={{ fontSize: 14 }}>{d.legs[0].arr}</div><div className="tleg-iata">{d.legs[0].to}</div>
           <div style={{ marginTop: 3 }}><span className="layover-badge">⏱ {d.layover.duration} {t.layover}</span></div>
           <div className="tleg-iata" style={{ marginTop: 2 }}>{d.legs[1].dep}</div>
         </div>
         <div className="tleg-sep" style={{ flex: 1 }}><div className="tleg-flight-bar"><div className="tleg-seg-line" /><span className="tleg-plane">✈</span><div className="tleg-seg-line" /></div><div className="tleg-meta">{d.legs[1].duration}</div></div>
-        <div className="tleg">
-          <div className="tleg-time">{d.legs[1].arr}</div>
-          <div className="tleg-iata" style={arrBadgeStyle}>{d.legs[1].to}</div>
+        <div className="card-arr">
+          {d.legs[1].arr}
+          <div className="arr-airport-tag" style={{ background: arrColor || 'var(--blue)' }}>{d.legs[1].to}</div>
         </div>
       </div>
       <div className="card-dur">{d.totalDuration}<small>{d.stops} {t.transfer}</small></div>
-      <div className="card-price">{fmt(d.price)}<small>/ kişi</small></div>
+      <div className="card-price">{fmt(d.price)}<small>{t.perPerson}</small></div>
     </>;
 
   return <FlightOperationalDetailShell header={header} mapRoute={route} lang={lang} detailSegs={detailSegs}

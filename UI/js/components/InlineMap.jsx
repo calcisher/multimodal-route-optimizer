@@ -90,7 +90,7 @@ function InlineMap({ route, onClose, lang, hubIata, hubWait }) {
       const isHub = hubIata && hubWait && hubWait.minutes != null && iata === hubIata;
       if (isHub) {
         const css = `color:${hubWait.color || '#5C4A3D'};border-color:${hubWait.color || '#E8DDD8'};background:${hubWait.bg || 'rgba(255,255,255,.95)'}`;
-        const html = `<span class="map-hub-wait" style="${css}">⏱ ${fmtConnMinutes(hubWait.minutes)} ${hubWait.label || ''}</span>`;
+        const html = `<span class="map-hub-wait" style="${css}">⏱ ${fmtConnMinutes(hubWait.minutes, lang)} ${hubWait.label || ''}</span>`;
         L.marker(c, {
           icon: L.divIcon({
             className: 'map-hub-hit',

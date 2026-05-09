@@ -46,7 +46,11 @@ const T = {
     fMaxTransfers: "Maks. aktarma", fOvernight: "Gece yolculuğunu hariç tut", fOvernightHelp: "Ertesi güne sarkan seyahatler gizlenir",
     fAny: "Hepsi", fDirect: "Direkt", fReset: "Filtreleri Sıfırla", fHrs: "saat",
     bannerEmpty: "Bu kategoride filtreyi karşılayan sonuç yok.", bannerSomeFiltered: "sonuç filtrelendi",
-    noOvernightChip: "gece dışında"
+    noOvernightChip: "gece dışında",
+    perPerson: "/ kişi", durHr: "s", durMin: "dk",
+    noResultBusFlightTitle: "Bu rota için otobüs+uçak kombinasyonu bulunamadı",
+    noResultBusFlightHint: "Kalkış şehrine 300 km içinde yakın havalimanı yok ya da bu havalimanlarından hedefe uygun uçuş yok. Daha geniş tarih veya başka bir kalkış şehri deneyin.",
+    legendDepAirports: "Kalkış havalimanları:", legendArrAirports: "Varış havalimanları:"
   },
   en: { tagline: "Smart multi-modal travel search", from: "From", to: "To", date: "Departure",
     search: "Search", searching: "Searching...",
@@ -94,6 +98,10 @@ const T = {
     fMaxTransfers: "Max transfers", fOvernight: "Exclude overnight trips", fOvernightHelp: "Hides trips that arrive next day",
     fAny: "Any", fDirect: "Direct", fReset: "Reset Filters", fHrs: "h",
     bannerEmpty: "No results in this category match the filter.", bannerSomeFiltered: "results filtered",
-    noOvernightChip: "no overnight"
+    noOvernightChip: "no overnight",
+    perPerson: "/ pax", durHr: "h", durMin: "m",
+    noResultBusFlightTitle: "No bus + flight combo found for this route",
+    noResultBusFlightHint: "Either no airport hub within 300 km of the origin, or no cheap onward flights from those hubs. Try a wider date range or a different origin city.",
+    legendDepAirports: "Origin airports:", legendArrAirports: "Destination airports:"
   }
 };

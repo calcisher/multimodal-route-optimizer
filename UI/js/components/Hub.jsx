@@ -44,7 +44,7 @@ function HubOptionRow({ kind, opt, selected, onSelect, badges, currency, lang, d
           {waitInfo && waitInfo.minutes != null && (
             <span className="hub-row-wait" style={{ color: waitInfo.color }}>
               <span className="hub-row-wait-dot" style={{ background: waitInfo.color }} />
-              {fmtConnMinutes(waitInfo.minutes)} {t.waitWord}
+              {fmtConnMinutes(waitInfo.minutes, lang)} {t.waitWord}
             </span>
           )}
         </div>
@@ -305,7 +305,7 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date,
       const summary = combos.map((c) => ({
         f: `${c.flight.airline || ''} ${c.flight.flightNo || ''} ${c.flight.dep}-${c.flight.arr} €${c.flight.price}`.trim(),
         b: `${c.bus.company || 'Bus'} ${c.bus.dep}-${c.bus.arr} €${c.bus.price}`,
-        wait: fmtConnMinutes(c.wait), overall: fmtConnMinutes(c.overall), price: `€${c.price}`
+        wait: fmtConnMinutes(c.wait, lang), overall: fmtConnMinutes(c.overall, lang), price: `€${c.price}`
       }));
       const prompt = `Sen seyahat asistanısın. Aşağıdaki ${mode === 'flight_plus_bus' ? 'uçak+otobüs' : 'otobüs+uçak'} kombinasyonlarından en iyi 3'ünü seç. Her biri için: bir kategori etiketi (örn: "🌅 Sabah erken", "💰 En ucuz", "⚡ En hızlı", "🌙 Gece yolculuğu") ve 1 cümlelik tavsiye yaz.
 Kombinasyonlar:
@@ -429,7 +429,7 @@ Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason":
                   <div className="hub-smart-label">{s.label}</div>
                   <div className="hub-smart-reason">{s.reason}</div>
                   {s.combo && (
-                    <div className="hub-smart-meta">{fmt(s.combo.price)} · {fmtConnMinutes(s.combo.overall)}</div>
+                    <div className="hub-smart-meta">{fmt(s.combo.price)} · {fmtConnMinutes(s.combo.overall, lang)}</div>
                   )}
                 </button>
               ))}
@@ -480,7 +480,7 @@ Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason":
                 <div className="hubs-wait-icon">⏱</div>
                 <div>
                   <div className="hubs-wait-time">
-                    {(conn && conn.minutes != null) ? fmtConnMinutes(conn.minutes) : t.waitMissing}
+                    {(conn && conn.minutes != null) ? fmtConnMinutes(conn.minutes, lang) : t.waitMissing}
                   </div>
                   <div className="hubs-wait-label">
                     {connStyle ? <><strong>{connStyle.label}</strong> · {hub.iata} {t.waitWord}</> : `${hub.iata} ${t.waitWord}`}
@@ -501,7 +501,7 @@ Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason":
           <div className="hub-summary-stats">
             <div>
               <small>{t.totalTripLabel}</small>
-              <span>{overallMin != null ? fmtConnMinutes(overallMin) : '—'}</span>
+              <span>{overallMin != null ? fmtConnMinutes(overallMin, lang) : '—'}</span>
             </div>
             <div>
               <small>{t.totalPriceLabel}</small>

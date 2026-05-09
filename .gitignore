@@ -30,3 +30,5 @@ repomix-output.txt
 data/airport_reliability.json
 airport_reliability.json
 .DS_Store
+
+.playwright-mcp

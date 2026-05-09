@@ -1,5 +1,5 @@
 // ── Filter UI: dual-handle range slider, panel, and active chips ─────────────
-function DualSlider({ from, to, onChange, min = 0, max = 24, step = 0.5, fmt }) {
+function DualSlider({ from, to, onChange, min = 0, max = 24, step = 0.5, fmt, ariaLabelFrom, ariaLabelTo }) {
   const span = max - min;
   const fillL = ((from - min) / span) * 100;
   const fillR = ((to - min) / span) * 100;
@@ -9,8 +9,10 @@ function DualSlider({ from, to, onChange, min = 0, max = 24, step = 0.5, fmt }) 
         <div className="fp-dual-track" />
         <div className="fp-dual-fill" style={{ left: `${fillL}%`, right: `${100 - fillR}%` }} />
         <input type="range" min={min} max={max} step={step} value={from}
+          aria-label={ariaLabelFrom}
           onChange={(e) => { const v = +e.target.value; onChange(Math.min(v, to - step), to); }} />
         <input type="range" min={min} max={max} step={step} value={to}
+          aria-label={ariaLabelTo}
           onChange={(e) => { const v = +e.target.value; onChange(from, Math.max(v, from + step)); }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--lt)', fontWeight: 600, marginTop: 2 }}>
@@ -32,6 +34,7 @@ function FilterPanel({ filter, setFilter, lang }) {
             <span className="fp-label-val">{filter.maxDurH >= 24 ? t.fAny : `≤ ${filter.maxDurH}${t.fHrs}`}</span>
           </div>
           <input className="fp-slider" type="range" min={1} max={24} step={1}
+            aria-label={t.fMaxDur}
             value={filter.maxDurH} onChange={(e) => set('maxDurH', +e.target.value)} />
         </div>
         <div className="fp-group">
@@ -41,6 +44,8 @@ function FilterPanel({ filter, setFilter, lang }) {
           </div>
           <DualSlider from={filter.depFromH} to={filter.depToH}
             onChange={(a, b) => setFilter({ ...filter, depFromH: a, depToH: b })}
+            ariaLabelFrom={`${t.fDepWindow} — ${lang === 'en' ? 'earliest' : 'en erken'}`}
+            ariaLabelTo={`${t.fDepWindow} — ${lang === 'en' ? 'latest' : 'en geç'}`}
             fmt={fmtFilterHour} />
         </div>
         <div className="fp-group">
@@ -50,6 +55,8 @@ function FilterPanel({ filter, setFilter, lang }) {
           </div>
           <DualSlider from={filter.arrFromH} to={filter.arrToH}
             onChange={(a, b) => setFilter({ ...filter, arrFromH: a, arrToH: b })}
+            ariaLabelFrom={`${t.fArrWindow} — ${lang === 'en' ? 'earliest' : 'en erken'}`}
+            ariaLabelTo={`${t.fArrWindow} — ${lang === 'en' ? 'latest' : 'en geç'}`}
             fmt={fmtFilterHour} />
         </div>
         <div className="fp-group">

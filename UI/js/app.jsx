@@ -300,7 +300,7 @@ function App() {
             <div className="sf-field sf-date">
               <div className="sf-label">{t.date}</div>
               <div className="sf-input-wrap">
-                <input type="date" className="sf-input" value={date} onChange={(e) => setDate(e.target.value)} />
+                <input type="date" className="sf-input" aria-label={t.date} value={date} onChange={(e) => setDate(e.target.value)} />
               </div>
             </div>
             <button className="search-btn" onClick={doSearch} disabled={loading}>
