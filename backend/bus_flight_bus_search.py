@@ -10,10 +10,9 @@ Pipeline shape:
   3. For each (origin_hub, dest_hub) pair, fetch non-stop flights and the
      two FlixBus legs (origin_city → origin_hub.city, dest_hub.city →
      arrival_city), all in parallel.
-  4. Compute the default trio for each pair: cheapest non-stop flight that
-     has at least one valid bus on each side (≥ 2h transfer), paired with
-     the bus1 with latest valid arrival and bus2 with earliest valid
-     departure (minimum wait at both transfers).
+  4. Compute the default trio for each pair: cheapest valid three-leg total
+     that respects the ≥ 2h transfer rule, using trip duration and transfer
+     tightness as tie-breakers.
 
 Returns one pair-card per (origin_hub, dest_hub) pair, sorted ascending by
 the trio's min_total_price. Pairs without a valid trio are dropped.
@@ -192,18 +191,17 @@ def _default_trio(
     outbound_date: str,
     min_transfer_hours: float,
 ) -> dict | None:
-    """Walk flight_options cheapest-first; for the first flight that has at
-    least one valid bus1 (latest arrival ≤ flight_dep − Δ) AND one valid
-    bus2 (earliest departure ≥ flight_arr + Δ), return:
+    """Return the best-value valid trio across all three leg arrays:
         {"bus1_idx": int, "flight_idx": int, "bus2_idx": int}
-    Picks the bus1 with the *latest* valid arrival (minimum origin-side
-    wait) and the bus2 with the *earliest* valid departure (minimum
-    destination-side wait). None if no flight has valid buses on both
-    sides.
 
-    Assumes flight_options is sorted by price ascending — caller responsibility.
+    Primary sort is total price so the UI headline min_total and default
+    selected rows describe the same product. Ties prefer shorter overall trip,
+    tighter total transfer time, cheaper flight, then source order.
     """
     threshold = timedelta(hours=min_transfer_hours)
+    best_key: tuple[float, float, float, float, int, int, int] | None = None
+    best_trio: dict | None = None
+
     for fi, f in enumerate(flight_options):
         if f.get("price_eur") is None:
             continue
@@ -212,38 +210,53 @@ def _default_trio(
         if f_dep is None or f_arr is None:
             continue
 
-        bus1_deadline = f_dep - threshold
-        best_bus1_idx = None
-        best_bus1_arr = None
+        valid_bus1: list[tuple[int, dict, object]] = []
         for bi, b in enumerate(bus1_options):
             if b.get("price_eur") is None:
                 continue
             b_arr = _to_naive(b.get("arrival_dt"), default_date=outbound_date)
-            if b_arr is None or b_arr > bus1_deadline:
+            if b_arr is None or b_arr > f_dep - threshold:
                 continue
-            if best_bus1_arr is None or b_arr > best_bus1_arr:
-                best_bus1_idx = bi
-                best_bus1_arr = b_arr
-        if best_bus1_idx is None:
+            valid_bus1.append((bi, b, b_arr))
+        if not valid_bus1:
             continue
 
-        bus2_earliest = f_arr + threshold
-        best_bus2_idx = None
-        best_bus2_dep = None
+        valid_bus2: list[tuple[int, dict, object]] = []
         for bi, b in enumerate(bus2_options):
             if b.get("price_eur") is None:
                 continue
             b_dep = _to_naive(b.get("departure_dt"), default_date=outbound_date)
-            if b_dep is None or b_dep < bus2_earliest:
+            if b_dep is None or b_dep < f_arr + threshold:
                 continue
-            if best_bus2_dep is None or b_dep < best_bus2_dep:
-                best_bus2_idx = bi
-                best_bus2_dep = b_dep
-        if best_bus2_idx is None:
+            valid_bus2.append((bi, b, b_dep))
+        if not valid_bus2:
             continue
 
-        return {"bus1_idx": best_bus1_idx, "flight_idx": fi, "bus2_idx": best_bus2_idx}
-    return None
+        for b1_idx, b1, b1_arr in valid_bus1:
+            b1_dep = _to_naive(b1.get("departure_dt"), default_date=outbound_date)
+            if b1_dep is None:
+                continue
+            wait1_min = (f_dep - b1_arr).total_seconds() / 60
+            for b2_idx, b2, b2_dep in valid_bus2:
+                b2_arr = _to_naive(b2.get("arrival_dt"), default_date=outbound_date)
+                if b2_arr is None:
+                    continue
+                total_price = b1["price_eur"] + f["price_eur"] + b2["price_eur"]
+                overall_min = (b2_arr - b1_dep).total_seconds() / 60
+                wait2_min = (b2_dep - f_arr).total_seconds() / 60
+                sort_key = (
+                    total_price,
+                    overall_min,
+                    wait1_min + wait2_min,
+                    f["price_eur"],
+                    fi,
+                    b1_idx,
+                    b2_idx,
+                )
+                if best_key is None or sort_key < best_key:
+                    best_key = sort_key
+                    best_trio = {"bus1_idx": b1_idx, "flight_idx": fi, "bus2_idx": b2_idx}
+    return best_trio
 
 
 def _min_valid_total_three_legs(

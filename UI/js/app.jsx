@@ -111,10 +111,14 @@ function App() {
     },
     busFlightBus: {
       url: '/api/bus-flight-bus',
-      apply: (data) => setResults((prev) => ({
-        ...(prev || {}),
-        busFlightBus: data.busFlightBus ?? [],
-      })),
+      apply: (data) => {
+        if (data.fromCoords && data.fromCity) LATLNG[data.fromCity] = [data.fromCoords.lat, data.fromCoords.lon];
+        if (data.toCoords && data.toCity) LATLNG[data.toCity] = [data.toCoords.lat, data.toCoords.lon];
+        setResults((prev) => ({
+          ...(prev || {}),
+          busFlightBus: data.busFlightBus ?? [],
+        }));
+      },
     },
     busOrTrain: {
       url: '/api/trains',

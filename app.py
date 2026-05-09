@@ -1014,6 +1014,11 @@ def api_bus_flight_bus():
     return jsonify({
         "busFlightBus": pairs,
         "airports": _airports_payload(iatas),
+        "fromCity": from_city,
+        "toCity": to_city,
+        "date": date_str,
+        "fromCoords": _city_coords(from_city),
+        "toCoords": _city_coords(to_city),
         "error": pipeline_err,
     })
 

@@ -67,6 +67,28 @@ def test_default_trio_picks_cheapest_flight_with_valid_buses():
     assert trio == {"bus1_idx": 0, "flight_idx": 0, "bus2_idx": 0}
 
 
+def test_default_trio_matches_minimum_total_not_just_cheapest_flight():
+    # The UI displays the pair's min_total as the headline price. The default
+    # selected rows must therefore add up to the same best-value total instead
+    # of selecting a cheaper flight with expensive ground legs.
+    bus1 = [
+        _bus(0, "07:00", "09:00", 100.0),  # valid only for f0
+        _bus(1, "08:00", "11:30", 5.0),    # valid for f1
+    ]
+    flights = [
+        _flight(0, "12:00", "13:30", 50.0),
+        _flight(1, "14:00", "15:30", 60.0),
+    ]
+    bus2 = [
+        _bus(0, "16:00", "18:00", 100.0),  # valid for both, but expensive
+        _bus(1, "17:31", "19:00", 5.0),    # valid for f1
+    ]
+
+    trio = _default_trio(bus1, flights, bus2, DATE, 2.0)
+
+    assert trio == {"bus1_idx": 1, "flight_idx": 1, "bus2_idx": 1}
+
+
 def test_default_trio_walks_to_next_flight_when_first_has_no_bus1():
     # First (cheapest) flight is too early for any bus1 to land 2h before.
     bus1 = [_bus(0, "07:00", "09:00", 25.0)]   # arrives 09:00
