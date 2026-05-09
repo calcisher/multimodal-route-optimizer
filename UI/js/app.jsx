@@ -14,8 +14,8 @@ function App() {
   const [date, setDate] = useState('');
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [loadingCards, setLoadingCards] = useState({ flights: false, flightBus: false, busFlight: false, busOrTrain: false });
-  const [errorCards, setErrorCards] = useState({ flights: null, flightBus: null, busFlight: null, busOrTrain: null });
+  const [loadingCards, setLoadingCards] = useState({ flights: false, flightBus: false, busFlight: false, busFlightBus: false, busOrTrain: false });
+  const [errorCards, setErrorCards] = useState({ flights: null, flightBus: null, busFlight: null, busFlightBus: null, busOrTrain: null });
   const [activeSec, setActiveSec] = useState(0);
   const [filter, setFilter] = useState(FILTER_DEFAULTS);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -109,6 +109,13 @@ function App() {
         busPlusFlight: data.busPlusFlight ?? [],
       })),
     },
+    busFlightBus: {
+      url: '/api/bus-flight-bus',
+      apply: (data) => setResults((prev) => ({
+        ...(prev || {}),
+        busFlightBus: data.busFlightBus ?? [],
+      })),
+    },
     busOrTrain: {
       url: '/api/trains',
       apply: (data) => {
@@ -163,13 +170,13 @@ function App() {
     }
 
     setLoading(true);
-    setErrorCards({ flights: null, flightBus: null, busFlight: null, busOrTrain: null });
+    setErrorCards({ flights: null, flightBus: null, busFlight: null, busFlightBus: null, busOrTrain: null });
     setFilter(FILTER_DEFAULTS);
     setFilterOpen(false);
     setAiOpen(false);
     setAiCache(null);
     setFlashId(null);
-    setResults({ bestFlights: [], cheapFlights: [], flightPlusBus: [], busPlusFlight: [], busOrTrain: [] });
+    setResults({ bestFlights: [], cheapFlights: [], flightPlusBus: [], busPlusFlight: [], busFlightBus: [], busOrTrain: [] });
     setActiveSec(0);
 
     requestAnimationFrame(() => {
@@ -183,6 +190,7 @@ function App() {
       runEndpoint('flights', body),
       runEndpoint('flightBus', body),
       runEndpoint('busFlight', body),
+      runEndpoint('busFlightBus', body),
       runEndpoint('busOrTrain', body),
     ]);
     setLoading(false);
@@ -257,7 +265,8 @@ function App() {
     { icon: '💶', label: t.cheapFlight, sub: t.cheapFlightSub, color: '#16A34A', data: filteredResults?.cheapFlights, minPrice: minPriceOf(filteredResults?.cheapFlights, 'price'), loading: loadingCards.flights, error: errorCards.flights, errorKey: 'flights', removed: removed[1] },
     { icon: '✈🚌', label: t.flightBus, sub: t.flightBusSub, color: '#7C3AED', data: filteredResults?.flightPlusBus, minPrice: minPriceOf(filteredResults?.flightPlusBus, 'minTotal'), loading: loadingCards.flightBus, error: errorCards.flightBus, errorKey: 'flightBus', removed: removed[2] },
     { icon: '🚌✈', label: t.busFlight, sub: t.busFlightSub, color: '#0891B2', data: filteredResults?.busPlusFlight, minPrice: minPriceOf(filteredResults?.busPlusFlight, 'minTotal'), loading: loadingCards.busFlight, error: errorCards.busFlight, errorKey: 'busFlight', removed: removed[3] },
-    { icon: '🚌🚆', label: t.busOnly, sub: t.busOnlySub, color: '#475569', data: filteredResults?.busOrTrain, minPrice: minPriceOf(filteredResults?.busOrTrain, 'price'), loading: loadingCards.busOrTrain, error: errorCards.busOrTrain, errorKey: 'busOrTrain', removed: removed[4] },
+    { icon: '🚌✈🚌', label: t.busFlightBus, sub: t.busFlightBusSub, color: '#D97706', data: filteredResults?.busFlightBus, minPrice: minPriceOf(filteredResults?.busFlightBus, 'minTotal'), loading: loadingCards.busFlightBus, error: errorCards.busFlightBus, errorKey: 'busFlightBus', removed: removed[4] },
+    { icon: '🚌🚆', label: t.busOnly, sub: t.busOnlySub, color: '#475569', data: filteredResults?.busOrTrain, minPrice: minPriceOf(filteredResults?.busOrTrain, 'price'), loading: loadingCards.busOrTrain, error: errorCards.busOrTrain, errorKey: 'busOrTrain', removed: removed[5] },
   ];
 
   const activeCat = CATS[activeSec];

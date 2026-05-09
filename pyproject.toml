@@ -22,3 +22,12 @@ dependencies = [
     "thefuzz>=0.22.1",
     "weasyprint>=68.1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

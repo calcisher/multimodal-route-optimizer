@@ -15,6 +15,7 @@ from flask import Flask, jsonify, request, send_from_directory
 
 from backend import data_cache
 from backend.bus_and_flight_search import _to_naive, find_cheap_ground_plus_flight
+from backend.bus_flight_bus_search import find_cheap_bus_plus_flight_plus_bus
 from backend.flight_and_ground_search import airports_df, geocode_city, haversine_km
 from backend.flight_plus_bus_search import find_cheap_flight_plus_ground_v2
 from backend.flight_search import flight_search
@@ -641,6 +642,87 @@ def transform_hubs(
     return out
 
 
+def transform_bus_flight_bus_pairs(
+    pairs: list[dict],
+    outbound_date: str,
+    departure_city: str,
+    arrival_city: str,
+) -> list[dict]:
+    """Shape bus_flight_bus pair-cards for the BusFlightBusCard frontend.
+
+    Each pair has two hubs (origin + dest) and three leg arrays. Bus1
+    runs departure_city → origin_hub.city, the flight runs origin_hub →
+    dest_hub, bus2 runs dest_hub.city → arrival_city. The default-trio
+    indices come straight from the pipeline (cheapest flight + tightest
+    valid buses).
+    """
+    out = []
+    for p in pairs:
+        origin = p.get("origin_hub") or {}
+        dest = p.get("dest_hub") or {}
+        origin_iata = origin.get("iata") or ""
+        dest_iata = dest.get("iata") or ""
+        origin_city = origin.get("city") or ""
+        dest_city = dest.get("city") or ""
+
+        bus1_options = [
+            _bus_to_ui(b, outbound_date, "bus_plus_flight",
+                       departure_city, dest_city, origin_city)
+            for b in p.get("bus1_options") or []
+        ]
+        bus2_options = [
+            _bus_to_ui(b, outbound_date, "flight_plus_bus",
+                       departure_city, arrival_city, dest_city)
+            for b in p.get("bus2_options") or []
+        ]
+        flight_options = [
+            _flight_to_ui(f, outbound_date, origin_iata, origin_city,
+                          origin_iata, dest_iata, dest_city, "bus_plus_flight")
+            for f in p.get("flight_options") or []
+        ]
+
+        trio = p.get("default_trio") or {}
+        out.append({
+            "mode": "bus_flight_bus",
+            "originHub": {
+                "iata": origin_iata,
+                "city": origin_city,
+                "country": origin.get("country") or "",
+                "countryEn": origin.get("country_en") or "",
+                "distanceKm": _to_float(origin.get("distance_km")),
+                "lat": _to_float(origin.get("lat")),
+                "lon": _to_float(origin.get("lon")),
+                "busArrivalName": origin.get("bus_arrival_name") or "",
+            },
+            "destHub": {
+                "iata": dest_iata,
+                "city": dest_city,
+                "country": dest.get("country") or "",
+                "countryEn": dest.get("country_en") or "",
+                "distanceKm": _to_float(dest.get("distance_km")),
+                "lat": _to_float(dest.get("lat")),
+                "lon": _to_float(dest.get("lon")),
+                "busArrivalName": dest.get("bus_arrival_name") or "",
+            },
+            "bus1Options": bus1_options,
+            "flightOptions": flight_options,
+            "bus2Options": bus2_options,
+            "defaultTrio": {
+                "bus1Idx": trio.get("bus1_idx"),
+                "flightIdx": trio.get("flight_idx"),
+                "bus2Idx": trio.get("bus2_idx"),
+            },
+            "minTotal": _to_float(p.get("min_total_price")),
+            "explorePrice": _to_float(p.get("explore_price")),
+            "depIata": origin_iata,
+            "arrIata": dest_iata,
+            "flightsCachedAt": p.get("flights_cached_at"),
+            "bus1CachedAt": p.get("bus1_cached_at"),
+            "bus2CachedAt": p.get("bus2_cached_at"),
+        })
+    return out
+
+
 # ---------- routes ----------
 
 @app.get("/")
@@ -744,6 +826,12 @@ def _iatas_in(items: list[dict]) -> set[str]:
         hub = d.get("hub") or {}
         if hub.get("iata"):
             out.add(hub["iata"])
+        # bus_flight_bus pair-cards carry two hubs side-by-side instead of
+        # the single `hub` field used by the existing hub-grouped sections.
+        for hk in ("originHub", "destHub"):
+            h2 = d.get(hk) or {}
+            if h2.get("iata"):
+                out.add(h2["iata"])
         for f in d.get("flightOptions") or []:
             for k in ("fromIata", "toIata"):
                 v = f.get(k)
@@ -894,6 +982,39 @@ def api_bus_plus_flight():
         "busPlusFlight": hubs,
         "airports": _airports_payload(iatas),
         "error": ground_err,
+    })
+
+
+@app.post("/api/bus-flight-bus")
+def api_bus_flight_bus():
+    payload = request.get_json(silent=True) or {}
+    inputs, err = _resolve_inputs(payload)
+    if err:
+        return err
+    from_iata, to_iata, from_city, to_city, date_str, _from_iatas, _to_iatas = inputs
+
+    print("\n" + "=" * 60)
+    print(f"🚌✈🚌 /api/bus-flight-bus  {from_city} → {to_city}  date={date_str}")
+
+    try:
+        pairs_raw = find_cheap_bus_plus_flight_plus_bus(
+            departure_city=from_city,
+            arrival_city=to_city,
+            outbound_date=date_str,
+        )
+        pipeline_err = None
+    except Exception as e:
+        app.logger.exception("find_cheap_bus_plus_flight_plus_bus failed")
+        pairs_raw = []
+        pipeline_err = str(e)
+    pairs = transform_bus_flight_bus_pairs(pairs_raw, date_str, from_city, to_city)
+    print(f"   → busFlightBus pairs={len(pairs)}")
+
+    iatas = _iatas_in(pairs) | {from_iata, to_iata}
+    return jsonify({
+        "busFlightBus": pairs,
+        "airports": _airports_payload(iatas),
+        "error": pipeline_err,
     })
 
 

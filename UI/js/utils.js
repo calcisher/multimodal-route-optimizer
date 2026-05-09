@@ -189,23 +189,30 @@ function countHubOptions(hubs) {
 }
 
 function applyFilters(results, f) {
-  const empty = { filtered: null, removed: [0, 0, 0, 0, 0] };
+  const empty = { filtered: null, removed: [0, 0, 0, 0, 0, 0] };
   if (!results) return empty;
-  if (!isFilterActive(f)) return { filtered: results, removed: [0, 0, 0, 0, 0] };
+  if (!isFilterActive(f)) return { filtered: results, removed: [0, 0, 0, 0, 0, 0] };
 
   const bestFlights = (results.bestFlights || []).filter((d) => flightPasses(d, f));
   const cheapFlights = (results.cheapFlights || []).filter((d) => flightPasses(d, f));
   const flightPlusBus = (results.flightPlusBus || []).map((h) => filterHubData(h, f)).filter(Boolean);
   const busPlusFlight = (results.busPlusFlight || []).map((h) => filterHubData(h, f)).filter(Boolean);
+  // bus_flight_bus pair-cards have three leg arrays — apply the flight
+  // filter to flightOptions (non-stop already enforced server-side; this
+  // handles user-set max-transfers / max-duration / time windows).
+  const busFlightBus = (results.busFlightBus || []).filter((p) =>
+    (p.flightOptions || []).some((fl) => flightPasses(fl, f))
+  );
   const busOrTrain = (results.busOrTrain || []).filter((d) => groundPasses(d, f));
 
   return {
-    filtered: { ...results, bestFlights, cheapFlights, flightPlusBus, busPlusFlight, busOrTrain },
+    filtered: { ...results, bestFlights, cheapFlights, flightPlusBus, busPlusFlight, busFlightBus, busOrTrain },
     removed: [
       (results.bestFlights || []).length - bestFlights.length,
       (results.cheapFlights || []).length - cheapFlights.length,
       countHubOptions(results.flightPlusBus) - countHubOptions(flightPlusBus),
       countHubOptions(results.busPlusFlight) - countHubOptions(busPlusFlight),
+      (results.busFlightBus || []).length - busFlightBus.length,
       (results.busOrTrain || []).length - busOrTrain.length
     ]
   };

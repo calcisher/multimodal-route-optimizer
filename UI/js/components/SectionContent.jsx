@@ -64,6 +64,18 @@ function SectionContent({ secIdx, data, currency, lang, date, flashId, arrColorM
   }
 
   if (secIdx === 4) {
+    return <div className="cards-list">{data.map((p, i) => (
+      <BusFlightBusCard
+        key={`${p.originHub?.iata || ''}-${p.destHub?.iata || ''}-${i}`}
+        pair={p}
+        currency={currency}
+        lang={lang}
+        defaultExpanded={i === 0}
+      />
+    ))}</div>;
+  }
+
+  if (secIdx === 5) {
     const sorted = [...data].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
     return <div className="cards-list">{sorted.map((d, i) => {
       const id = `bg-${d.company}-${d.dep}`;
