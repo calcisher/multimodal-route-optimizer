@@ -100,24 +100,30 @@ function BFBOption({ kind, opt, selected, disabled, onSelect, currency, lang }) 
   );
 }
 
-function BFBLegPanel({ icon, title, route, times, meta, price }) {
+function BFBTimelineLeg({ step, icon, title, route, times, meta, price }) {
   return (
-    <div className="bfb-leg-panel">
-      <div className="bfb-leg-label">{icon} {title}</div>
-      <div className="bfb-leg-times">{times || '— → —'}</div>
-      <div className="bfb-leg-route">{route || '—'}</div>
-      <div className="bfb-leg-meta">{meta || '—'}{price}</div>
+    <div className="bfb-timeline-leg">
+      <div className="bfb-step-badge">{step}</div>
+      <div className="bfb-leg-content">
+        <div className="bfb-leg-label">{icon} {title}</div>
+        <div className="bfb-leg-route">{route || '—'}</div>
+        <div className="bfb-leg-times">{times || '— → —'}</div>
+        <div className="bfb-leg-meta">{meta || '—'}{price}</div>
+      </div>
     </div>
   );
 }
 
-function BFBWaitPanel({ wait, label, lang }) {
+function BFBTimelineTransfer({ wait, iata, city, lang }) {
   const bad = wait != null && wait < BFB_MIN_TRANSFER_MIN;
   return (
-    <div className={`bfb-wait-panel${bad ? ' bad' : ''}`}>
-      <div className="bfb-wait-icon">⏱</div>
-      <div className="bfb-wait-time">{wait != null ? fmtConnMinutes(wait, lang) : '—'}</div>
-      <div className="bfb-wait-copy">{label}</div>
+    <div className={`bfb-transfer-node${bad ? ' bad' : ''}`}>
+      <div className="bfb-transfer-line" />
+      <div className="bfb-transfer-chip">
+        <span>⏱ {wait != null ? fmtConnMinutes(wait, lang) : '—'}</span>
+        <small>{iata || city || '—'} {T[lang].waitWord}</small>
+      </div>
+      <div className="bfb-transfer-line" />
     </div>
   );
 }
@@ -208,7 +214,8 @@ function BusFlightBusCard({ pair, currency, lang, defaultExpanded = false }) {
   const routeEnd = sel2?.to || '';
   const originHubLabel = _bfbAirportLabel(originCity, originIata);
   const destHubLabel = _bfbAirportLabel(destCity, destIata);
-  const fullRoute = [routeStart, originHubLabel, destHubLabel, routeEnd].filter(Boolean).join(' → ');
+  const mainRoute = [routeStart, routeEnd].filter(Boolean).join(' → ');
+  const viaRoute = [originHubLabel, destHubLabel].filter(Boolean).join(' + ');
   const headerPrice = totalPrice != null ? totalPrice : pair?.minTotal;
   const flightCarrier = _bfbCarrier('flight', selF, lang);
   const bus1Carrier = _bfbCarrier('bus', sel1, lang);
@@ -308,12 +315,13 @@ function BusFlightBusCard({ pair, currency, lang, defaultExpanded = false }) {
     <div className={`bfb-card${expanded ? ' open' : ''}`}>
       <button className="bfb-header" type="button" onClick={() => setExpanded((p) => !p)}>
         <div className="bfb-header-main">
-          <div className="bfb-header-route">
-            <span className="bfb-iata">{originIata || '—'}</span>
-            <span className="bfb-arrow">→</span>
-            <span className="bfb-iata">{destIata || '—'}</span>
+          <div className="bfb-route-title">
+            <span>{mainRoute || `${originCity} → ${destCity}`}</span>
           </div>
-          <div className="bfb-header-path">{fullRoute || `${originCity} → ${destCity}`}</div>
+          <div className="bfb-route-subtitle">
+            <span className="bfb-mode-chip">🚌✈🚌 {t.bfbLegCount}</span>
+            <span>{t.bfbViaLabel} {viaRoute || `${originIata} + ${destIata}`}</span>
+          </div>
         </div>
         <div className="bfb-header-summary">
           <span className="bfb-header-price">{headerPrice != null ? fmt(headerPrice) : '—'}</span>
@@ -324,40 +332,63 @@ function BusFlightBusCard({ pair, currency, lang, defaultExpanded = false }) {
 
       {expanded && (
         <div className="bfb-body">
-          <div className="bfb-path-strip" aria-label={t.bfbFullPath}>
-            <span>{routeStart || '—'}</span>
-            <b>{originIata || '—'}</b>
-            <b>{destIata || '—'}</b>
-            <span>{routeEnd || '—'}</span>
+          <div className="bfb-itinerary" aria-label={t.bfbSelectedJourney}>
+            <div className="bfb-itinerary-head">
+              <div>
+                <div className="bfb-section-kicker">{t.bfbSelectedJourney}</div>
+                <div className="bfb-itinerary-title">{mainRoute || '—'}</div>
+                <div className="bfb-itinerary-via">{t.bfbViaLabel} {viaRoute || '—'}</div>
+              </div>
+              <div className="bfb-itinerary-stats">
+                <div>
+                  <small>{t.totalPriceLabel}</small>
+                  <strong>{totalPrice != null ? fmt(totalPrice) : '—'}</strong>
+                </div>
+                <div>
+                  <small>{t.totalTripLabel}</small>
+                  <strong>{totalMin != null ? fmtConnMinutes(totalMin, lang) : '—'}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="bfb-timeline">
+              <BFBTimelineLeg
+                step="1"
+                icon="🚌"
+                title={t.bfbFirstBus}
+                route={sel1 ? `${routeStart} → ${originHubLabel}` : ''}
+                times={sel1 ? `${sel1.dep} → ${sel1.arr}${sel1.nextDay ? ' (+1)' : ''}` : ''}
+                meta={sel1 ? `${bus1Carrier} · ${sel1.duration || '—'}` : ''}
+                price={sel1?.price != null ? ` · ${fmt(sel1.price)}` : ''}
+              />
+              <BFBTimelineTransfer wait={wait1} iata={originIata} city={originCity} lang={lang} />
+              <BFBTimelineLeg
+                step="2"
+                icon="✈"
+                title={t.flightLeg}
+                route={selF ? `${originHubLabel} → ${destHubLabel}` : ''}
+                times={selF ? `${selF.dep} → ${selF.arr}${selF.nextDay ? ' (+1)' : ''}` : ''}
+                meta={selF ? `${flightCarrier} · ${selF.duration || '—'}` : ''}
+                price={selF?.price != null ? ` · ${fmt(selF.price)}` : ''}
+              />
+              <BFBTimelineTransfer wait={wait2} iata={destIata} city={destCity} lang={lang} />
+              <BFBTimelineLeg
+                step="3"
+                icon="🚌"
+                title={t.bfbFinalBus}
+                route={sel2 ? `${destHubLabel} → ${routeEnd}` : ''}
+                times={sel2 ? `${sel2.dep} → ${sel2.arr}${sel2.nextDay ? ' (+1)' : ''}` : ''}
+                meta={sel2 ? `${bus2Carrier} · ${sel2.duration || '—'}` : ''}
+                price={sel2?.price != null ? ` · ${fmt(sel2.price)}` : ''}
+              />
+            </div>
           </div>
 
-          <div className="bfb-selected">
-            <BFBLegPanel
-              icon="🚌"
-              title={t.bfbFirstBus}
-              route={sel1 ? `${routeStart} → ${originHubLabel}` : ''}
-              times={sel1 ? `${sel1.dep} → ${sel1.arr}${sel1.nextDay ? ' (+1)' : ''}` : ''}
-              meta={sel1 ? `${bus1Carrier} · ${sel1.duration || '—'}` : ''}
-              price={sel1?.price != null ? ` · ${fmt(sel1.price)}` : ''}
-            />
-            <BFBWaitPanel wait={wait1} label={`${originIata || ''} ${t.waitWord}`.trim()} lang={lang} />
-            <BFBLegPanel
-              icon="✈"
-              title={t.flightLeg}
-              route={selF ? `${originHubLabel} → ${destHubLabel}` : ''}
-              times={selF ? `${selF.dep} → ${selF.arr}${selF.nextDay ? ' (+1)' : ''}` : ''}
-              meta={selF ? `${flightCarrier} · ${selF.duration || '—'}` : ''}
-              price={selF?.price != null ? ` · ${fmt(selF.price)}` : ''}
-            />
-            <BFBWaitPanel wait={wait2} label={`${destIata || ''} ${t.waitWord}`.trim()} lang={lang} />
-            <BFBLegPanel
-              icon="🚌"
-              title={t.bfbFinalBus}
-              route={sel2 ? `${destHubLabel} → ${routeEnd}` : ''}
-              times={sel2 ? `${sel2.dep} → ${sel2.arr}${sel2.nextDay ? ' (+1)' : ''}` : ''}
-              meta={sel2 ? `${bus2Carrier} · ${sel2.duration || '—'}` : ''}
-              price={sel2?.price != null ? ` · ${fmt(sel2.price)}` : ''}
-            />
+          <div className="bfb-alternatives-head">
+            <div>
+              <div className="bfb-section-kicker">{t.bfbChangeLegs}</div>
+              <div className="bfb-alternatives-title">{t.bfbChangeLegsHint}</div>
+            </div>
           </div>
 
           <div className="bfb-picker-grid">
