@@ -474,6 +474,8 @@ body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100v
 .tw-opts{display:flex;gap:6px;flex-wrap:wrap}
 .tw-opt{padding:5px 11px;border:1.5px solid var(--brd);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--mid);transition:.15s;background:var(--card-bg)}
 .tw-opt.active{background:var(--or-s);border-color:var(--or);color:var(--or)}
+.tw-help{margin-top:7px;font-size:10px;line-height:1.35;color:var(--lt);font-weight:600}
+.currency-quick{min-width:78px;justify-content:center;font-variant-numeric:tabular-nums}
 
 /* EMPTY */
 .empty-state{text-align:center;padding:80px 40px;color:var(--mid)}

@@ -5,6 +5,24 @@ const TWEAK_DEFAULTS = {
   cardStyle: "comfortable"
 };
 
+const FX_ESTIMATE = {
+  base: "EUR",
+  date: "2026-05-16",
+  rates: {
+    EUR: 1,
+    USD: 1.17,
+    GBP: 0.863,
+    TRY: 53.5
+  }
+};
+
+const CURRENCY_OPTIONS = [
+  { code: "EUR", label: "EUR", symbol: "€" },
+  { code: "USD", label: "USD", symbol: "$" },
+  { code: "GBP", label: "GBP", symbol: "£" },
+  { code: "TRY", label: "TRY", symbol: "₺" }
+];
+
 
 // ── Mock Data ────────────────────────────────────────────────────────────────
 const MOCK = {

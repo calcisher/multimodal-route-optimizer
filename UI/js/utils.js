@@ -3,9 +3,22 @@
 // drop trailing ".00" so integer prices stay clean (€113, not €113.00).
 function formatPrice(n, currency) {
   if (n == null || !Number.isFinite(n)) return '—';
-  const v = Math.round(n * 100) / 100;
-  const s = Number.isInteger(v) ? String(v) : v.toFixed(2);
-  return currency === 'USD' ? `$${s}` : `€${s}`;
+  const code = FX_ESTIMATE.rates[currency] ? currency : FX_ESTIMATE.base;
+  const raw = n * FX_ESTIMATE.rates[code];
+  const v = code === 'TRY' ? Math.round(raw) : Math.round(raw * 100) / 100;
+  const opts = code === 'TRY' ? { maximumFractionDigits: 0 } : { minimumFractionDigits: Number.isInteger(v) ? 0 : 2, maximumFractionDigits: 2 };
+  const s = v.toLocaleString('en-US', opts);
+  const meta = CURRENCY_OPTIONS.find((c) => c.code === code) || CURRENCY_OPTIONS[0];
+  return `${meta.symbol}${s}`;
+}
+
+function currencyMeta(code) {
+  return CURRENCY_OPTIONS.find((c) => c.code === code) || CURRENCY_OPTIONS[0];
+}
+
+function nextCurrency(code) {
+  const idx = CURRENCY_OPTIONS.findIndex((c) => c.code === code);
+  return CURRENCY_OPTIONS[(idx + 1 + CURRENCY_OPTIONS.length) % CURRENCY_OPTIONS.length].code;
 }
 
 // ── Geo helpers ───────────────────────────────────────────────────────────────

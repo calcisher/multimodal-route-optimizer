@@ -291,6 +291,9 @@ function App() {
           Multi Route
         </div>
         <div className="hdr-right">
+          <button className="theme-btn currency-quick" onClick={() => updateTweak('currency', nextCurrency(cur))} title={lang === 'tr' ? `16 Mayıs 2026 tahmini kur: 1 EUR ≈ ${FX_ESTIMATE.rates[cur]} ${cur}` : `May 16, 2026 estimated FX: 1 EUR ≈ ${FX_ESTIMATE.rates[cur]} ${cur}`}>
+            {currencyMeta(cur).symbol} {cur}
+          </button>
           <button className="theme-btn" onClick={() => setShowTweaks((p) => !p)} aria-label={t.tweaks}>⚙</button>
           <button className="theme-btn" onClick={() => updateTweak('theme', tweaks.theme === 'dark' ? 'light' : 'dark')}>
             {tweaks.theme === 'dark' ? '☀ Light' : '🌙 Dark'}
@@ -436,10 +439,11 @@ function App() {
           <div className="tw-group">
             <div className="tw-label">{t.currency}</div>
             <div className="tw-opts">
-              {['EUR', 'USD', 'GBP'].map((c) => (
-                <div key={c} className={`tw-opt${cur === c ? ' active' : ''}`} onClick={() => updateTweak('currency', c)}>{c}</div>
+              {CURRENCY_OPTIONS.map(({ code: c, symbol }) => (
+                <div key={c} className={`tw-opt${cur === c ? ' active' : ''}`} onClick={() => updateTweak('currency', c)}>{symbol} {c}</div>
               ))}
             </div>
+            <div className="tw-help">{lang === 'tr' ? `16 Mayıs 2026 tahmini: 1 EUR ≈ ${FX_ESTIMATE.rates[cur]} ${cur}` : `May 16, 2026 estimate: 1 EUR ≈ ${FX_ESTIMATE.rates[cur]} ${cur}`}</div>
           </div>
           <div className="tw-group">
             <div className="tw-label">Theme</div>
