@@ -25,7 +25,7 @@ from __future__ import annotations
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -45,6 +45,12 @@ from .flixbus_finder import get_trips
 
 _GLOBAL_AIRPORTS_FILE = Path(__file__).parent.parent / "data" / "airports.json"
 _GLOBAL_LOOKUP: dict[str, dict] | None = None
+
+# If a same-day bus already gives the cheapest flight at least this many
+# hours of buffer (well above the 2h hard transfer rule), skip the prev/
+# next-day FlixBus query — the user won't pick the overnight option, and
+# the extra round trip just burns time on cache misses.
+_COMFORT_HOURS = 3.0
 
 
 def _global_iata_lookup() -> dict[str, dict]:
@@ -184,79 +190,139 @@ def _explore_dest_hubs_anywhere(
     return df
 
 
+def _has_comfortable_bus_before_flight(
+    flight: dict,
+    bus_options: list[dict],
+    outbound_date: str,
+    comfort_hours: float = _COMFORT_HOURS,
+) -> bool:
+    """True if any priced bus arrives ≥ comfort_hours before flight takeoff.
+    Used to decide whether the prev-day FlixBus query is worth running.
+    """
+    f_dep = _to_naive(flight.get("departure_time"), default_date=outbound_date)
+    if f_dep is None:
+        return False
+    deadline = f_dep - timedelta(hours=comfort_hours)
+    for b in bus_options:
+        if b.get("price_eur") is None:
+            continue
+        b_arr = _to_naive(b.get("arrival_dt"), default_date=outbound_date)
+        if b_arr is not None and b_arr <= deadline:
+            return True
+    return False
+
+
+def _has_comfortable_bus_after_flight(
+    flight: dict,
+    bus_options: list[dict],
+    outbound_date: str,
+    comfort_hours: float = _COMFORT_HOURS,
+) -> bool:
+    """True if any priced bus departs ≥ comfort_hours after flight landing.
+    Used to decide whether the next-day FlixBus query is worth running.
+    """
+    f_arr = _to_naive(flight.get("arrival_time"), default_date=outbound_date)
+    if f_arr is None:
+        return False
+    earliest = f_arr + timedelta(hours=comfort_hours)
+    for b in bus_options:
+        if b.get("price_eur") is None:
+            continue
+        b_dep = _to_naive(b.get("departure_dt"), default_date=outbound_date)
+        if b_dep is not None and b_dep >= earliest:
+            return True
+    return False
+
+
 def _default_trio(
     bus1_options: list[dict],
     flight_options: list[dict],
     bus2_options: list[dict],
     outbound_date: str,
     min_transfer_hours: float,
+    bus1_prev_options: list[dict] | None = None,
+    bus2_next_options: list[dict] | None = None,
 ) -> dict | None:
-    """Return the best-value valid trio across all three leg arrays:
-        {"bus1_idx": int, "flight_idx": int, "bus2_idx": int}
+    """Return the default valid trio across all three leg arrays:
+        {"bus1_idx": int, "bus1_source": "same"|"prev",
+         "flight_idx": int,
+         "bus2_idx": int, "bus2_source": "same"|"next"}
 
-    Primary sort is total price so the UI headline min_total and default
-    selected rows describe the same product. Ties prefer shorter overall trip,
-    tighter total transfer time, cheaper flight, then source order.
+    Selection rule (per product spec): walk flights from cheapest to most
+    expensive; for the first flight that has BOTH a valid bus1 (arrives
+    ≥ min_transfer_hours before takeoff) and a valid bus2 (departs
+    ≥ min_transfer_hours after landing), pick the tightest connections —
+    latest-arriving valid bus1, earliest-departing valid bus2 across the
+    combined same-day + overnight pool. Same-day is preferred on ties to
+    avoid surfacing an overnight stay when a same-day option is equally
+    tight. Returns None if no flight has both sides covered.
     """
     threshold = timedelta(hours=min_transfer_hours)
-    best_key: tuple[float, float, float, float, int, int, int] | None = None
-    best_trio: dict | None = None
+    bus1_prev_options = bus1_prev_options or []
+    bus2_next_options = bus2_next_options or []
 
-    for fi, f in enumerate(flight_options):
-        if f.get("price_eur") is None:
-            continue
+    bus1_all = (
+        [("same", i, b) for i, b in enumerate(bus1_options)]
+        + [("prev", i, b) for i, b in enumerate(bus1_prev_options)]
+    )
+    bus2_all = (
+        [("same", i, b) for i, b in enumerate(bus2_options)]
+        + [("next", i, b) for i, b in enumerate(bus2_next_options)]
+    )
+
+    priced_flights = [
+        (fi, f) for fi, f in enumerate(flight_options)
+        if f.get("price_eur") is not None
+    ]
+    priced_flights.sort(key=lambda pair: (pair[1]["price_eur"], pair[0]))
+
+    for fi, f in priced_flights:
         f_dep = _to_naive(f.get("departure_time"), default_date=outbound_date)
         f_arr = _to_naive(f.get("arrival_time"), default_date=outbound_date)
         if f_dep is None or f_arr is None:
             continue
 
-        valid_bus1: list[tuple[int, dict, object]] = []
-        for bi, b in enumerate(bus1_options):
+        # Tightest valid bus1 across same+prev. On tied arrival time, prefer
+        # same-day (source rank: "same" beats "prev") so we don't push the
+        # user into an overnight stay when same-day works equally well.
+        best_b1: tuple | None = None  # (arr_dt, source_rank, source, idx)
+        for src, bi, b in bus1_all:
             if b.get("price_eur") is None:
                 continue
             b_arr = _to_naive(b.get("arrival_dt"), default_date=outbound_date)
             if b_arr is None or b_arr > f_dep - threshold:
                 continue
-            valid_bus1.append((bi, b, b_arr))
-        if not valid_bus1:
+            src_rank = 0 if src == "same" else 1
+            key = (b_arr, -src_rank)
+            if best_b1 is None or key > (best_b1[0], -best_b1[1]):
+                best_b1 = (b_arr, src_rank, src, bi)
+        if best_b1 is None:
             continue
 
-        valid_bus2: list[tuple[int, dict, object]] = []
-        for bi, b in enumerate(bus2_options):
+        best_b2: tuple | None = None  # (dep_dt, source_rank, source, idx)
+        for src, bi, b in bus2_all:
             if b.get("price_eur") is None:
                 continue
             b_dep = _to_naive(b.get("departure_dt"), default_date=outbound_date)
             if b_dep is None or b_dep < f_arr + threshold:
                 continue
-            valid_bus2.append((bi, b, b_dep))
-        if not valid_bus2:
+            src_rank = 0 if src == "same" else 1
+            # Earlier dep wins; on tie, prefer same-day.
+            key = (b_dep, src_rank)
+            if best_b2 is None or key < (best_b2[0], best_b2[1]):
+                best_b2 = (b_dep, src_rank, src, bi)
+        if best_b2 is None:
             continue
 
-        for b1_idx, b1, b1_arr in valid_bus1:
-            b1_dep = _to_naive(b1.get("departure_dt"), default_date=outbound_date)
-            if b1_dep is None:
-                continue
-            wait1_min = (f_dep - b1_arr).total_seconds() / 60
-            for b2_idx, b2, b2_dep in valid_bus2:
-                b2_arr = _to_naive(b2.get("arrival_dt"), default_date=outbound_date)
-                if b2_arr is None:
-                    continue
-                total_price = b1["price_eur"] + f["price_eur"] + b2["price_eur"]
-                overall_min = (b2_arr - b1_dep).total_seconds() / 60
-                wait2_min = (b2_dep - f_arr).total_seconds() / 60
-                sort_key = (
-                    total_price,
-                    overall_min,
-                    wait1_min + wait2_min,
-                    f["price_eur"],
-                    fi,
-                    b1_idx,
-                    b2_idx,
-                )
-                if best_key is None or sort_key < best_key:
-                    best_key = sort_key
-                    best_trio = {"bus1_idx": b1_idx, "flight_idx": fi, "bus2_idx": b2_idx}
-    return best_trio
+        return {
+            "bus1_idx": best_b1[3],
+            "bus1_source": best_b1[2],
+            "flight_idx": fi,
+            "bus2_idx": best_b2[3],
+            "bus2_source": best_b2[2],
+        }
+
+    return None
 
 
 def _min_valid_total_three_legs(
@@ -265,13 +331,18 @@ def _min_valid_total_three_legs(
     bus2_options: list[dict],
     outbound_date: str,
     min_transfer_hours: float,
+    bus1_prev_options: list[dict] | None = None,
+    bus2_next_options: list[dict] | None = None,
 ) -> float | None:
     """Cheapest bus1.price + flight.price + bus2.price across trios that
-    satisfy the 2h rule on both transfers. None if no valid trio exists.
+    satisfy the 2h rule on both transfers, considering same-day + overnight
+    buses on each side. None if no valid trio exists.
 
     Independent of _default_trio — used for sort/summary, not selection.
     """
     threshold = timedelta(hours=min_transfer_hours)
+    bus1_all = list(bus1_options) + list(bus1_prev_options or [])
+    bus2_all = list(bus2_options) + list(bus2_next_options or [])
     best: float | None = None
     for f in flight_options:
         if f.get("price_eur") is None:
@@ -284,7 +355,7 @@ def _min_valid_total_three_legs(
         bus2_earliest = f_arr + threshold
 
         cheapest_bus1: float | None = None
-        for b in bus1_options:
+        for b in bus1_all:
             if b.get("price_eur") is None:
                 continue
             b_arr = _to_naive(b.get("arrival_dt"), default_date=outbound_date)
@@ -296,7 +367,7 @@ def _min_valid_total_three_legs(
             continue
 
         cheapest_bus2: float | None = None
-        for b in bus2_options:
+        for b in bus2_all:
             if b.get("price_eur") is None:
                 continue
             b_dep = _to_naive(b.get("departure_dt"), default_date=outbound_date)
@@ -373,9 +444,10 @@ def _fetch_pair(
     def _filter_bus(df: pd.DataFrame, dt_col: str) -> pd.DataFrame:
         df = df.copy()
         df["_dt_naive"] = df[dt_col].map(_to_naive)
-        return df[df["_dt_naive"].notna() & df["price_eur"].notna()].reset_index(drop=True)
+        df = df[df["_dt_naive"].notna() & df["price_eur"].notna()]
+        return df.sort_values("_dt_naive").reset_index(drop=True)
 
-    bus1_df = _filter_bus(bus1_df, "arrival_dt")
+    bus1_df = _filter_bus(bus1_df, "departure_dt")
     bus2_df = _filter_bus(bus2_df, "departure_dt")
     if bus1_df.empty or bus2_df.empty:
         return None
@@ -387,9 +459,55 @@ def _fetch_pair(
     bus1_options = [_bus_option(i, r) for i, (_, r) in enumerate(bus1_df.iterrows())]
     bus2_options = [_bus_option(i, r) for i, (_, r) in enumerate(bus2_df.iterrows())]
 
+    # Overnight options: prev-day bus1 (D-1) lets the user catch a very-early
+    # flight by riding the night before; next-day bus2 (D+1) lets the user
+    # take a late flight and bus onward the morning after. We only query them
+    # when the cheapest same-day flight DOESN'T already have a comfortable
+    # (≥ _COMFORT_HOURS) bus on that side — otherwise the overnight would
+    # never be picked and the extra FlixBus call is wasted on cache misses.
+    cheapest_flight = flight_options[0] if flight_options else None
+    skip_prev_query = cheapest_flight is not None and _has_comfortable_bus_before_flight(
+        cheapest_flight, bus1_options, outbound_date,
+    )
+    skip_next_query = cheapest_flight is not None and _has_comfortable_bus_after_flight(
+        cheapest_flight, bus2_options, outbound_date,
+    )
+
+    try:
+        prev_date = (datetime.strptime(outbound_date, "%Y-%m-%d").date()
+                     - timedelta(days=1)).isoformat()
+        next_date = (datetime.strptime(outbound_date, "%Y-%m-%d").date()
+                     + timedelta(days=1)).isoformat()
+    except ValueError:
+        prev_date = next_date = None
+
+    bus1_prev_options: list[dict] = []
+    if not skip_prev_query and prev_date:
+        try:
+            bus1_prev_df = get_trips(departure_city, origin_hub["city"], prev_date)
+        except Exception as e:
+            print(f"   get_trips({departure_city} → {origin_hub['city']}, {prev_date}) raised: {e}")
+            bus1_prev_df = None
+        if bus1_prev_df is not None and not bus1_prev_df.empty:
+            prev_df = _filter_bus(bus1_prev_df, "departure_dt")
+            bus1_prev_options = [_bus_option(i, r) for i, (_, r) in enumerate(prev_df.iterrows())]
+
+    bus2_next_options: list[dict] = []
+    if not skip_next_query and next_date:
+        try:
+            bus2_next_df = get_trips(dest_hub["city"], arrival_city, next_date)
+        except Exception as e:
+            print(f"   get_trips({dest_hub['city']} → {arrival_city}, {next_date}) raised: {e}")
+            bus2_next_df = None
+        if bus2_next_df is not None and not bus2_next_df.empty:
+            next_df = _filter_bus(bus2_next_df, "departure_dt")
+            bus2_next_options = [_bus_option(i, r) for i, (_, r) in enumerate(next_df.iterrows())]
+
     trio = _default_trio(
         bus1_options, flight_options, bus2_options,
         outbound_date, min_transfer_hours,
+        bus1_prev_options=bus1_prev_options,
+        bus2_next_options=bus2_next_options,
     )
     if trio is None:
         return None
@@ -397,6 +515,8 @@ def _fetch_pair(
     min_total = _min_valid_total_three_legs(
         bus1_options, flight_options, bus2_options,
         outbound_date, min_transfer_hours,
+        bus1_prev_options=bus1_prev_options,
+        bus2_next_options=bus2_next_options,
     )
 
     explore_price = dest_hub.get("explore_price") if "explore_price" in dest_hub else None
@@ -424,6 +544,8 @@ def _fetch_pair(
         "bus1_options": bus1_options,
         "flight_options": flight_options,
         "bus2_options": bus2_options,
+        "bus1_prev_options": bus1_prev_options,
+        "bus2_next_options": bus2_next_options,
         "default_trio": trio,
         "min_total_price": min_total,
         "explore_price": float(explore_price) if pd.notna(explore_price) else None,

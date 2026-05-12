@@ -680,6 +680,20 @@ def transform_bus_flight_bus_pairs(
                           origin_iata, dest_iata, dest_city, "bus_plus_flight")
             for f in p.get("flight_options") or []
         ]
+        bus1_prev_options = []
+        for i, b in enumerate(p.get("bus1_prev_options") or []):
+            ui = _bus_to_ui(b, outbound_date, "bus_plus_flight",
+                            departure_city, dest_city, origin_city)
+            ui["id"] = f"b1p{i}"
+            ui["overnight"] = "prev"
+            bus1_prev_options.append(ui)
+        bus2_next_options = []
+        for i, b in enumerate(p.get("bus2_next_options") or []):
+            ui = _bus_to_ui(b, outbound_date, "flight_plus_bus",
+                            departure_city, arrival_city, dest_city)
+            ui["id"] = f"b2n{i}"
+            ui["overnight"] = "next"
+            bus2_next_options.append(ui)
 
         trio = p.get("default_trio") or {}
         out.append({
@@ -707,10 +721,14 @@ def transform_bus_flight_bus_pairs(
             "bus1Options": bus1_options,
             "flightOptions": flight_options,
             "bus2Options": bus2_options,
+            "bus1PrevOptions": bus1_prev_options,
+            "bus2NextOptions": bus2_next_options,
             "defaultTrio": {
                 "bus1Idx": trio.get("bus1_idx"),
+                "bus1Source": trio.get("bus1_source", "same"),
                 "flightIdx": trio.get("flight_idx"),
                 "bus2Idx": trio.get("bus2_idx"),
+                "bus2Source": trio.get("bus2_source", "same"),
             },
             "minTotal": _to_float(p.get("min_total_price")),
             "explorePrice": _to_float(p.get("explore_price")),
@@ -1092,11 +1110,10 @@ _AI_SUGGEST_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "kind": {"type": "string", "enum": ["cheap", "fast", "best"]},
                     "id": {"type": "string"},
                     "reason": {"type": "string"},
                 },
-                "required": ["kind", "id", "reason"],
+                "required": ["id", "reason"],
                 "additionalProperties": False,
             },
         },
@@ -1121,19 +1138,57 @@ def ai_suggest():
 
     if lang == "tr":
         system_msg = (
-            "Sen bir seyahat asistanısın. Kullanıcıya sunulan tüm seyahat seçeneklerini "
-            "analiz et ve en mantıklı 3 tanesini seç. Fiyat, toplam yolculuk süresi ve "
-            "aktarma/bekleme süresi arasındaki dengeyi göz önünde bulundur. "
-            "Özellikle fiyatta küçük bir fark varken layover süresi çok daha kısa olan "
-            "seçenekleri yakala. Yanıtını Türkçe yaz."
+            "Sen akıllı bir arkadaş gibi konuşan dürüst bir seyahat asistanısın. "
+            "Aşağıdaki gerçek seçeneklerden 3 tanesini seç ve her biri için arkadaşına "
+            "anlatır gibi kısa, samimi bir gerekçe yaz. Her gerekçede şunlar olsun: "
+            "(1) gerçek fiyatı söyle, (2) toplam yolculuk süresini söyle, "
+            "(3) diğer seçeneklerle karşılaştırınca avantajı ve eksiği. "
+            "Örnek ton: 'Sadece €35 — uçaklardan çok daha ucuz, ama 20 saat yoldasın, "
+            "buna değer mi sen karar ver.' Yapay 'en ucuz/en hızlı/en iyi' etiketleri kullanma. "
+            "Her gerekçe en fazla 2 cümle, ~30 kelime. Yanıtı Türkçe yaz."
         )
     else:
         system_msg = (
-            "You are a travel assistant. Analyze all travel options and pick the 3 most "
-            "worthwhile ones. Consider the trade-off between price, total trip duration, and "
-            "connection/layover time. Especially catch options where a small price premium "
-            "buys a significantly shorter layover. Reply in English."
+            "You are an honest travel assistant who talks like a smart friend. From the real "
+            "options below, pick 3 and write a short, conversational reason for each — the kind "
+            "a friend would actually say. Every reason MUST mention: (1) the real price, "
+            "(2) the total trip duration, and (3) the trade-off versus the other options "
+            "(why this is worth it AND what you give up). "
+            "Example tone: 'Just €35 — way cheaper than the flights, but you're on the road "
+            "for 20h, your call.' No fake 'cheapest/fastest/best overall' labels. "
+            "Each reason: at most 2 short sentences, ~30 words. Reply in English."
         )
+
+    # Precompute reference stats so the model can ground its comparisons.
+    def _opt_price(it):
+        p = it.get("totalPrice") if it.get("totalPrice") is not None else it.get("price")
+        return p if isinstance(p, (int, float)) else None
+
+    def _opt_hours(it):
+        if it.get("totalTripH") is not None:
+            return it["totalTripH"]
+        # Parse "7h 15m" style durations into hours
+        dur = it.get("dur") or ""
+        try:
+            hours = 0.0
+            if "h" in dur:
+                hours += float(dur.split("h")[0].strip())
+                rest = dur.split("h", 1)[1]
+                if "m" in rest:
+                    hours += float(rest.split("m")[0].strip()) / 60.0
+            elif "m" in dur:
+                hours = float(dur.split("m")[0].strip()) / 60.0
+            return round(hours, 1) if hours else None
+        except (ValueError, IndexError):
+            return None
+
+    priced = [(it, _opt_price(it), _opt_hours(it)) for it in catalog]
+    valid_p = [p for _, p, _ in priced if p is not None]
+    valid_h = [h for _, _, h in priced if h is not None]
+    cheapest = min(valid_p) if valid_p else None
+    priciest = max(valid_p) if valid_p else None
+    fastest = min(valid_h) if valid_h else None
+    slowest = max(valid_h) if valid_h else None
 
     lines = []
     for item in catalog:
@@ -1141,26 +1196,38 @@ def ai_suggest():
         iid = item.get("id", "")
         if cat in ("Best Flight", "Cheapest Flight"):
             lines.append(
-                f'[{iid}] {cat}: {item.get("airline")} {item.get("dep")}→{item.get("arr")} '
+                f'id={iid} | {cat}: {item.get("airline")} {item.get("dep")}→{item.get("arr")} '
                 f'{item.get("dur")} {item.get("stops", 0)} stops €{item.get("price")}'
             )
         elif cat in ("Flight+Bus", "Bus+Flight"):
             lines.append(
-                f'[{iid}] {cat} via {item.get("hub")}: '
+                f'id={iid} | {cat} via {item.get("hub")}: '
                 f'flight {item.get("flightAirline")} {item.get("flightDep")}→{item.get("flightArr")} €{item.get("flightPrice")} | '
                 f'bus {item.get("busDep")}→{item.get("busArr")} €{item.get("busPrice")} | '
                 f'layover {item.get("layoverH")}h | total trip {item.get("totalTripH")}h | total €{item.get("totalPrice")}'
             )
         elif cat == "Bus/Train":
             lines.append(
-                f'[{iid}] Bus/Train: {item.get("company")} {item.get("dep")}→{item.get("arr")} '
+                f'id={iid} | Bus/Train: {item.get("company")} {item.get("dep")}→{item.get("arr")} '
                 f'{item.get("dur")} €{item.get("price")}'
             )
 
-    user_msg = "Travel options:\n" + "\n".join(lines) + (
-        "\n\nPick exactly 3 using 'cheap', 'fast', 'best' kinds. "
-        "Use the exact bracketed ID for each pick. "
-        "Keep reasons under 12 words."
+    stats_parts = []
+    if cheapest is not None and priciest is not None:
+        stats_parts.append(f"price range: €{cheapest:.2f} – €{priciest:.2f}")
+    if fastest is not None and slowest is not None:
+        stats_parts.append(f"duration range: {fastest}h – {slowest}h")
+    stats_line = ("Catalog stats — " + "; ".join(stats_parts) + ".\n\n") if stats_parts else ""
+
+    user_msg = (
+        stats_line
+        + "Travel options (each line starts with its id):\n"
+        + "\n".join(lines)
+        + "\n\nPick exactly 3 options. For each pick, return the id EXACTLY as shown after "
+          "id= (no extra characters, no quotes, no brackets — just the raw id string). "
+          "For each reason, name the real price and duration, and compare against the rest "
+          "(e.g. 'half the price but 3x longer'). Be conversational and concrete — no flat "
+          "'cheapest/fastest/best' labels."
     )
 
     try:
@@ -1168,7 +1235,7 @@ def ai_suggest():
             "https://api.x.ai/v1/chat/completions",
             headers={"Authorization": f"Bearer {xai_key}", "Content-Type": "application/json"},
             json={
-                "model": "grok-4-1-fast-non-reasoning-latest",
+                "model": "grok-4.3-latest",
                 "messages": [
                     {"role": "system", "content": system_msg},
                     {"role": "user", "content": user_msg},

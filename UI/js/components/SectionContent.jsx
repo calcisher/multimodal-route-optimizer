@@ -32,7 +32,8 @@ function SectionContent({ secIdx, data, currency, lang, date, flashId, arrColorM
   if (secIdx === 0 || secIdx === 1) {
     const prefix = secIdx === 0 ? 'bf' : 'cf';
     return <div className="cards-list">{data.map((d, i) => {
-      const id = `${prefix}-${d.flightNo || d.airline}-${d.dep}`;
+      const depKey = d.dep || d.legs?.[0]?.dep || '';
+      const id = `${prefix}-${d.flightNo || d.airline}-${depKey}`;
       const flash = id === flashId;
       const arrColor = arrColorMap ? arrColorMap[d.arrIata] : null;
       const depColor = depColorMap ? depColorMap[d.depIata] : null;

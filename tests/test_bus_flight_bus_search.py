@@ -7,20 +7,24 @@ SerpAPI / FlixBus and are exercised by the live smoke test instead.
 from __future__ import annotations
 
 from backend.bus_flight_bus_search import (
+    _COMFORT_HOURS,
     _default_trio,
+    _has_comfortable_bus_after_flight,
+    _has_comfortable_bus_before_flight,
     _min_valid_total_three_legs,
 )
 
 DATE = "2026-05-10"
 
 
-def _bus(idx: int, dep: str, arr: str, price: float | None) -> dict:
+def _bus(idx: int, dep: str, arr: str, price: float | None,
+         date: str = DATE, arr_date: str | None = None) -> dict:
     return {
         "id": f"b{idx}",
         "price_eur": price,
         "duration_min": 120,
-        "departure_dt": f"{DATE}T{dep}:00",
-        "arrival_dt": f"{DATE}T{arr}:00",
+        "departure_dt": f"{date}T{dep}:00",
+        "arrival_dt": f"{arr_date or date}T{arr}:00",
         "origin": "x",
         "destination": "y",
         "url": None,
@@ -64,29 +68,34 @@ def test_default_trio_picks_cheapest_flight_with_valid_buses():
         _bus(2, "15:00", "17:00", 22.0),
     ]
     trio = _default_trio(bus1, flights, bus2, DATE, 2.0)
-    assert trio == {"bus1_idx": 0, "flight_idx": 0, "bus2_idx": 0}
+    assert trio == {"bus1_idx": 0, "bus1_source": "same",
+                    "flight_idx": 0,
+                    "bus2_idx": 0, "bus2_source": "same"}
 
 
-def test_default_trio_matches_minimum_total_not_just_cheapest_flight():
-    # The UI displays the pair's min_total as the headline price. The default
-    # selected rows must therefore add up to the same best-value total instead
-    # of selecting a cheaper flight with expensive ground legs.
+def test_default_trio_prefers_cheapest_flight_over_cheaper_total():
+    # New rule: cheapest flight wins as long as it has valid buses, even if
+    # a pricier flight would yield a cheaper end-to-end total. The user
+    # explicitly asked for "cheapest flight + closest-time buses" instead of
+    # "cheapest total" because total-price defaults felt unintuitive.
     bus1 = [
-        _bus(0, "07:00", "09:00", 100.0),  # valid only for f0
-        _bus(1, "08:00", "11:30", 5.0),    # valid for f1
+        _bus(0, "07:00", "09:00", 100.0),  # valid only for f0 (≤ 10:00)
+        _bus(1, "08:00", "11:30", 5.0),    # valid only for f1 (≤ 12:00)
     ]
     flights = [
-        _flight(0, "12:00", "13:30", 50.0),
+        _flight(0, "12:00", "13:30", 50.0),  # cheapest — wins
         _flight(1, "14:00", "15:30", 60.0),
     ]
     bus2 = [
-        _bus(0, "16:00", "18:00", 100.0),  # valid for both, but expensive
-        _bus(1, "17:31", "19:00", 5.0),    # valid for f1
+        _bus(0, "16:00", "18:00", 100.0),  # valid for f0 (≥ 15:30)
+        _bus(1, "17:31", "19:00", 5.0),    # valid only for f1
     ]
 
     trio = _default_trio(bus1, flights, bus2, DATE, 2.0)
 
-    assert trio == {"bus1_idx": 1, "flight_idx": 1, "bus2_idx": 1}
+    assert trio == {"bus1_idx": 0, "bus1_source": "same",
+                    "flight_idx": 0,
+                    "bus2_idx": 0, "bus2_source": "same"}
 
 
 def test_default_trio_walks_to_next_flight_when_first_has_no_bus1():
@@ -98,7 +107,9 @@ def test_default_trio_walks_to_next_flight_when_first_has_no_bus1():
     ]
     bus2 = [_bus(0, "16:00", "18:00", 20.0)]   # 16:00 ≥ 13:30 + 2h = 15:30 ✓
     trio = _default_trio(bus1, flights, bus2, DATE, 2.0)
-    assert trio == {"bus1_idx": 0, "flight_idx": 1, "bus2_idx": 0}
+    assert trio == {"bus1_idx": 0, "bus1_source": "same",
+                    "flight_idx": 1,
+                    "bus2_idx": 0, "bus2_source": "same"}
 
 
 def test_default_trio_returns_none_when_no_flight_has_both_buses():
@@ -120,7 +131,9 @@ def test_default_trio_skips_options_with_none_price():
         _bus(1, "16:30", "18:30", 22.0),
     ]
     trio = _default_trio(bus1, flights, bus2, DATE, 2.0)
-    assert trio == {"bus1_idx": 1, "flight_idx": 0, "bus2_idx": 1}
+    assert trio == {"bus1_idx": 1, "bus1_source": "same",
+                    "flight_idx": 0,
+                    "bus2_idx": 1, "bus2_source": "same"}
 
 
 def test_default_trio_picks_latest_valid_bus1_and_earliest_valid_bus2():
@@ -139,7 +152,9 @@ def test_default_trio_picks_latest_valid_bus1_and_earliest_valid_bus2():
         _bus(3, "15:25", "17:30", 25.0),   # invalid: 15:25 < 15:30
     ]
     trio = _default_trio(bus1, flights, bus2, DATE, 2.0)
-    assert trio == {"bus1_idx": 2, "flight_idx": 0, "bus2_idx": 2}
+    assert trio == {"bus1_idx": 2, "bus1_source": "same",
+                    "flight_idx": 0,
+                    "bus2_idx": 2, "bus2_source": "same"}
 
 
 # ── _min_valid_total_three_legs ──────────────────────────────────────────────
@@ -175,3 +190,131 @@ def test_min_valid_total_handles_empty_lists():
     assert _min_valid_total_three_legs([], [], [], DATE, 2.0) is None
     flight = [_flight(0, "10:00", "11:30", 60.0)]
     assert _min_valid_total_three_legs([], flight, [], DATE, 2.0) is None
+
+
+# ── overnight handling ──────────────────────────────────────────────────────
+
+PREV_DATE = "2026-05-09"  # DATE - 1 day
+NEXT_DATE = "2026-05-11"  # DATE + 1 day
+
+
+def test_default_trio_uses_prev_day_bus_when_cheap_flight_only_reachable_overnight():
+    # No same-day bus arrives by 04:00 (deadline for the 06:00 flight). A
+    # prev-day bus arriving 23:30 the night before unlocks the cheapest
+    # flight, which is the explicit user ask ("Milan→Nuremberg €46 path").
+    bus1_same = [_bus(0, "08:00", "10:00", 5.0)]
+    bus1_prev = [_bus(0, "20:00", "23:30", 5.0,
+                      date=PREV_DATE, arr_date=PREV_DATE)]
+    flights = [
+        _flight(0, "06:00", "07:30", 20.0),  # cheapest, prev-day needed
+        _flight(1, "14:00", "15:30", 60.0),
+    ]
+    bus2 = [_bus(0, "09:30", "12:00", 5.0)]
+
+    trio = _default_trio(
+        bus1_same, flights, bus2, DATE, 2.0,
+        bus1_prev_options=bus1_prev,
+    )
+    assert trio == {"bus1_idx": 0, "bus1_source": "prev",
+                    "flight_idx": 0,
+                    "bus2_idx": 0, "bus2_source": "same"}
+
+
+def test_default_trio_prefers_same_day_when_tied_with_overnight():
+    # Same-day and prev-day buses both arrive at 08:00 — selector must
+    # break the tie toward same-day so we don't surface an overnight stay
+    # when same-day equally satisfies the 2h rule.
+    bus1_same = [_bus(0, "06:00", "08:00", 10.0)]
+    bus1_prev = [_bus(0, "20:00", "08:00", 5.0,
+                      date=PREV_DATE, arr_date=DATE)]
+    flights = [_flight(0, "10:00", "11:30", 60.0)]
+    bus2 = [_bus(0, "13:30", "15:30", 10.0)]
+
+    trio = _default_trio(
+        bus1_same, flights, bus2, DATE, 2.0,
+        bus1_prev_options=bus1_prev,
+    )
+    assert trio == {"bus1_idx": 0, "bus1_source": "same",
+                    "flight_idx": 0,
+                    "bus2_idx": 0, "bus2_source": "same"}
+
+
+def test_default_trio_uses_next_day_bus_for_late_flight():
+    bus1 = [_bus(0, "06:00", "08:00", 5.0)]
+    flights = [
+        _flight(0, "22:00", "23:30", 20.0),  # late + cheap, no same-day bus2 after 01:30
+        _flight(1, "10:00", "11:30", 60.0),
+    ]
+    bus2_same = [_bus(0, "13:30", "15:00", 5.0)]
+    bus2_next = [_bus(0, "07:00", "09:00", 5.0,
+                       date=NEXT_DATE, arr_date=NEXT_DATE)]
+
+    trio = _default_trio(
+        bus1, flights, bus2_same, DATE, 2.0,
+        bus2_next_options=bus2_next,
+    )
+    assert trio == {"bus1_idx": 0, "bus1_source": "same",
+                    "flight_idx": 0,
+                    "bus2_idx": 0, "bus2_source": "next"}
+
+
+# ── overnight-query gate ────────────────────────────────────────────────────
+
+def test_comfort_before_flight_true_when_bus_arrives_with_3h_slack():
+    # Flight at 10:00, bus arrives 07:00 → 3h gap exactly meets _COMFORT_HOURS.
+    flight = _flight(0, "10:00", "11:30", 50.0)
+    bus = [_bus(0, "05:00", "07:00", 10.0)]
+    assert _has_comfortable_bus_before_flight(flight, bus, DATE) is True
+
+
+def test_comfort_before_flight_false_when_only_2h_slack():
+    # 2h gap satisfies hard transfer rule but NOT comfort threshold → still query overnight.
+    flight = _flight(0, "10:00", "11:30", 50.0)
+    bus = [_bus(0, "06:00", "08:00", 10.0)]
+    assert _has_comfortable_bus_before_flight(flight, bus, DATE) is False
+
+
+def test_comfort_before_flight_false_when_no_priced_bus():
+    flight = _flight(0, "10:00", "11:30", 50.0)
+    bus = [_bus(0, "05:00", "07:00", None)]   # priceless → ignored
+    assert _has_comfortable_bus_before_flight(flight, bus, DATE) is False
+
+
+def test_comfort_before_flight_false_when_empty_bus_list():
+    flight = _flight(0, "10:00", "11:30", 50.0)
+    assert _has_comfortable_bus_before_flight(flight, [], DATE) is False
+
+
+def test_comfort_after_flight_true_when_bus_departs_with_3h_slack():
+    flight = _flight(0, "08:00", "09:30", 50.0)
+    bus = [_bus(0, "12:30", "14:30", 10.0)]   # 12:30 ≥ 09:30 + 3h
+    assert _has_comfortable_bus_after_flight(flight, bus, DATE) is True
+
+
+def test_comfort_after_flight_false_when_only_2h_slack():
+    flight = _flight(0, "08:00", "09:30", 50.0)
+    bus = [_bus(0, "11:30", "13:30", 10.0)]   # 11:30 = 09:30 + 2h (no comfort)
+    assert _has_comfortable_bus_after_flight(flight, bus, DATE) is False
+
+
+def test_comfort_threshold_constant_matches_user_spec():
+    # User explicitly asked for a 3h comfort window — guard the constant so
+    # silent edits don't change the gate behavior.
+    assert _COMFORT_HOURS == 3.0
+
+
+def test_min_valid_total_three_legs_considers_overnight_buses():
+    bus1_same = [_bus(0, "07:00", "09:00", 100.0)]  # only valid for f1
+    bus1_prev = [_bus(0, "20:00", "23:30", 3.0,
+                      date=PREV_DATE, arr_date=PREV_DATE)]
+    flights = [
+        _flight(0, "06:00", "07:30", 20.0),
+        _flight(1, "14:00", "15:30", 60.0),
+    ]
+    bus2 = [_bus(0, "09:30", "12:00", 5.0)]
+    # f0 trio: 3 + 20 + 5 = 28 (uses prev-day bus1)
+    # f1 trio: 100 + 60 + 5 = 165
+    assert _min_valid_total_three_legs(
+        bus1_same, flights, bus2, DATE, 2.0,
+        bus1_prev_options=bus1_prev,
+    ) == 28.0

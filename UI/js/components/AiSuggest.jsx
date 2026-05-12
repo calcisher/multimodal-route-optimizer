@@ -1,6 +1,7 @@
 // ── AI Suggestion panel ───────────────────────────────────────────────────────
-// Builds a rich flat catalog (individual hub combos, not just hub summaries)
-// and calls the Flask /api/ai-suggest endpoint which proxies xAI structured output.
+// Builds a flat catalog of every realistic option, then calls /api/ai-suggest
+// which proxies xAI. The AI returns 3 honest picks with short reasons; clicking
+// one jumps to that section and flashes the matching card.
 function AiSuggestPanel({ results, currency, lang, initialCache, onResult, onPick, onClose }) {
   const [loading, setLoading] = useState(!initialCache);
   const [picks, setPicks] = useState(initialCache?.picks ?? null);
@@ -11,8 +12,8 @@ function AiSuggestPanel({ results, currency, lang, initialCache, onResult, onPic
 
   useEffect(() => { if (!initialCache) ask(); }, []);
 
-  // For each hub, enumerate all valid bus×flight combos (connection >= 120 min).
-  // Returns top N sorted by price so the context stays manageable.
+  // For each hub, enumerate all valid bus×flight combos (connection >= 120 min)
+  // and pass a small representative slice so the prompt stays manageable.
   function hubCombos(hubData, secIdx, prefix, maxPerHub = 8) {
     const { busOptions = [], flightOptions = [], hub, mode } = hubData;
     const combos = [];
@@ -41,7 +42,6 @@ function AiSuggestPanel({ results, currency, lang, initialCache, onResult, onPic
       }
     }
     if (combos.length === 0) return [];
-    // Always guarantee cheapest AND fastest are in the catalog, then fill with next-cheapest
     const byPrice = [...combos].sort((a, b) => a.totalPrice - b.totalPrice);
     const byDur = [...combos].sort((a, b) => (a.totalTripH ?? 999) - (b.totalTripH ?? 999));
     const result = [];
@@ -60,20 +60,24 @@ function AiSuggestPanel({ results, currency, lang, initialCache, onResult, onPic
 
     const flat = [];
 
+    // Multi-leg flights only have dep/arr inside legs[]; single-leg has them at top level.
+    const flightDep = (d) => d.dep || d.legs?.[0]?.dep || '';
+    const flightArr = (d) => d.arr || d.legs?.[d.legs.length - 1]?.arr || '';
+    const flightDur = (d) => d.duration || d.totalDuration || '';
+
     (results.bestFlights || []).forEach((d) => flat.push({
       cat: 'Best Flight', secIdx: 0,
-      id: `bf-${d.flightNo || d.airline}-${d.dep}`,
-      airline: d.airline, dep: d.dep, arr: d.arr, dur: d.duration,
+      id: `bf-${d.flightNo || d.airline}-${flightDep(d)}`,
+      airline: d.airline, dep: flightDep(d), arr: flightArr(d), dur: flightDur(d),
       price: d.price, stops: d.stops || 0,
     }));
     (results.cheapFlights || []).forEach((d) => flat.push({
       cat: 'Cheapest Flight', secIdx: 1,
-      id: `cf-${d.flightNo || d.airline}-${d.dep}`,
-      airline: d.airline, dep: d.dep, arr: d.arr, dur: d.duration,
+      id: `cf-${d.flightNo || d.airline}-${flightDep(d)}`,
+      airline: d.airline, dep: flightDep(d), arr: flightArr(d), dur: flightDur(d),
       price: d.price, stops: d.stops || 0,
     }));
 
-    // Hub combos — full cross-product per hub (filtered & capped per hub)
     (results.flightPlusBus || []).forEach((h) => {
       hubCombos(h, 2, 'fpb').forEach((c) => flat.push(c));
     });
@@ -107,54 +111,43 @@ function AiSuggestPanel({ results, currency, lang, initialCache, onResult, onPic
         throw new Error(err.error || `HTTP ${resp.status}`);
       }
       const data = await resp.json();
+      // Defensive: strip wrapping brackets/quotes/whitespace from the model's id.
+      const cleanId = (s) => (s || '').replace(/^[\s\[\]"`'<>]+|[\s\[\]"`'<>]+$/g, '');
       const enriched = (data.picks || []).map((p) => {
-        const item = flat.find((f) => f.id === p.id);
-        return item ? { ...p, item } : null;
+        const pid = cleanId(p.id);
+        const item = flat.find((f) => f.id === pid);
+        return item ? { id: pid, reason: p.reason, item } : null;
       }).filter(Boolean);
       if (enriched.length === 0) throw new Error('no valid picks');
       setPicks(enriched);
       setSummary(data.summary || '');
       onResult?.(enriched, data.summary || '');
     } catch (e) {
-      // Deterministic fallback: cheapest + fastest without AI
+      // Fallback when AI is unreachable: just show the 3 cheapest options
+      // with a neutral reason, no forced cheap/fast/best framing.
       const scored = flat
         .filter((f) => (f.price != null || f.totalPrice != null))
-        .map((f) => ({ ...f, _p: f.totalPrice ?? f.price ?? Infinity, _h: f.totalTripH ?? 99 }));
-      const byPrice = [...scored].sort((a, b) => a._p - b._p);
-      const byDur   = [...scored].sort((a, b) => a._h - b._h);
-      const fallbackPicks = [];
-      const seen = new Set();
-      for (const [kind, item] of [['cheap', byPrice[0]], ['fast', byDur[0]]]) {
-        if (item && !seen.has(item.id)) {
-          seen.add(item.id);
-          fallbackPicks.push({
-            kind, id: item.id,
-            reason: kind === 'cheap'
-              ? (lang === 'tr' ? 'En düşük toplam fiyat' : 'Lowest total price')
-              : (lang === 'tr' ? 'En kısa yolculuk süresi' : 'Shortest trip time'),
-            item,
-          });
-        }
-      }
-      if (fallbackPicks.length === 0) {
+        .map((f) => ({ ...f, _p: f.totalPrice ?? f.price ?? Infinity }))
+        .sort((a, b) => a._p - b._p);
+      const fallback = scored.slice(0, 3).map((it) => ({
+        id: it.id,
+        reason: lang === 'tr' ? 'Listedeki en uygun fiyatlı seçenek.' : 'Among the lowest-priced options available.',
+        item: it,
+      }));
+      if (fallback.length === 0) {
         setError(lang === 'tr'
           ? 'AI önerisi alınamadı, manuel seçim yapabilirsiniz.'
           : 'Could not get AI picks. Please choose manually.');
         setLoading(false);
         return;
       }
-      setPicks(fallbackPicks);
+      setPicks(fallback);
       setSummary('');
-      onResult?.(fallbackPicks, '');
+      onResult?.(fallback, '');
     } finally {
       setLoading(false);
     }
   }
-
-  const tagLabel = (kind) => {
-    if (lang === 'tr') return kind === 'cheap' ? '💰 En Ucuz' : kind === 'fast' ? '⚡ En Hızlı' : '⭐ En İyi';
-    return kind === 'cheap' ? '💰 Cheapest' : kind === 'fast' ? '⚡ Fastest' : '⭐ Best overall';
-  };
 
   const priceOf = (item) => item.totalPrice ?? item.price;
 
@@ -194,13 +187,12 @@ function AiSuggestPanel({ results, currency, lang, initialCache, onResult, onPic
       </div>
       {summary && <div className="ai-suggest-summary">{summary}</div>}
       <div className="ai-suggest-cards">
-        {picks.map((p) => {
+        {picks.map((p, i) => {
           const it = p.item;
           const price = priceOf(it);
           return (
-            <button key={p.kind} className={`ai-suggest-card ${p.kind}`}
+            <button key={p.id || i} className="ai-suggest-card"
               onClick={() => onPick(it.secIdx, it.id)}>
-              <div className="ai-suggest-card-tag">{tagLabel(p.kind)}</div>
               <div className="ai-suggest-card-title">{titleOf(it)}</div>
               <div className="ai-suggest-card-meta">{p.reason}</div>
               {price != null && <div className="ai-suggest-card-price">{fmt(price)}</div>}

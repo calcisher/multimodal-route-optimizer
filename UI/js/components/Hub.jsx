@@ -103,10 +103,6 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date,
   // The top card in a section gets defaultExpanded=true so users don't open an
   // entirely shut accordion on first paint.
   const [expanded, setExpanded] = useState(defaultExpanded || autoExpand);
-  // Smart picks (AI top-3 button) — null = not requested, [] = no result
-  const [smart, setSmart] = useState(null);
-  const [smartLoading, setSmartLoading] = useState(false);
-
   // Reset selection when a new search lands (hubData identity changes).
   useEffect(() => {
     if (preSelectBusId && preSelectFlightId) {
@@ -116,7 +112,6 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date,
         setSel({ busId: preSelectBusId, flightId: preSelectFlightId });
         setBusStage(0); setFlightStage(0);
         setExpanded(true);
-        setSmart(null);
         return;
       }
     }
@@ -130,7 +125,6 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date,
     setBusStage(0);
     setFlightStage(0);
     setExpanded(defaultExpanded);
-    setSmart(null);
   }, [hubData, preSelectBusId, preSelectFlightId]);
 
   const selBus = busOptions.find((b) => b.id === sel.busId) || null;
@@ -276,86 +270,6 @@ function HubMasterCard({ hubData, currency, lang, defaultExpanded = false, date,
       )}
     </div>);
 
-  // ── AI smart picks (global Top-3 across all valid combos) ──────────────────
-  // Walk every (bus,flight) pair, drop ones that don't satisfy the 2h rule, pass
-  // a compact summary to the model and ask for a 3-element JSON ranking. We
-  // only pass the prompt+combos and let the model attach a label and reason.
-  async function getSmartPicks() {
-    setSmartLoading(true);
-    try {
-      const combos = [];
-      for (const f of flightOptions) {
-        for (const b of busOptions) {
-          const c = calcConnection(b, f, mode);
-          if (c.minutes == null || c.minutes < PICK_MIN_CONNECTION) continue;
-          const overall = totalTripMin(b, f, mode);
-          combos.push({
-            flight: f, bus: b,
-            wait: c.minutes,
-            overall,
-            price: (b.price ?? 0) + (f.price ?? 0)
-          });
-        }
-      }
-      if (combos.length === 0) {
-        setSmart([{ label: '⚠️', reason: t.aiPickEmpty, combo: null }]);
-        setSmartLoading(false);
-        return;
-      }
-      const summary = combos.map((c) => ({
-        f: `${c.flight.airline || ''} ${c.flight.flightNo || ''} ${c.flight.dep}-${c.flight.arr} €${c.flight.price}`.trim(),
-        b: `${c.bus.company || 'Bus'} ${c.bus.dep}-${c.bus.arr} €${c.bus.price}`,
-        wait: fmtConnMinutes(c.wait, lang), overall: fmtConnMinutes(c.overall, lang), price: `€${c.price}`
-      }));
-      const prompt = `Sen seyahat asistanısın. Aşağıdaki ${mode === 'flight_plus_bus' ? 'uçak+otobüs' : 'otobüs+uçak'} kombinasyonlarından en iyi 3'ünü seç. Her biri için: bir kategori etiketi (örn: "🌅 Sabah erken", "💰 En ucuz", "⚡ En hızlı", "🌙 Gece yolculuğu") ve 1 cümlelik tavsiye yaz.
-Kombinasyonlar:
-${summary.map((s, i) => `${i + 1}. ${mode === 'flight_plus_bus' ? `Uçak ${s.f}, sonra Otobüs ${s.b}` : `Otobüs ${s.b}, sonra Uçak ${s.f}`} | bekleme: ${s.wait} | toplam yolculuk: ${s.overall} | toplam: ${s.price}`).join('\n')}
-
-Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason": "..."}]
-3 öğe içersin.`;
-      let txt = '';
-      if (window.claude && typeof window.claude.complete === 'function') {
-        txt = await window.claude.complete(prompt);
-      } else {
-        // Fallback: pick three deterministic combos so the panel is still useful
-        // when the page is opened outside the Claude harness.
-        const cheap = [...combos].sort((a, b) => a.price - b.price)[0];
-        const fast = [...combos].sort((a, b) => a.overall - b.overall)[0];
-        const balanced = [...combos].sort((a, b) => (a.price * 2 + a.overall) - (b.price * 2 + b.overall))[0];
-        const fakePicks = [];
-        const seen = new Set();
-        for (const [c, label, reason] of [
-          [cheap, '💰 En ucuz', 'Toplam fiyatta en avantajlı seçenek.'],
-          [fast, '⚡ En hızlı', 'Toplam yolculuk süresi en kısa.'],
-          [balanced, '🎯 Dengeli', 'Fiyat ve süre dengesinde en iyi.']
-        ]) {
-          if (!c) continue;
-          const key = `${c.flight.id}|${c.bus.id}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          fakePicks.push({ index: combos.indexOf(c) + 1, label, reason });
-        }
-        txt = JSON.stringify(fakePicks);
-      }
-      const jsonMatch = txt.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const picks = JSON.parse(jsonMatch[0]);
-        setSmart(picks.map((p) => ({ ...p, combo: combos[p.index - 1] })).filter((p) => p.combo));
-      } else {
-        setSmart([{ label: '⚠️', reason: t.aiError, combo: null }]);
-      }
-    } catch (e) {
-      console.error(e);
-      setSmart([{ label: '⚠️', reason: t.aiError, combo: null }]);
-    }
-    setSmartLoading(false);
-  }
-
-  const applySmartCombo = (c) => {
-    if (!c) return;
-    setSel({ busId: c.bus.id, flightId: c.flight.id });
-  };
-
   // ── Booking links ──────────────────────────────────────────────────────────
   // Bus URL stays as a flat https://www.omio.com — wire the proper Omio search
   // shape later when we know which fields it accepts.
@@ -410,35 +324,6 @@ Sadece JSON döndür: [{"index": 1-based, "label": "🌅 Sabah erken", "reason":
       {noPairing && expanded && <div className="hub-no-pairing-banner">⚠ {t.noValidPairing}</div>}
 
       {expanded && <>
-      {/* Global AI Top-3 picker — replaces the old En ucuz/En hızlı/Sabah erken chips. */}
-      <div className="hub-smart-bar">
-        {!smart && !smartLoading && (
-          <button className="hub-smart-btn" onClick={getSmartPicks}>
-            {t.aiTopBtn} <small>{t.aiTopBtnSmall}</small>
-          </button>
-        )}
-        {smartLoading && <div className="hub-smart-loading">{t.aiTopLoading}</div>}
-        {smart && (
-          <div className="hub-smart-row">
-            <div className="hub-smart-title">{t.aiSmartTitle}</div>
-            <div className="hub-smart-cards">
-              {smart.map((s, i) => (
-                <button key={i} className="hub-smart-card"
-                  onClick={() => applySmartCombo(s.combo)}
-                  disabled={!s.combo}>
-                  <div className="hub-smart-label">{s.label}</div>
-                  <div className="hub-smart-reason">{s.reason}</div>
-                  {s.combo && (
-                    <div className="hub-smart-meta">{fmt(s.combo.price)} · {fmtConnMinutes(s.combo.overall, lang)}</div>
-                  )}
-                </button>
-              ))}
-            </div>
-            <button className="hub-smart-clear" title={t.aiClearTitle} onClick={() => setSmart(null)}>✕</button>
-          </div>
-        )}
-      </div>
-
       <div className="hub-grid">
         {mode === 'bus_plus_flight' ? <>{busCol}{flightCol}</> : <>{flightCol}{busCol}</>}
       </div>

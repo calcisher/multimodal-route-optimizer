@@ -346,15 +346,17 @@ function pickCheapest(buses, flights, mode) {
 // Default picker for hub cards: anchor on the cheapest single flight, then
 // pair it with the bus whose connection time is the *shortest* still meeting
 // the 2h floor (PICK_MIN_CONNECTION). Falls back to the next-cheapest flight
-// if the cheapest can't be paired with any valid bus. This avoids the "10h
-// idle layover because we picked the cheapest bus" surprise pickCheapest had.
+// if the cheapest can't be paired with any valid bus. Bus selection is
+// price-independent — FlixBus sometimes omits price on a trip, and gating on
+// price made the picker silently skip the genuinely-closest bus and slip to
+// a later one that happened to be cheaper, which read as "it just picks the
+// cheapest". Only the flight side stays price-anchored.
 function pickTightConnection(buses, flights, mode) {
   if (!flights.length || !buses.length) return null;
   const sortedF = [...flights].filter((f) => f.price != null).sort((a, b) => a.price - b.price);
   for (const f of sortedF) {
     let best = null;
     for (const b of buses) {
-      if (b.price == null) continue;
       const c = calcConnection(b, f, mode);
       if (c.minutes == null || c.minutes < PICK_MIN_CONNECTION) continue;
       if (!best || c.minutes < best.conn.minutes) {
