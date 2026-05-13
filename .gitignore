@@ -29,6 +29,11 @@ repomix-output.txt
 # per-machine SerpAPI reliability state (not source of truth)
 data/airport_reliability.json
 airport_reliability.json
+
+# runtime SQLite cache (not source of truth)
+data/search_cache.db
+data/search_cache.db-shm
+data/search_cache.db-wal
 .DS_Store
 
 .playwright-mcp

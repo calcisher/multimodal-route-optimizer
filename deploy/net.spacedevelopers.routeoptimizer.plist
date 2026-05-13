@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>net.spacedevelopers.routeoptimizer</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/kerembozdag/498/multimodal-route-optimizer</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/kerembozdag/498/multimodal-route-optimizer/.venv/bin/gunicorn</string>
+        <string>--bind</string>
+        <string>127.0.0.1:5001</string>
+        <string>--workers</string>
+        <string>2</string>
+        <string>--threads</string>
+        <string>4</string>
+        <string>--timeout</string>
+        <string>120</string>
+        <string>--access-logfile</string>
+        <string>/Users/kerembozdag/Library/Logs/spacedevelopers/access.log</string>
+        <string>--error-logfile</string>
+        <string>/Users/kerembozdag/Library/Logs/spacedevelopers/error.log</string>
+        <string>app:app</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/kerembozdag/498/multimodal-route-optimizer/.venv/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/kerembozdag/Library/Logs/spacedevelopers/stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/kerembozdag/Library/Logs/spacedevelopers/stderr.log</string>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
+</dict>
+</plist>
