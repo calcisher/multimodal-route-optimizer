@@ -5,6 +5,9 @@ const TWEAK_DEFAULTS = {
   cardStyle: "comfortable"
 };
 
+// Fallback rates only — /api/fx overwrites rates+date at page load with daily
+// ECB values (see the fx effect in app.jsx). Keep these roughly current so a
+// failed fetch doesn't show wildly wrong prices.
 const FX_ESTIMATE = {
   base: "EUR",
   date: "2026-05-16",

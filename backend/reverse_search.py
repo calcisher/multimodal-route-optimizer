@@ -130,7 +130,8 @@ def get_flixbus_id_from_db(city_name: str) -> str | None:
                         """, (query_lower, f"%{query_lower}%"))
             row = cur.fetchone()
             conn.close()
-            if row: return row[0]
+            if row:
+                return row[0]
         except Exception as e:
             print(f"   ⚠️ DB Error ({city_name}): {e}")
 
@@ -148,7 +149,7 @@ def flixbus_transfer(departure_location: str, arrival_location: str, departure_d
     to_id = get_flixbus_id_from_db(arr_city)
 
     if not from_id or not to_id:
-        print(f"   ❌ FlixBus: Cities could not be matched in API/DB.")
+        print("   ❌ FlixBus: Cities could not be matched in API/DB.")
         return pd.DataFrame()
 
     f_date = datetime.strptime(departure_date, "%Y-%m-%d").strftime("%d.%m.%Y")
@@ -188,7 +189,7 @@ def flixbus_transfer(departure_location: str, arrival_location: str, departure_d
             min_price = df["price"].min()
             print(f"   ✅ FlixBus DONE. Found {len(df)} bus(es). Cheapest: {min_price:.2f}€")
         else:
-            print(f"   ✅ FlixBus DONE. Found 0 bus(es).")
+            print("   ✅ FlixBus DONE. Found 0 bus(es).")
         return df
     except Exception as e:
         print(f"❌ FlixBus ERROR: {e}")
@@ -224,7 +225,7 @@ def checkmybus_transfer(departure_location: str, arrival_location: str, departur
             bus_cnt = len(df[df["transport_mode"] == "bus"]) if "transport_mode" in df.columns else 0
             print(f"   ✅ CheckMyBus DONE. Found {train_cnt} train(s), {bus_cnt} bus(es). Cheapest: {min_price:.2f}€")
         else:
-            print(f"   ✅ CheckMyBus DONE. Found 0 results.")
+            print("   ✅ CheckMyBus DONE. Found 0 results.")
 
         return df
     except Exception as e:
@@ -292,8 +293,10 @@ def a_to_b_via_ground_then_flight(departure_city: str,
         print("-" * 50)
 
         frames_to_concat = []
-        if not flixbus_df.empty: frames_to_concat.append(flixbus_df)
-        if not cmb_df.empty: frames_to_concat.append(cmb_df)
+        if not flixbus_df.empty:
+            frames_to_concat.append(flixbus_df)
+        if not cmb_df.empty:
+            frames_to_concat.append(cmb_df)
 
         if not frames_to_concat:
             continue

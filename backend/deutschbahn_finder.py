@@ -23,7 +23,7 @@ r = requests.get(f"{BASE}/journeys", params={
 
 for j in r.json().get("journeys", []):
     legs = j["legs"]
-    tipler = [l.get("line", {}).get("product", "?") for l in legs if l.get("line")]
+    tipler = [leg.get("line", {}).get("product", "?") for leg in legs if leg.get("line")]
     aktarma = len(legs) - 1
     dep_dt = datetime.fromisoformat(legs[0]["departure"])
     arr_dt = datetime.fromisoformat(legs[-1]["arrival"])

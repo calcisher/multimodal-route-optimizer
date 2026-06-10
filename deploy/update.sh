@@ -36,6 +36,16 @@ fi
 echo "==> Step 2/4: uv sync (install/upgrade deps)"
 uv sync --quiet
 
+# The UI bundle (UI/js/app.min.js) is a committed artifact built locally by
+# deploy/build_ui.sh — the mini never rebuilds it (no node needed, and a
+# rebuild here would dirty the tree and break the next --ff-only pull).
+# Warn if someone committed UI source changes without rebuilding.
+SRC_TS=$(git log -1 --format=%ct -- UI/js/app.jsx UI/js/utils.js UI/js/i18n.js UI/js/constants.js UI/js/components 2>/dev/null || echo 0)
+BUNDLE_TS=$(git log -1 --format=%ct -- UI/js/app.min.js 2>/dev/null || echo 0)
+if [ "${SRC_TS:-0}" -gt "${BUNDLE_TS:-0}" ]; then
+    echo "    ⚠️  UI sources are newer than UI/js/app.min.js — run 'bash deploy/build_ui.sh' locally and push the rebuilt bundle."
+fi
+
 echo "==> Step 3/4: restart gunicorn"
 launchctl kickstart -k "gui/$(id -u)/$LABEL"
 sleep 3

@@ -72,7 +72,7 @@ function AiSuggestPanel({ results, currency, lang, initialCache, onResult, onPic
       price: d.price, stops: d.stops || 0,
     }));
     (results.cheapFlights || []).forEach((d) => flat.push({
-      cat: 'Cheapest Flight', secIdx: 1,
+      cat: 'Other Flight', secIdx: 1,
       id: `cf-${d.flightNo || d.airline}-${flightDep(d)}`,
       airline: d.airline, dep: flightDep(d), arr: flightArr(d), dur: flightDur(d),
       price: d.price, stops: d.stops || 0,

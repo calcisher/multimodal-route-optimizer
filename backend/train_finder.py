@@ -332,7 +332,7 @@ def _get_trips_de(origin: str, destination: str, date: str) -> pd.DataFrame:
         price_obj = j.get("price")
         price = _safe_float(price_obj.get("amount")) if price_obj else None
         # Count actual train-leg transfers (legs with a line = train segments)
-        train_legs = [l for l in legs if l.get("line")]
+        train_legs = [leg for leg in legs if leg.get("line")]
         stops_count = max(0, len(train_legs) - 1)
 
         # Extract per-leg waypoints (station name + coordinates) for map display
@@ -406,7 +406,7 @@ def get_trips(origin: str, destination: str, date: str) -> pd.DataFrame:
     if country in ("DE", "DB_EUROPE"):
         df = _get_trips_de(origin, destination, date)
     else:
-        print(f"   ⏭  Unknown city pair — train search skipped")
+        print("   ⏭  Unknown city pair — train search skipped")
         return pd.DataFrame()
 
     if not df.empty:

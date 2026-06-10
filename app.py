@@ -322,14 +322,14 @@ def _flight_row_to_ui(row: pd.Series) -> dict:
     if len(legs_raw) > 1:
         ui_legs = [
             {
-                "dep": _time_of(l.get("dep")),
-                "arr": _time_of(l.get("arr")),
-                "from": l.get("from", ""),
-                "to": l.get("to", ""),
-                "duration": _fmt_minutes(l.get("duration")),
-                "flightNo": l.get("flight_number", ""),
+                "dep": _time_of(leg.get("dep")),
+                "arr": _time_of(leg.get("arr")),
+                "from": leg.get("from", ""),
+                "to": leg.get("to", ""),
+                "duration": _fmt_minutes(leg.get("duration")),
+                "flightNo": leg.get("flight_number", ""),
             }
-            for l in legs_raw
+            for leg in legs_raw
         ]
         lay = layovers_raw[0] if layovers_raw else {}
         layover = {
@@ -339,7 +339,7 @@ def _flight_row_to_ui(row: pd.Series) -> dict:
         }
         return {
             "airline": _clean(row.get("airline")) or "",
-            "flightNo": " + ".join(l.get("flight_number", "") for l in legs_raw if l.get("flight_number")),
+            "flightNo": " + ".join(leg.get("flight_number", "") for leg in legs_raw if leg.get("flight_number")),
             "price": _to_float(row.get("price")),
             "depIata": legs_raw[0].get("from", "") or (_clean(row.get("departure_iata")) or ""),
             "arrIata": legs_raw[-1].get("to", "") or (_clean(row.get("arrival_iata")) or ""),
@@ -491,17 +491,17 @@ def _flight_to_ui(f: dict, outbound_date: str, hub_iata: str,
     if len(legs_raw) > 1:
         payload["legs"] = [
             {
-                "dep": _time_of(l.get("dep")),
-                "arr": _time_of(l.get("arr")),
-                "from": l.get("from", ""),
-                "to": l.get("to", ""),
-                "fromName": l.get("from_name", ""),
-                "toName": l.get("to_name", ""),
-                "duration": _fmt_minutes(l.get("duration")),
-                "flightNo": l.get("flight_number", ""),
-                "airline": l.get("airline", "") or f.get("airline", "") or "",
+                "dep": _time_of(leg.get("dep")),
+                "arr": _time_of(leg.get("arr")),
+                "from": leg.get("from", ""),
+                "to": leg.get("to", ""),
+                "fromName": leg.get("from_name", ""),
+                "toName": leg.get("to_name", ""),
+                "duration": _fmt_minutes(leg.get("duration")),
+                "flightNo": leg.get("flight_number", ""),
+                "airline": leg.get("airline", "") or f.get("airline", "") or "",
             }
-            for l in legs_raw
+            for leg in legs_raw
         ]
         payload["layovers"] = [
             {
@@ -763,6 +763,46 @@ def health():
     return {"ok": True}
 
 
+# ---------- FX rates ----------
+# Daily ECB reference rates via frankfurter.dev (free, no API key). The
+# frontend ships hardcoded fallback rates in constants.js; this endpoint
+# upgrades them to fresh values at page load. Fallback mirrors those constants
+# so both sides degrade identically when the fetch fails.
+_FX_FALLBACK = {"base": "EUR", "date": "2026-05-16",
+                "rates": {"EUR": 1, "USD": 1.17, "GBP": 0.863, "TRY": 53.5}}
+_FX_TTL_HOURS = 12
+_fx_cache: dict = {}
+_fx_fetched_at: datetime | None = None
+
+
+@app.get("/api/fx")
+def api_fx():
+    global _fx_cache, _fx_fetched_at
+    now = datetime.now()
+    if _fx_cache and _fx_fetched_at and (now - _fx_fetched_at).total_seconds() < _FX_TTL_HOURS * 3600:
+        return jsonify(_fx_cache)
+    try:
+        resp = httpx.get(
+            "https://api.frankfurter.dev/v1/latest",
+            params={"base": "EUR", "symbols": "USD,GBP,TRY"},
+            timeout=6,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        rates = {"EUR": 1.0}
+        for code, val in (data.get("rates") or {}).items():
+            rates[code] = float(val)
+        missing = {"USD", "GBP", "TRY"} - set(rates)
+        if missing:
+            raise ValueError(f"rates missing from response: {sorted(missing)}")
+        _fx_cache = {"base": "EUR", "date": data.get("date"), "rates": rates}
+        _fx_fetched_at = now
+        return jsonify(_fx_cache)
+    except Exception:
+        app.logger.exception("FX fetch failed; serving fallback rates")
+        return jsonify({**(_fx_cache or _FX_FALLBACK), "stale": True})
+
+
 @app.get("/api/airports")
 def airports():
     """List of airports for the frontend autocomplete (IT/DE only)."""
@@ -802,6 +842,15 @@ def _resolve_inputs(payload: dict):
 
     if not date_str:
         return None, (jsonify({"error": "date is required (YYYY-MM-DD)."}), 400)
+    # Reject malformed/past dates before any SerpAPI call — past dates always
+    # come back empty but still bill credits (stale shared URLs are the usual
+    # source now that the UI defaults to today+20).
+    try:
+        req_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return None, (jsonify({"error": f"Invalid date {date_str!r}, expected YYYY-MM-DD."}), 400)
+    if req_date < date_cls.today():
+        return None, (jsonify({"error": f"Date {date_str} is in the past. Pick today or a later date."}), 400)
     if not from_raw or not to_raw:
         return None, (jsonify({"error": "Both From and To are required."}), 400)
 
@@ -1076,7 +1125,7 @@ def api_trains():
         train_err = str(e)
     try:
         buses_df = bus_future.result()
-    except Exception as e:
+    except Exception:
         app.logger.exception("bus_direct_get_trips failed")
         buses_df = pd.DataFrame()
 
@@ -1194,7 +1243,7 @@ def ai_suggest():
     for item in catalog:
         cat = item.get("cat", "")
         iid = item.get("id", "")
-        if cat in ("Best Flight", "Cheapest Flight"):
+        if cat in ("Best Flight", "Other Flight", "Cheapest Flight"):
             lines.append(
                 f'id={iid} | {cat}: {item.get("airline")} {item.get("dep")}→{item.get("arr")} '
                 f'{item.get("dur")} {item.get("stops", 0)} stops €{item.get("price")}'

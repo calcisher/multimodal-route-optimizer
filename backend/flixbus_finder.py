@@ -1,7 +1,5 @@
 import requests
 import sqlite3
-import os
-import json
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -327,7 +325,7 @@ if __name__ == "__main__":
     # Tüm aralıktaki biletleri çeker ve kendi içinde fiyata göre sıralar
     best_tickets = search_range(c1[0], c2[0], baslangic_tarihi, bitis_tarihi)
 
-    print(f"\n🏆 TÜM ARAMANIN EN UCUZ 5 BİLETİ:")
+    print("\n🏆 TÜM ARAMANIN EN UCUZ 5 BİLETİ:")
     print("-" * 40)
 
     if not best_tickets:

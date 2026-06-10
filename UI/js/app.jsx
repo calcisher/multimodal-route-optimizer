@@ -6,7 +6,7 @@ const { useState, useEffect, useRef, useMemo } = React;
 // in one search, we wrap (still readable, cycle is not semantic).
 
 function App() {
-  const [lang, setLang] = useState('en');
+  const [lang, setLang] = useState(() => ((navigator.language || '').toLowerCase().startsWith('tr') ? 'tr' : 'en'));
   const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
   const [showTweaks, setShowTweaks] = useState(false);
   const [from, setFrom] = useState('');
@@ -23,6 +23,7 @@ function App() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiCache, setAiCache] = useState(null); // { picks, summary } — persists across open/close
   const [flashId, setFlashId] = useState(null);
+  const [fxDate, setFxDate] = useState(FX_ESTIMATE.date);
   const t = T[lang];
   const resultsRef = useRef(null);
   const lastBodyRef = useRef(null); // Keeps latest search body so visibilitychange can retry failed endpoints.
@@ -32,12 +33,25 @@ function App() {
   }, [tweaks.theme]);
 
   useEffect(() => {
-    setDate('2026-05-20');
+    setDate(isoDaysFromNow(20));
 
     fetch('/api/airports')
       .then((r) => r.json())
       .then((data) => setAirports(Array.isArray(data?.airports) ? data.airports : []))
       .catch((err) => console.error('/api/airports failed:', err));
+
+    // Upgrade the hardcoded fallback rates in constants.js to fresh ECB rates.
+    // FX_ESTIMATE is mutated in place because formatPrice reads it globally;
+    // fxDate state forces the re-render that makes new rates visible.
+    fetch('/api/fx')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data || !data.rates || !data.rates.TRY) return;
+        Object.assign(FX_ESTIMATE.rates, data.rates);
+        if (data.date) FX_ESTIMATE.date = data.date;
+        setFxDate(FX_ESTIMATE.date);
+      })
+      .catch((err) => console.error('/api/fx failed:', err));
   }, []);
 
   // Restore search from URL on first mount: ?from=Venice&to=Nürnberg&date=...
@@ -291,7 +305,7 @@ function App() {
           Multi Route
         </div>
         <div className="hdr-right">
-          <button className="theme-btn currency-quick" onClick={() => updateTweak('currency', nextCurrency(cur))} title={lang === 'tr' ? `16 Mayıs 2026 tahmini kur: 1 EUR ≈ ${FX_ESTIMATE.rates[cur]} ${cur}` : `May 16, 2026 estimated FX: 1 EUR ≈ ${FX_ESTIMATE.rates[cur]} ${cur}`}>
+          <button className="theme-btn currency-quick" onClick={() => updateTweak('currency', nextCurrency(cur))} title={lang === 'tr' ? `${fxDate} kuru: 1 EUR ≈ ${fmtFxRate(FX_ESTIMATE.rates[cur])} ${cur}` : `FX as of ${fxDate}: 1 EUR ≈ ${fmtFxRate(FX_ESTIMATE.rates[cur])} ${cur}`}>
             {currencyMeta(cur).symbol} {cur}
           </button>
           <button className="theme-btn" onClick={() => setShowTweaks((p) => !p)} aria-label={t.tweaks}>⚙</button>
@@ -316,7 +330,7 @@ function App() {
             <div className="sf-field sf-date">
               <div className="sf-label">{t.date}</div>
               <div className="sf-input-wrap">
-                <input type="date" className="sf-input" aria-label={t.date} value={date} onChange={(e) => setDate(e.target.value)} />
+                <input type="date" className="sf-input" aria-label={t.date} value={date} min={isoDaysFromNow(0)} onChange={(e) => setDate(e.target.value)} />
               </div>
             </div>
             <button className="search-btn" onClick={doSearch} disabled={loading}>
@@ -443,7 +457,7 @@ function App() {
                 <div key={c} className={`tw-opt${cur === c ? ' active' : ''}`} onClick={() => updateTweak('currency', c)}>{symbol} {c}</div>
               ))}
             </div>
-            <div className="tw-help">{lang === 'tr' ? `16 Mayıs 2026 tahmini: 1 EUR ≈ ${FX_ESTIMATE.rates[cur]} ${cur}` : `May 16, 2026 estimate: 1 EUR ≈ ${FX_ESTIMATE.rates[cur]} ${cur}`}</div>
+            <div className="tw-help">{lang === 'tr' ? `${fxDate} kuru: 1 EUR ≈ ${fmtFxRate(FX_ESTIMATE.rates[cur])} ${cur}` : `FX as of ${fxDate}: 1 EUR ≈ ${fmtFxRate(FX_ESTIMATE.rates[cur])} ${cur}`}</div>
           </div>
           <div className="tw-group">
             <div className="tw-label">Theme</div>

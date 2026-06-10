@@ -16,6 +16,24 @@ function currencyMeta(code) {
   return CURRENCY_OPTIONS.find((c) => c.code === code) || CURRENCY_OPTIONS[0];
 }
 
+// Live ECB rates have long decimals (1.1734…) — trim to 3 for tooltip display.
+function fmtFxRate(r) {
+  if (r == null || !Number.isFinite(r)) return '—';
+  return String(Math.round(r * 1000) / 1000);
+}
+
+// ── Date helper ──────────────────────────────────────────────────────────────
+// Local-timezone YYYY-MM-DD, offset by `days` from today. Used for the default
+// departure date (today + 20) and the date input's min (today). Avoids
+// toISOString() because that converts to UTC and can shift a day near midnight.
+function isoDaysFromNow(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 function nextCurrency(code) {
   const idx = CURRENCY_OPTIONS.findIndex((c) => c.code === code);
   return CURRENCY_OPTIONS[(idx + 1 + CURRENCY_OPTIONS.length) % CURRENCY_OPTIONS.length].code;
